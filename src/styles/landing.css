@@ -1,0 +1,231 @@
+/* ============================
+   Kudi Landing Page Styles
+   ============================ */
+
+.landing-page {
+  --kudi-dark: #0A2F24;
+  --kudi-green: #16A34A;
+  --kudi-green-hover: #15803D;
+  --kudi-light: #F0FDF4;
+  --kudi-footer: #071E17;
+  --kudi-glow: rgba(22, 163, 74, 0.15);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  overflow-x: hidden;
+}
+
+/* ---- Logo Intro (opening animation) ---- */
+
+.landing-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--kudi-dark);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.landing-intro__text {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(4rem, 15vw, 12rem);
+  font-weight: 800;
+  color: white;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  will-change: transform, font-size, left, top;
+}
+
+/* CSS scroll-driven animation (Chrome 115+, Safari 18+) */
+@supports (animation-timeline: scroll()) {
+  .landing-intro {
+    animation: introShrink linear both;
+    animation-timeline: scroll();
+    animation-range: 0px 100vh;
+  }
+  .landing-intro__text {
+    animation: introTextShrink linear both;
+    animation-timeline: scroll();
+    animation-range: 0px 100vh;
+  }
+}
+
+@keyframes introShrink {
+  0% {
+    clip-path: inset(0);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(0 calc(100% - 200px) calc(100% - 64px) 0);
+    opacity: 0;
+  }
+}
+
+@keyframes introTextShrink {
+  0% {
+    font-size: clamp(4rem, 15vw, 12rem);
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    font-size: 1.5rem;
+    left: 1.5rem;
+    top: 1.125rem;
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+}
+
+/* ---- Navbar ---- */
+
+.landing-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(10, 47, 36, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  transform: translateY(-100%);
+  transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.landing-nav--visible {
+  transform: translateY(0);
+}
+
+.landing-nav__logo svg {
+  width: 32px;
+  height: 32px;
+}
+
+/* ---- Scroll reveal ---- */
+
+.landing-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.landing-reveal[data-visible="true"] {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ---- Hero screenshot float ---- */
+
+@keyframes heroFloat {
+  0%, 100% { transform: perspective(1200px) rotateY(-6deg) rotateX(3deg) translateY(0); }
+  50% { transform: perspective(1200px) rotateY(-6deg) rotateX(3deg) translateY(-14px); }
+}
+
+.landing-hero__screenshot {
+  animation: heroFloat 6s ease-in-out infinite;
+  will-change: transform;
+}
+
+.landing-hero__glow {
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(ellipse at center, var(--kudi-glow), transparent 70%);
+  filter: blur(60px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ---- Pricing toggle ---- */
+
+.landing-toggle {
+  width: 52px;
+  height: 28px;
+  border-radius: 14px;
+  background: var(--kudi-green);
+  padding: 2px;
+  cursor: pointer;
+  border: none;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.landing-toggle__dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: white;
+  display: block;
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.landing-toggle__dot--annual {
+  transform: translateX(24px);
+}
+
+/* ---- Price animation ---- */
+
+.landing-price {
+  transition: opacity 200ms ease, transform 200ms ease;
+}
+
+.landing-price--changing {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+/* ---- Feature card hover ---- */
+
+.landing-feature-card {
+  transition: box-shadow 300ms ease, transform 300ms ease;
+}
+
+.landing-feature-card:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+/* ---- How it works connector ---- */
+
+@media (min-width: 1024px) {
+  .landing-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 24px;
+    left: calc(100% + 8px);
+    width: calc(100% - 64px);
+    border-top: 2px dashed rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* ---- Social proof scroll ---- */
+
+.landing-social-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.landing-social-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---- Smooth scroll for anchor links ---- */
+
+.landing-page {
+  scroll-behavior: smooth;
+}

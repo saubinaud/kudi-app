@@ -1,0 +1,829 @@
+import { useState, useEffect, useMemo } from 'react';
+import { useApi } from '../hooks/useApi';
+import { useAuth } from '../context/AuthContext';
+import { API_BASE } from '../config/api';
+import { useToast } from '../context/ToastContext';
+import { cx } from '../styles/tokens';
+import { formatCurrency, formatDate } from '../utils/format';
+import SearchableSelect from '../components/SearchableSelect';
+import CustomSelect from '../components/CustomSelect';
+import PeriodoSelector from '../components/PeriodoSelector';
+import ConfirmDialog from '../components/ConfirmDialog';
+import {
+  Plus, X, Trash2, ChevronDown, ChevronUp,
+  ShoppingBag, Package, Salad, DollarSign, Download,
+} from 'lucide-react';
+
+const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function currentMonthPeriod() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const inicio = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+  const lastDay = new Date(y, m + 1, 0).getDate();
+  const fin = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+  return { nombre: `${MESES[m]} ${y}`, fecha_inicio: inicio, fecha_fin: fin };
+}
+
+const EMPTY_ITEM = { tipo: 'insumo', insumo_id: null, material_id: null, producto_id: null, nombre_item: '', cantidad: '', unidad: '', precio_unitario: '', _precio_catalogo: 0 };
+
+export default function PLComprasPage() {
+  const api = useApi();
+  const { token } = useAuth();
+  const toast = useToast();
+
+  // Data
+  const [periodos, setPeriodos] = useState([]);
+  const [periodo, setPeriodo] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  });
+  const [compras, setCompras] = useState([]);
+  const [resumen, setResumen] = useState(null);
+  const [insumos, setInsumos] = useState([]);
+  const [materiales, setMateriales] = useState([]);
+  const [productos, setProductos] = useState([]);
+  const [proveedores, setProveedores] = useState([]);
+  const [lineas, setLineas] = useState([]);
+
+  // UI state
+  const [loading, setLoading] = useState(true);
+  const [loadingCompras, setLoadingCompras] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [expanded, setExpanded] = useState({});
+  const [creatingPeriodo, setCreatingPeriodo] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Modal form
+  const [form, setForm] = useState({ fecha: todayStr(), proveedor: '', proveedor_id: '', nota: '', cuenta_id: '', tipo_comprobante: '', linea_negocio_id: null, descripcion: '' });
+  const [items, setItems] = useState([{ ...EMPTY_ITEM }]);
+  const [cuentas, setCuentas] = useState([]);
+
+  // Load periodos + catalogs on mount
+  useEffect(() => {
+    Promise.all([
+      api.get('/pl/periodos').catch(() => ({ data: [] })),
+      api.get('/insumos').catch(() => ({ data: [] })),
+      api.get('/materiales').catch(() => ({ data: [] })),
+      api.get('/flujo/cuentas').catch(() => ({ data: [] })),
+      api.get('/productos').catch(() => ({ data: [] })),
+      api.get('/proveedores').catch(() => ({ data: [] })),
+      api.get('/lineas').catch(() => ({ data: [] })),
+    ]).then(([perRes, insRes, matRes, cuentasRes, prodRes, provRes, lineasRes]) => {
+      const pers = perRes.data || [];
+      setPeriodos(pers);
+      setInsumos(insRes.data || []);
+      setMateriales(matRes.data || []);
+      setCuentas((cuentasRes.data || []).map(c => ({ value: c.id, label: c.nombre })));
+      setProductos(prodRes.data || []);
+      setProveedores(provRes.data || []);
+      setLineas(lineasRes.data || []);
+      setLoading(false);
+    });
+  }, []);
+
+  // Load compras + resumen when periodo changes
+  const loadCompras = async (p) => {
+    if (!p?.year || !p?.month) return;
+    setLoadingCompras(true);
+    try {
+      const qs = `year=${p.year}&month=${p.month}`;
+      const [comprasRes, resumenRes] = await Promise.all([
+        api.get(`/pl/compras?${qs}`),
+        api.get(`/pl/compras/resumen?${qs}`),
+      ]);
+      setCompras(comprasRes.data || []);
+      setResumen(resumenRes.data || null);
+    } catch {
+      toast.error('Error cargando compras');
+    } finally {
+      setLoadingCompras(false);
+    }
+  };
+
+  useEffect(() => {
+    if (periodo) loadCompras(periodo);
+  }, [periodo]); // eslint-disable-line
+
+  // Create first period
+  const crearPrimerPeriodo = async () => {
+    setCreatingPeriodo(true);
+    try {
+      const mp = currentMonthPeriod();
+      const res = await api.post('/pl/periodos', mp);
+      const nuevo = res.data;
+      setPeriodos((prev) => [...prev, nuevo]);
+      toast.success('Periodo creado');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setCreatingPeriodo(false);
+    }
+  };
+
+  // Modal helpers
+  const openNewCompra = () => {
+    setForm({ fecha: todayStr(), proveedor: '', proveedor_id: '', nota: '', cuenta_id: '', tipo_comprobante: '', linea_negocio_id: null, descripcion: '' });
+    setItems([{ ...EMPTY_ITEM }]);
+    setModalOpen(true);
+  };
+
+  const addItem = () => setItems((prev) => [...prev, { ...EMPTY_ITEM }]);
+
+  const removeItem = (idx) => {
+    if (items.length <= 1) return;
+    setItems((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateItem = (idx, field, value) => {
+    setItems((prev) => prev.map((item, i) => {
+      if (i !== idx) return item;
+      const updated = { ...item, [field]: value };
+      // Reset linked fields when tipo changes
+      if (field === 'tipo') {
+        updated.insumo_id = null;
+        updated.material_id = null;
+        updated.producto_id = null;
+        updated.nombre_item = '';
+        updated.unidad = '';
+        updated._precio_catalogo = 0;
+      }
+      return updated;
+    }));
+  };
+
+  const selectInsumo = (idx, ins) => {
+    const precioSugerido = Number(ins.cantidad_presentacion) > 0
+      ? Number(ins.precio_presentacion) / Number(ins.cantidad_presentacion)
+      : Number(ins.precio_presentacion) || 0;
+    setItems((prev) => prev.map((item, i) => {
+      if (i !== idx) return item;
+      return { ...item, insumo_id: ins.id, unidad: ins.unidad_medida || ins.unidad || '', precio_unitario: parseFloat(precioSugerido.toFixed(2)), _precio_catalogo: precioSugerido };
+    }));
+  };
+
+  const selectMaterial = (idx, mat) => {
+    const precioSugerido = Number(mat.cantidad_presentacion) > 0
+      ? Number(mat.precio_presentacion) / Number(mat.cantidad_presentacion)
+      : Number(mat.precio_presentacion) || 0;
+    setItems((prev) => prev.map((item, i) => {
+      if (i !== idx) return item;
+      return { ...item, material_id: mat.id, unidad: mat.unidad_medida || mat.unidad || '', precio_unitario: parseFloat(precioSugerido.toFixed(2)), _precio_catalogo: precioSugerido };
+    }));
+  };
+
+  const selectProducto = (idx, prod) => {
+    const precioSugerido = Number(prod.costo_neto) || 0;
+    setItems((prev) => prev.map((item, i) => {
+      if (i !== idx) return item;
+      return { ...item, producto_id: prod.id, unidad: 'uni', precio_unitario: parseFloat(precioSugerido.toFixed(2)), _precio_catalogo: precioSugerido };
+    }));
+  };
+
+  // Computed total
+  const formTotal = useMemo(() =>
+    items.reduce((s, item) => s + ((parseFloat(item.precio_unitario) || 0) * (parseFloat(item.cantidad) || 0)), 0),
+    [items]
+  );
+
+  const itemSubtotal = (item) =>
+    (parseFloat(item.precio_unitario) || 0) * (parseFloat(item.cantidad) || 0);
+
+  // Save
+  const saveCompra = async () => {
+    if (!form.fecha) { toast.error('Fecha es requerida'); return; }
+    const validItems = items.filter((it) =>
+      (parseFloat(it.cantidad) > 0) && (parseFloat(it.precio_unitario) > 0) &&
+      (it.insumo_id || it.material_id || it.producto_id || it.nombre_item)
+    );
+    if (validItems.length === 0) { toast.error('Agrega al menos un item valido'); return; }
+
+    setSaving(true);
+    try {
+      await api.post('/pl/compras', {
+        fecha: form.fecha,
+        proveedor: form.proveedor || null,
+        proveedor_id: form.proveedor_id || null,
+        nota: form.nota || null,
+        cuenta_id: form.cuenta_id || null,
+        tipo_comprobante: form.tipo_comprobante || null,
+        linea_negocio_id: form.linea_negocio_id || null,
+        descripcion: form.descripcion || null,
+        items: validItems.map((it) => ({
+          insumo_id: it.insumo_id || null,
+          material_id: it.material_id || null,
+          producto_id: it.producto_id || null,
+          nombre_item: it.nombre_item || null,
+          cantidad: parseFloat(it.cantidad),
+          unidad: it.unidad || null,
+          precio_unitario: parseFloat(it.precio_unitario),
+        })),
+      });
+      toast.success('Compra registrada');
+      setModalOpen(false);
+      loadCompras(periodo);
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Export CSV
+  const exportCSV = async () => {
+    try {
+      // API_BASE imported at top
+      const res = await fetch(`${API_BASE}/pl/compras/export?year=${periodo.year}&month=${periodo.month}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`Error ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `compras-${periodo.year}-${String(periodo.month).padStart(2, '0')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Export error:', e);
+      toast.error('Error exportando CSV');
+    }
+  };
+
+  // Delete
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.del(`/pl/compras/${deleteTarget.id}`);
+      toast.success('Compra eliminada');
+      loadCompras(periodo);
+    } catch {
+      toast.error('Error eliminando');
+    } finally {
+      setDeleteTarget(null);
+    }
+  };
+
+  // Toggle accordion
+  const toggleCompra = (id) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  // Loading skeleton
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto pb-12 space-y-4">
+        <div className={cx.skeleton + ' h-10 w-48'} />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => <div key={i} className={cx.skeleton + ' h-24'} />)}
+        </div>
+        <div className={cx.skeleton + ' h-64'} />
+      </div>
+    );
+  }
+
+  // No periods
+  if (periodos.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto pb-12">
+        <h1 className="text-xl font-bold text-stone-900 mb-5">Compras</h1>
+        <div className={`${cx.card} p-12 text-center`}>
+          <ShoppingBag size={40} className="text-stone-300 mx-auto mb-4" />
+          <p className="text-stone-500 text-sm mb-6">
+            Para registrar compras, primero necesitas crear un periodo contable.
+          </p>
+          <button onClick={crearPrimerPeriodo} disabled={creatingPeriodo} className={cx.btnPrimary}>
+            {creatingPeriodo ? 'Creando...' : 'Crear primer periodo'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto pb-12">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold text-stone-900">Compras</h1>
+          <PeriodoSelector
+            periodos={periodos}
+            value={periodo}
+            onChange={setPeriodo}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={exportCSV} className={cx.btnSecondary + ' flex items-center gap-2'}>
+            <Download size={16} /> Exportar CSV
+          </button>
+          <button onClick={openNewCompra} className={cx.btnPrimary + ' flex items-center gap-2'}>
+            <Plus size={14} /> Nueva compra
+          </button>
+        </div>
+      </div>
+
+      {/* Summary cards */}
+      {resumen && (
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-5">
+          <SummaryCard
+            icon={<Salad size={18} />}
+            label="Compras Insumos"
+            value={formatCurrency(resumen.total_insumos)}
+            color="text-teal-600"
+          />
+          <SummaryCard
+            icon={<Package size={18} />}
+            label="Compras Materiales"
+            value={formatCurrency(resumen.total_materiales)}
+            color="text-blue-600"
+          />
+          {parseFloat(resumen.total_productos || 0) > 0 && (
+            <SummaryCard
+              icon={<ShoppingBag size={18} />}
+              label="Compras Productos"
+              value={formatCurrency(resumen.total_productos)}
+              color="text-violet-600"
+            />
+          )}
+          <SummaryCard
+            icon={<DollarSign size={18} />}
+            label="Total Compras"
+            value={formatCurrency(resumen.total_compras)}
+            color="text-rose-600"
+            bold
+          />
+        </div>
+      )}
+
+      {/* Compras list */}
+      {loadingCompras ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => <div key={i} className={cx.skeleton + ' h-16'} />)}
+        </div>
+      ) : compras.length === 0 ? (
+        <div className={`${cx.card} p-12 text-center`}>
+          <p className="text-stone-400 text-sm">No hay compras registradas en este periodo</p>
+        </div>
+      ) : (
+        <div className={`${cx.card} divide-y divide-stone-100 overflow-hidden`}>
+          {compras.map((compra) => {
+            const isExpanded = expanded[compra.id] === true;
+            return (
+              <div key={compra.id}>
+                {/* Compra header */}
+                <div
+                  className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-stone-50/50 transition-colors"
+                  onClick={() => toggleCompra(compra.id)}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    {isExpanded
+                      ? <ChevronUp size={16} className="text-stone-400 flex-shrink-0" />
+                      : <ChevronDown size={16} className="text-stone-400 flex-shrink-0" />
+                    }
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-stone-900 truncate">
+                        {formatDate(compra.fecha)}
+                        {compra.proveedor && <span className="text-stone-500 font-normal"> - {compra.proveedor}</span>}
+                      </p>
+                      <p className="text-[11px] text-stone-400">
+                        {compra.items?.length || 0} item{(compra.items?.length || 0) !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0 ml-3">
+                    <span className="text-sm font-semibold text-stone-900">{formatCurrency(compra.total)}</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setDeleteTarget(compra); }}
+                      className={cx.btnIcon + ' !p-1 hover:text-rose-600'}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Expanded: items table */}
+                {isExpanded && compra.items && (
+                  <div className="px-5 pb-4">
+                    {/* Desktop */}
+                    <div className="hidden sm:block">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-stone-100">
+                            <th className={cx.th}>Item</th>
+                            <th className={cx.th + ' text-right'}>Cantidad</th>
+                            <th className={cx.th + ' text-center'}>Unidad</th>
+                            <th className={cx.th + ' text-right'}>Precio unit.</th>
+                            <th className={cx.th + ' text-right'}>Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {compra.items.map((it) => {
+                            const variation = (() => {
+                              const catItem = it.insumo_id ? insumos.find(ins => ins.id === it.insumo_id)
+                                : it.material_id ? materiales.find(m => m.id === it.material_id)
+                                : it.producto_id ? productos.find(p => p.id === it.producto_id) : null;
+                              if (!catItem) return null;
+                              let catPrice;
+                              if (it.producto_id) {
+                                catPrice = Number(catItem.costo_neto) || 0;
+                              } else {
+                                catPrice = Number(catItem.cantidad_presentacion) > 0
+                                  ? Number(catItem.precio_presentacion) / Number(catItem.cantidad_presentacion) : 0;
+                              }
+                              if (catPrice <= 0) return null;
+                              const diff = ((parseFloat(it.precio_unitario) / catPrice) - 1) * 100;
+                              if (Math.abs(diff) < 0.5) return null;
+                              return diff;
+                            })();
+                            return (
+                            <tr key={it.id} className={cx.tr}>
+                              <td className={cx.td + ' font-medium text-stone-900'}>{it.item_nombre || it.nombre_item || '-'}</td>
+                              <td className={cx.td + ' text-right text-stone-600'}>{parseFloat(it.cantidad)}</td>
+                              <td className={cx.td + ' text-center text-stone-500'}>{it.unidad || '-'}</td>
+                              <td className={cx.td + ' text-right text-stone-600'}>{formatCurrency(parseFloat(it.precio_unitario).toFixed(2))}</td>
+                              <td className={cx.td + ' text-right'}>
+                                <span className="font-semibold text-stone-900">{formatCurrency(parseFloat(it.total).toFixed(2))}</span>
+                                {variation !== null && (
+                                  <span className={`ml-1.5 text-[10px] ${variation > 0 ? 'text-rose-500' : 'text-teal-600'}`}>
+                                    {variation > 0 ? '+' : ''}{variation.toFixed(1)}%
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    {/* Mobile */}
+                    <div className="sm:hidden space-y-2">
+                      {compra.items.map((it) => {
+                        const variation = (() => {
+                          const catItem = it.insumo_id ? insumos.find(ins => ins.id === it.insumo_id)
+                            : it.material_id ? materiales.find(m => m.id === it.material_id) : null;
+                          if (!catItem) return null;
+                          const catPrice = Number(catItem.cantidad_presentacion) > 0
+                            ? Number(catItem.precio_presentacion) / Number(catItem.cantidad_presentacion) : 0;
+                          if (catPrice <= 0) return null;
+                          const diff = ((parseFloat(it.precio_unitario) / catPrice) - 1) * 100;
+                          if (Math.abs(diff) < 0.5) return null;
+                          return diff;
+                        })();
+                        return (
+                        <div key={it.id} className="flex items-center justify-between py-2 pl-7">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-stone-800 truncate">{it.item_nombre || it.nombre_item || '-'}</p>
+                            <p className="text-[11px] text-stone-400">
+                              {parseFloat(it.cantidad)} {it.unidad || ''} x {formatCurrency(parseFloat(it.precio_unitario).toFixed(2))}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-shrink-0 ml-3">
+                            <span className="text-sm font-semibold text-stone-900">
+                              {formatCurrency(parseFloat(it.total).toFixed(2))}
+                            </span>
+                            {variation !== null && (
+                              <span className={`text-[10px] ${variation > 0 ? 'text-rose-500' : 'text-teal-600'}`}>
+                                {variation > 0 ? '+' : ''}{variation.toFixed(1)}%
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        );
+                      })}
+                    </div>
+                    {compra.nota && (
+                      <p className="text-xs text-stone-400 mt-3 pl-7">Nota: {compra.nota}</p>
+                    )}
+                    {compra.descripcion && (
+                      <p className="text-xs text-stone-400 mt-1 pl-7">Descripción: {compra.descripcion}</p>
+                    )}
+                    {(compra.tipo_comprobante || compra.linea_nombre) && (
+                      <div className="flex items-center gap-2 mt-2 pl-7">
+                        {compra.tipo_comprobante && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-stone-100 text-stone-600 capitalize">
+                            {compra.tipo_comprobante}
+                          </span>
+                        )}
+                        {compra.linea_nombre && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-600">
+                            {compra.linea_nombre}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Nueva compra modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-w-[95vw] max-h-[85vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-stone-900">Nueva compra</h3>
+                <button onClick={() => setModalOpen(false)} className={cx.btnIcon}>
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Header: fecha + proveedor */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label className={cx.label}>Fecha</label>
+                  <input
+                    type="date"
+                    value={form.fecha}
+                    onChange={(e) => setForm((f) => ({ ...f, fecha: e.target.value }))}
+                    className={cx.input}
+                  />
+                </div>
+                <div>
+                  <label className={cx.label}>Proveedor</label>
+                  {proveedores.length > 0 ? (
+                    <CustomSelect
+                      options={[
+                        { value: '', label: 'Sin especificar' },
+                        ...proveedores.map(p => ({ value: p.id, label: p.nombre })),
+                      ]}
+                      value={form.proveedor_id}
+                      onChange={(v) => {
+                        const prov = proveedores.find(p => p.id === v);
+                        setForm((f) => ({ ...f, proveedor_id: v, proveedor: prov?.nombre || '' }));
+                      }}
+                      placeholder="Seleccionar proveedor"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={form.proveedor}
+                      onChange={(e) => setForm((f) => ({ ...f, proveedor: e.target.value }))}
+                      className={cx.input}
+                      placeholder="Ej: Mercado central"
+                    />
+                  )}
+                </div>
+                {cuentas.length > 0 && (
+                <div>
+                  <label className={cx.label}>Cuenta de pago</label>
+                  <CustomSelect
+                    options={[{ value: '', label: 'Sin especificar' }, ...cuentas]}
+                    value={form.cuenta_id}
+                    onChange={(v) => setForm((f) => ({ ...f, cuenta_id: v }))}
+                    placeholder="¿Con qué pagaste?"
+                  />
+                </div>
+                )}
+              </div>
+
+              {/* Tipo comprobante + linea + descripcion */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label className={cx.label}>Tipo de comprobante</label>
+                  <CustomSelect
+                    value={form.tipo_comprobante}
+                    onChange={(v) => setForm((f) => ({ ...f, tipo_comprobante: v }))}
+                    options={[
+                      { value: '', label: 'Sin comprobante' },
+                      { value: 'boleta', label: 'Boleta' },
+                      { value: 'factura', label: 'Factura' },
+                      { value: 'recibo', label: 'Recibo por honorarios' },
+                      { value: 'ticket', label: 'Ticket' },
+                      { value: 'guia', label: 'Guía de remisión' },
+                    ]}
+                    placeholder="Tipo..."
+                  />
+                </div>
+                {lineas.length > 0 && (
+                  <div>
+                    <label className={cx.label}>Línea de negocio</label>
+                    <CustomSelect
+                      value={form.linea_negocio_id || ''}
+                      onChange={(v) => setForm((f) => ({ ...f, linea_negocio_id: v || null }))}
+                      options={[{ value: '', label: 'Sin línea' }, ...lineas.map((l) => ({ value: l.id, label: l.nombre }))]}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="mb-4">
+                <label className={cx.label}>Descripción (opcional)</label>
+                <input
+                  type="text"
+                  value={form.descripcion || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, descripcion: e.target.value }))}
+                  className={cx.input}
+                  placeholder="Nota sobre esta compra..."
+                />
+              </div>
+
+              {/* Items */}
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">Items</p>
+                <div className="space-y-3">
+                  {items.map((item, idx) => (
+                    <div key={idx} className="border border-stone-200 rounded-xl p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        {/* Type selector */}
+                        <CustomSelect
+                          value={item.tipo}
+                          onChange={(v) => updateItem(idx, 'tipo', v)}
+                          options={[
+                            { value: 'insumo', label: 'Insumo' },
+                            { value: 'material', label: 'Material' },
+                            { value: 'producto', label: 'Producto' },
+                            { value: 'otro', label: 'Otro' },
+                          ]}
+                          compact
+                          className="w-28"
+                        />
+                        {items.length > 1 && (
+                          <button onClick={() => removeItem(idx)} className={cx.btnIcon + ' !p-1 hover:text-rose-600'}>
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Item selector based on type */}
+                      {item.tipo === 'insumo' && (
+                        <div className="mb-2">
+                          <SearchableSelect
+                            options={insumos}
+                            value={item.insumo_id}
+                            onChange={(ins) => selectInsumo(idx, ins)}
+                            placeholder="Buscar insumo..."
+                          />
+                        </div>
+                      )}
+                      {item.tipo === 'material' && (
+                        <div className="mb-2">
+                          <SearchableSelect
+                            options={materiales}
+                            value={item.material_id}
+                            onChange={(mat) => selectMaterial(idx, mat)}
+                            placeholder="Buscar material..."
+                          />
+                        </div>
+                      )}
+                      {item.tipo === 'producto' && (
+                        <div className="mb-2">
+                          <SearchableSelect
+                            options={productos}
+                            value={item.producto_id}
+                            onChange={(prod) => selectProducto(idx, prod)}
+                            placeholder="Buscar producto..."
+                          />
+                        </div>
+                      )}
+                      {item.tipo === 'otro' && (
+                        <div className="mb-2">
+                          <input
+                            type="text"
+                            value={item.nombre_item}
+                            onChange={(e) => updateItem(idx, 'nombre_item', e.target.value)}
+                            className={cx.input}
+                            placeholder="Nombre del item"
+                          />
+                        </div>
+                      )}
+
+                      {/* Quantity + unit + price */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="text-[10px] text-stone-400 font-medium">Cantidad</label>
+                          <input
+                            type="number"
+                            value={item.cantidad}
+                            onChange={(e) => updateItem(idx, 'cantidad', e.target.value)}
+                            className={cx.input}
+                            placeholder="0"
+                            min="0"
+                            step="any"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-stone-400 font-medium">Unidad</label>
+                          <CustomSelect
+                            value={item.unidad}
+                            onChange={(v) => updateItem(idx, 'unidad', v)}
+                            options={[
+                              { value: 'uni', label: 'uni' },
+                              { value: 'g', label: 'g' },
+                              { value: 'kg', label: 'kg' },
+                              { value: 'ml', label: 'ml' },
+                              { value: 'L', label: 'L' },
+                              { value: 'oz', label: 'oz' },
+                              { value: 'cm', label: 'cm' },
+                              { value: 'mt', label: 'mt' },
+                            ]}
+                            compact
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-stone-400 font-medium">Precio unit.</label>
+                          <input
+                            type="number"
+                            value={item.precio_unitario}
+                            onChange={(e) => updateItem(idx, 'precio_unitario', e.target.value)}
+                            className={cx.input}
+                            placeholder="0.00"
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Subtotal + variacion */}
+                      <div className="flex items-center justify-between mt-2">
+                        {item._precio_catalogo > 0 && parseFloat(item.precio_unitario) > 0 && (
+                          <span className={`text-[10px] font-medium ${
+                            parseFloat(item.precio_unitario) > item._precio_catalogo ? 'text-rose-500' :
+                            parseFloat(item.precio_unitario) < item._precio_catalogo ? 'text-teal-600' : 'text-stone-400'
+                          }`}>
+                            {parseFloat(item.precio_unitario) > item._precio_catalogo
+                              ? `+${((parseFloat(item.precio_unitario) / item._precio_catalogo - 1) * 100).toFixed(1)}% vs catalogo`
+                              : parseFloat(item.precio_unitario) < item._precio_catalogo
+                              ? `${((parseFloat(item.precio_unitario) / item._precio_catalogo - 1) * 100).toFixed(1)}% vs catalogo`
+                              : 'Mismo precio'}
+                          </span>
+                        )}
+                        <span className="text-xs font-semibold text-stone-600">
+                          Subtotal: {formatCurrency(itemSubtotal(item))}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button onClick={addItem} className={cx.btnGhost + ' w-full flex items-center justify-center gap-1 text-xs mb-4'}>
+                <Plus size={14} /> Agregar item
+              </button>
+
+              {/* Nota */}
+              <div className="mb-4">
+                <label className={cx.label}>Nota (opcional)</label>
+                <input
+                  type="text"
+                  value={form.nota}
+                  onChange={(e) => setForm((f) => ({ ...f, nota: e.target.value }))}
+                  className={cx.input}
+                  placeholder="Ej: Compra semanal"
+                />
+              </div>
+
+              {/* Total */}
+              <div className="border-t border-stone-200 pt-4 mb-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-stone-500">Total</span>
+                  <span className="text-xl font-bold text-stone-900">{formatCurrency(formTotal)}</span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button onClick={saveCompra} disabled={saving} className={cx.btnPrimary + ' flex-1'}>
+                  {saving ? 'Guardando...' : 'Guardar compra'}
+                </button>
+                <button onClick={() => setModalOpen(false)} className={cx.btnSecondary}>
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm delete */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Eliminar compra"
+        message={`Estas seguro de eliminar esta compra de ${formatCurrency(deleteTarget?.total)}?`}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
+    </div>
+  );
+}
+
+function SummaryCard({ icon, label, value, color, bold }) {
+  return (
+    <div className={`${cx.card} p-4`}>
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className={color || 'text-stone-400'}>{icon}</span>
+        <span className="text-xs font-semibold text-stone-500 tracking-wide uppercase">{label}</span>
+      </div>
+      <p className={`text-xl ${bold ? 'font-extrabold' : 'font-bold'} text-stone-900`}>
+        {value}
+      </p>
+    </div>
+  );
+}
