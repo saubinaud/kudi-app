@@ -37,6 +37,7 @@ import ComisionesPage from './pages/ComisionesPage';
 import ProveedoresPage from './pages/ProveedoresPage';
 import ShopifyPage from './pages/ShopifyPage';
 import POSPage from './pages/POSPage';
+import LandingPage from './pages/LandingPage';
 
 
 function ScrollToTop() {
@@ -56,6 +57,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/landing" element={<LandingPage />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
             {/* Protected routes with layout */}
