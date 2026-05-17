@@ -1,0 +1,911 @@
+[
+  {
+    "departamento": "Amazonas",
+    "provincias": [
+      {
+        "provincia": "Chachapoyas",
+        "distritos": ["Chachapoyas", "Asuncion", "Balsas", "Cheto", "Chiliquin", "Chuquibamba", "Granada", "Huancas", "La Jalca", "Leimebamba", "Levanto", "Magdalena", "Mariscal Castilla", "Molinopampa", "Montevideo", "Olleros", "Quinjalca", "San Francisco de Daguas", "San Isidro de Maino", "Soloco", "Sonche"]
+      },
+      {
+        "provincia": "Bagua",
+        "distritos": ["Bagua", "Aramango", "Copallin", "El Parco", "Imaza", "La Peca"]
+      },
+      {
+        "provincia": "Bongara",
+        "distritos": ["Jumbilla", "Chisquilla", "Churuja", "Corosha", "Cuispes", "Florida", "Jazan", "Recta", "San Carlos", "Shipasbamba", "Valera", "Yambrasbamba"]
+      },
+      {
+        "provincia": "Condorcanqui",
+        "distritos": ["Nieva", "El Cenepa", "Rio Santiago"]
+      },
+      {
+        "provincia": "Luya",
+        "distritos": ["Lamud", "Camporredondo", "Cocabamba", "Colcamar", "Conila", "Inguilpata", "Longuita", "Lonya Chico", "Luya", "Luya Viejo", "Maria", "Ocalli", "Ocumal", "Pisuquia", "Providencia", "San Cristobal", "San Francisco del Yeso", "San Jeronimo", "San Juan de Lopecancha", "Santa Catalina", "Santo Tomas", "Tingo", "Trita"]
+      },
+      {
+        "provincia": "Rodriguez de Mendoza",
+        "distritos": ["San Nicolas", "Chirimoto", "Cochamal", "Huambo", "Limabamba", "Longar", "Mariscal Benavides", "Milpuc", "Omia", "Santa Rosa", "Totora", "Vista Alegre"]
+      },
+      {
+        "provincia": "Utcubamba",
+        "distritos": ["Bagua Grande", "Cajaruro", "Cumba", "El Milagro", "Jamalca", "Lonya Grande", "Yamon"]
+      }
+    ]
+  },
+  {
+    "departamento": "Ancash",
+    "provincias": [
+      {
+        "provincia": "Huaraz",
+        "distritos": ["Huaraz", "Cochabamba", "Colcabamba", "Huanchay", "Independencia", "Jangas", "La Libertad", "Olleros", "Pampas Grande", "Pariacoto", "Pira", "Tarica"]
+      },
+      {
+        "provincia": "Aija",
+        "distritos": ["Aija", "Coris", "Huacllan", "La Merced", "Succha"]
+      },
+      {
+        "provincia": "Antonio Raymondi",
+        "distritos": ["Llamellin", "Aczo", "Chaccho", "Chingas", "Mirgas", "San Juan de Rontoy"]
+      },
+      {
+        "provincia": "Asuncion",
+        "distritos": ["Chacas", "Acochaca"]
+      },
+      {
+        "provincia": "Bolognesi",
+        "distritos": ["Chiquian", "Abelardo Pardo Lezameta", "Antonio Raymondi", "Aquia", "Cajacay", "Canis", "Colquioc", "Huallanca", "Huasta", "Huayllacayan", "La Primavera", "Mangas", "Pacllon", "San Miguel de Corpanqui", "Ticllos"]
+      },
+      {
+        "provincia": "Carhuaz",
+        "distritos": ["Carhuaz", "Acopampa", "Amashca", "Anta", "Ataquero", "Marcara", "Pariahuanca", "San Miguel de Aco", "Shilla", "Tinco", "Yungar"]
+      },
+      {
+        "provincia": "Carlos Fermin Fitzcarrald",
+        "distritos": ["San Luis", "San Nicolas", "Yauya"]
+      },
+      {
+        "provincia": "Casma",
+        "distritos": ["Casma", "Buena Vista Alta", "Comandante Noel", "Yautan"]
+      },
+      {
+        "provincia": "Corongo",
+        "distritos": ["Corongo", "Aco", "Bambas", "Cusca", "La Pampa", "Yanac", "Yupan"]
+      },
+      {
+        "provincia": "Huari",
+        "distritos": ["Huari", "Anra", "Cajay", "Chavin de Huantar", "Huacachi", "Huacchis", "Huachis", "Huantar", "Masin", "Paucas", "Ponto", "Rahuapampa", "Rapayan", "San Marcos", "San Pedro de Chana", "Uco"]
+      },
+      {
+        "provincia": "Huarmey",
+        "distritos": ["Huarmey", "Cochapeti", "Culebras", "Huayan", "Malvas"]
+      },
+      {
+        "provincia": "Huaylas",
+        "distritos": ["Caraz", "Huallanca", "Huata", "Huaylas", "Mato", "Pamparomas", "Pueblo Libre", "Santa Cruz", "Santo Toribio", "Yuracmarca"]
+      },
+      {
+        "provincia": "Mariscal Luzuriaga",
+        "distritos": ["Piscobamba", "Casca", "Eleazar Guzman Barron", "Fidel Olivas Escudero", "Llama", "Llumpa", "Lucma", "Musga"]
+      },
+      {
+        "provincia": "Ocros",
+        "distritos": ["Ocros", "Acas", "Cajamarquilla", "Carhuapampa", "Cochas", "Congas", "Llipa", "San Cristobal de Rajan", "San Pedro", "Santiago de Chilcas"]
+      },
+      {
+        "provincia": "Pallasca",
+        "distritos": ["Cabana", "Bolognesi", "Conchucos", "Huacaschuque", "Huandoval", "Lacabamba", "Llapo", "Pallasca", "Pampas", "Santa Rosa", "Tauca"]
+      },
+      {
+        "provincia": "Pomabamba",
+        "distritos": ["Pomabamba", "Huayllan", "Parobamba", "Quinuabamba"]
+      },
+      {
+        "provincia": "Recuay",
+        "distritos": ["Recuay", "Catac", "Cotaparaco", "Huayllapampa", "Llacllin", "Marca", "Pampas Chico", "Pararin", "Tapacocha", "Ticapampa"]
+      },
+      {
+        "provincia": "Santa",
+        "distritos": ["Chimbote", "Caceres del Peru", "Coishco", "Macate", "Moro", "Nepeña", "Nuevo Chimbote", "Samanco", "Santa"]
+      },
+      {
+        "provincia": "Sihuas",
+        "distritos": ["Sihuas", "Acobamba", "Alfonso Ugarte", "Cashapampa", "Chingalpo", "Huayllabamba", "Quiches", "Ragash", "San Juan", "Sicsibamba"]
+      },
+      {
+        "provincia": "Yungay",
+        "distritos": ["Yungay", "Cascapara", "Mancos", "Matacoto", "Quillo", "Ranrahirca", "Shupluy", "Yanama"]
+      }
+    ]
+  },
+  {
+    "departamento": "Apurimac",
+    "provincias": [
+      {
+        "provincia": "Abancay",
+        "distritos": ["Abancay", "Chacoche", "Circa", "Curahuasi", "Huanipaca", "Lambrama", "Pichirhua", "San Pedro de Cachora", "Tamburco"]
+      },
+      {
+        "provincia": "Andahuaylas",
+        "distritos": ["Andahuaylas", "Andarapa", "Chiara", "Huancarama", "Huancaray", "Huayana", "Kishuara", "Pacobamba", "Pacucha", "Pampachiri", "Pomacocha", "San Antonio de Cachi", "San Jeronimo", "San Miguel de Chaccrampa", "Santa Maria de Chicmo", "Talavera", "Tumay Huaraca", "Turpo", "Kaquiabamba", "Jose Maria Arguedas"]
+      },
+      {
+        "provincia": "Antabamba",
+        "distritos": ["Antabamba", "El Oro", "Huaquirca", "Juan Espinoza Medrano", "Oropesa", "Pachaconas", "Sabaino"]
+      },
+      {
+        "provincia": "Aymaraes",
+        "distritos": ["Chalhuanca", "Capaya", "Caraybamba", "Chapimarca", "Colcabamba", "Cotaruse", "Huayllo", "Justo Apu Sahuaraura", "Lucre", "Pocohuanca", "San Juan de Chacña", "Sañayca", "Soraya", "Tapairihua", "Tintay", "Toraya", "Yanaca"]
+      },
+      {
+        "provincia": "Cotabambas",
+        "distritos": ["Tambobamba", "Cotabambas", "Coyllurqui", "Haquira", "Mara", "Challhuahuacho"]
+      },
+      {
+        "provincia": "Chincheros",
+        "distritos": ["Chincheros", "Anco Huallo", "Cocharcas", "Huaccana", "Ocobamba", "Ongoy", "Uranmarca", "Ranracancha", "Rocchac", "El Porvenir", "Los Chankas"]
+      },
+      {
+        "provincia": "Grau",
+        "distritos": ["Chuquibambilla", "Curpahuasi", "Gamarra", "Huayllati", "Mamara", "Micaela Bastidas", "Pataypampa", "Progreso", "San Antonio", "Santa Rosa", "Turpay", "Vilcabamba", "Virundo", "Curasco"]
+      }
+    ]
+  },
+  {
+    "departamento": "Arequipa",
+    "provincias": [
+      {
+        "provincia": "Arequipa",
+        "distritos": ["Arequipa", "Alto Selva Alegre", "Cayma", "Cerro Colorado", "Characato", "Chiguata", "Jacobo Hunter", "Jose Luis Bustamante y Rivero", "La Joya", "Mariano Melgar", "Miraflores", "Mollebaya", "Paucarpata", "Pocsi", "Polobaya", "Quequeña", "Sabandia", "Sachaca", "San Juan de Siguas", "San Juan de Tarucani", "Santa Isabel de Siguas", "Santa Rita de Siguas", "Socabaya", "Tiabaya", "Uchumayo", "Vitor", "Yanahuara", "Yarabamba", "Yura"]
+      },
+      {
+        "provincia": "Camana",
+        "distritos": ["Camana", "Jose Maria Quimper", "Mariano Nicolas Valcarcel", "Mariscal Caceres", "Nicolas de Pierola", "Ocoña", "Quilca", "Samuel Pastor"]
+      },
+      {
+        "provincia": "Caraveli",
+        "distritos": ["Caraveli", "Acari", "Atico", "Atiquipa", "Bella Union", "Cahuacho", "Chala", "Chaparra", "Huanuhuanu", "Jaqui", "Lomas", "Quicacha", "Yauca"]
+      },
+      {
+        "provincia": "Castilla",
+        "distritos": ["Aplao", "Andagua", "Ayo", "Chachas", "Chilcaymarca", "Choco", "Huancarqui", "Machaguay", "Orcopampa", "Pampacolca", "Tipan", "Uñon", "Uraca", "Viraco"]
+      },
+      {
+        "provincia": "Caylloma",
+        "distritos": ["Chivay", "Achoma", "Cabanaconde", "Callalli", "Caylloma", "Coporaque", "Huambo", "Huanca", "Ichupampa", "Lari", "Lluta", "Maca", "Madrigal", "Majes", "San Antonio de Chuca", "Sibayo", "Tapay", "Tisco", "Tuti", "Yanque"]
+      },
+      {
+        "provincia": "Condesuyos",
+        "distritos": ["Chuquibamba", "Andaray", "Cayarani", "Chichas", "Iray", "Rio Grande", "Salamanca", "Yanaquihua"]
+      },
+      {
+        "provincia": "Islay",
+        "distritos": ["Mollendo", "Cocachacra", "Dean Valdivia", "Islay", "Mejia", "Punta de Bombon"]
+      },
+      {
+        "provincia": "La Union",
+        "distritos": ["Cotahuasi", "Alca", "Charcana", "Huaynacotas", "Pampamarca", "Puyca", "Quechualla", "Sayla", "Tauria", "Tomepampa", "Toro"]
+      }
+    ]
+  },
+  {
+    "departamento": "Ayacucho",
+    "provincias": [
+      {
+        "provincia": "Huamanga",
+        "distritos": ["Ayacucho", "Acocro", "Acos Vinchos", "Carmen Alto", "Chiara", "Ocros", "Pacaycasa", "Quinua", "San Jose de Ticllas", "San Juan Bautista", "Santiago de Pischa", "Socos", "Tambillo", "Vinchos", "Jesus Nazareno", "Andres Avelino Caceres Dorregaray"]
+      },
+      {
+        "provincia": "Cangallo",
+        "distritos": ["Cangallo", "Chuschi", "Los Morochucos", "Maria Parado de Bellido", "Paras", "Totos"]
+      },
+      {
+        "provincia": "Huanca Sancos",
+        "distritos": ["Sancos", "Carapo", "Sacsamarca", "Santiago de Lucanamarca"]
+      },
+      {
+        "provincia": "Huanta",
+        "distritos": ["Huanta", "Ayahuanco", "Huamanguilla", "Iguain", "Luricocha", "Santillana", "Sivia", "Llochegua", "Canayre", "Uchuraccay", "Pucacolpa", "Chaca"]
+      },
+      {
+        "provincia": "La Mar",
+        "distritos": ["San Miguel", "Anco", "Ayna", "Chilcas", "Chungui", "Luis Carranza", "Santa Rosa", "Tambo", "Samugari", "Anchihuay", "Oronccoy"]
+      },
+      {
+        "provincia": "Lucanas",
+        "distritos": ["Puquio", "Aucara", "Cabana", "Carmen Salcedo", "Chaviña", "Chipao", "Huac-Huas", "Laramate", "Leoncio Prado", "Llauta", "Lucanas", "Ocaña", "Otoca", "Saisa", "San Cristobal", "San Juan", "San Pedro", "San Pedro de Palco", "Sancos", "Santa Ana de Huaycahuacho", "Santa Lucia"]
+      },
+      {
+        "provincia": "Parinacochas",
+        "distritos": ["Coracora", "Chumpi", "Coronel Castañeda", "Pacapausa", "Pullo", "Puyusca", "San Francisco de Ravacayco", "Upahuacho"]
+      },
+      {
+        "provincia": "Paucar del Sara Sara",
+        "distritos": ["Pausa", "Colta", "Corculla", "Lampa", "Marcabamba", "Oyolo", "Pararca", "San Javier de Alpabamba", "San Jose de Ushua", "Sara Sara"]
+      },
+      {
+        "provincia": "Sucre",
+        "distritos": ["Querobamba", "Belen", "Chalcos", "Chilcayoc", "Huacaña", "Morcolla", "Paico", "San Pedro de Larcay", "San Salvador de Quije", "Santiago de Paucaray", "Soras"]
+      },
+      {
+        "provincia": "Victor Fajardo",
+        "distritos": ["Huancapi", "Alcamenca", "Apongo", "Asquipata", "Canaria", "Cayara", "Colca", "Huamanquiquia", "Huancaraylla", "Huaya", "Sarhua", "Vilcanchos"]
+      },
+      {
+        "provincia": "Vilcas Huaman",
+        "distritos": ["Vilcas Huaman", "Accomarca", "Carhuanca", "Concepcion", "Huambalpa", "Independencia", "Saurama", "Vischongo"]
+      }
+    ]
+  },
+  {
+    "departamento": "Cajamarca",
+    "provincias": [
+      {
+        "provincia": "Cajamarca",
+        "distritos": ["Cajamarca", "Asuncion", "Chetilla", "Cospan", "Encañada", "Jesus", "Llacanora", "Los Baños del Inca", "Magdalena", "Matara", "Namora", "San Juan"]
+      },
+      {
+        "provincia": "Cajabamba",
+        "distritos": ["Cajabamba", "Cachachi", "Condebamba", "Sitacocha"]
+      },
+      {
+        "provincia": "Celendin",
+        "distritos": ["Celendin", "Chumuch", "Cortegana", "Huasmin", "Jorge Chavez", "Jose Galvez", "Miguel Iglesias", "Oxamarca", "Sorochuco", "Sucre", "Utco", "La Libertad de Pallan"]
+      },
+      {
+        "provincia": "Chota",
+        "distritos": ["Chota", "Anguia", "Chadín", "Chalamarca", "Chiguirip", "Chimban", "Choropampa", "Cochabamba", "Conchan", "Huambos", "Lajas", "Llama", "Miracosta", "Paccha", "Pion", "Querocoto", "San Juan de Licupis", "Tacabamba", "Tocmoche", "Chadin"]
+      },
+      {
+        "provincia": "Contumaza",
+        "distritos": ["Contumaza", "Chilete", "Cupisnique", "Guzmango", "San Benito", "Santa Cruz de Toledo", "Tantarica", "Yonan"]
+      },
+      {
+        "provincia": "Cutervo",
+        "distritos": ["Cutervo", "Callayuc", "Choros", "Cujillo", "La Ramada", "Pimpingos", "Querocotillo", "San Andres de Cutervo", "San Juan de Cutervo", "San Luis de Lucma", "Santa Cruz", "Santo Domingo de la Capilla", "Santo Tomas", "Socota", "Toribio Casanova"]
+      },
+      {
+        "provincia": "Hualgayoc",
+        "distritos": ["Bambamarca", "Chugur", "Hualgayoc"]
+      },
+      {
+        "provincia": "Jaen",
+        "distritos": ["Jaen", "Bellavista", "Chontali", "Colasay", "Huabal", "Las Pirias", "Pomahuaca", "Pucara", "Sallique", "San Felipe", "San Jose del Alto", "Santa Rosa"]
+      },
+      {
+        "provincia": "San Ignacio",
+        "distritos": ["San Ignacio", "Chirinos", "Huarango", "La Coipa", "Namballe", "San Jose de Lourdes", "Tabaconas"]
+      },
+      {
+        "provincia": "San Marcos",
+        "distritos": ["Pedro Galvez", "Chancay", "Eduardo Villanueva", "Gregorio Pita", "Ichocan", "Jose Manuel Quiroz", "Jose Sabogal"]
+      },
+      {
+        "provincia": "San Miguel",
+        "distritos": ["San Miguel", "Bolivar", "Calquis", "Catilluc", "El Prado", "La Florida", "Llapa", "Nanchoc", "Niepos", "San Gregorio", "San Silvestre de Cochan", "Tongod", "Union Agua Blanca"]
+      },
+      {
+        "provincia": "San Pablo",
+        "distritos": ["San Pablo", "San Bernardino", "San Luis", "Tumbaden"]
+      },
+      {
+        "provincia": "Santa Cruz",
+        "distritos": ["Santa Cruz", "Andabamba", "Catache", "Chancaybaños", "La Esperanza", "Ninabamba", "Pulan", "Saucepampa", "Sexi", "Uticyacu", "Yauyucan"]
+      }
+    ]
+  },
+  {
+    "departamento": "Callao",
+    "provincias": [
+      {
+        "provincia": "Callao",
+        "distritos": ["Callao", "Bellavista", "Carmen de la Legua Reynoso", "La Perla", "La Punta", "Mi Peru", "Ventanilla"]
+      }
+    ]
+  },
+  {
+    "departamento": "Cusco",
+    "provincias": [
+      {
+        "provincia": "Cusco",
+        "distritos": ["Cusco", "Ccorca", "Poroy", "San Jeronimo", "San Sebastian", "Santiago", "Saylla", "Wanchaq"]
+      },
+      {
+        "provincia": "Acomayo",
+        "distritos": ["Acomayo", "Acopia", "Acos", "Mosoc Llacta", "Pomacanchi", "Rondocan", "Sangarara"]
+      },
+      {
+        "provincia": "Anta",
+        "distritos": ["Anta", "Ancahuasi", "Cachimayo", "Chinchaypujio", "Huarocondo", "Limatambo", "Mollepata", "Pucyura", "Zurite"]
+      },
+      {
+        "provincia": "Calca",
+        "distritos": ["Calca", "Coya", "Lamay", "Lares", "Pisac", "San Salvador", "Taray", "Yanatile"]
+      },
+      {
+        "provincia": "Canas",
+        "distritos": ["Yanaoca", "Checca", "Kunturkanki", "Langui", "Layo", "Pampamarca", "Quehue", "Tupac Amaru"]
+      },
+      {
+        "provincia": "Canchis",
+        "distritos": ["Sicuani", "Checacupe", "Combapata", "Marangani", "Pitumarca", "San Pablo", "San Pedro", "Tinta"]
+      },
+      {
+        "provincia": "Chumbivilcas",
+        "distritos": ["Santo Tomas", "Capacmarca", "Chamaca", "Colquemarca", "Livitaca", "Llusco", "Quiñota", "Velille"]
+      },
+      {
+        "provincia": "Espinar",
+        "distritos": ["Espinar", "Condoroma", "Coporaque", "Ocoruro", "Pallpata", "Pichigua", "Suyckutambo", "Alto Pichigua"]
+      },
+      {
+        "provincia": "La Convencion",
+        "distritos": ["Santa Ana", "Echarate", "Huayopata", "Maranura", "Ocobamba", "Quellouno", "Kimbiri", "Santa Teresa", "Vilcabamba", "Pichari", "Inkawasi", "Villa Virgen", "Villa Kintiarina", "Megantoni"]
+      },
+      {
+        "provincia": "Paruro",
+        "distritos": ["Paruro", "Accha", "Ccapi", "Colcha", "Huanoquite", "Omacha", "Paccaritambo", "Pillpinto", "Yaurisque"]
+      },
+      {
+        "provincia": "Paucartambo",
+        "distritos": ["Paucartambo", "Caicay", "Challabamba", "Colquepata", "Huancarani", "Kosñipata"]
+      },
+      {
+        "provincia": "Quispicanchi",
+        "distritos": ["Urcos", "Andahuaylillas", "Camanti", "Ccarhuayo", "Ccatca", "Cusipata", "Huaro", "Lucre", "Marcapata", "Ocongate", "Oropesa", "Quiquijana"]
+      },
+      {
+        "provincia": "Urubamba",
+        "distritos": ["Urubamba", "Chinchero", "Huayllabamba", "Machupicchu", "Maras", "Ollantaytambo", "Yucay"]
+      }
+    ]
+  },
+  {
+    "departamento": "Huancavelica",
+    "provincias": [
+      {
+        "provincia": "Huancavelica",
+        "distritos": ["Huancavelica", "Acobambilla", "Acoria", "Conayca", "Cuenca", "Huachocolpa", "Huayllahuara", "Izcuchaca", "Laria", "Manta", "Mariscal Caceres", "Moya", "Nuevo Occoro", "Palca", "Pilchaca", "Vilca", "Yauli", "Ascension", "Huando"]
+      },
+      {
+        "provincia": "Acobamba",
+        "distritos": ["Acobamba", "Andabamba", "Anta", "Caja", "Marcas", "Paucara", "Pomacocha", "Rosario"]
+      },
+      {
+        "provincia": "Angaraes",
+        "distritos": ["Lircay", "Anchonga", "Callanmarca", "Ccochaccasa", "Chincho", "Congalla", "Huanca Huanca", "Huayllay Grande", "Julcamarca", "San Antonio de Antaparco", "Santo Tomas de Pata", "Secclla"]
+      },
+      {
+        "provincia": "Castrovirreyna",
+        "distritos": ["Castrovirreyna", "Arma", "Aurahua", "Capillas", "Chupamarca", "Cocas", "Huachos", "Huamatambo", "Mollepampa", "San Juan", "Santa Ana", "Tantara", "Ticrapo"]
+      },
+      {
+        "provincia": "Churcampa",
+        "distritos": ["Churcampa", "Anco", "Chinchihuasi", "El Carmen", "La Merced", "Locroja", "Paucarbamba", "San Miguel de Mayocc", "San Pedro de Coris", "Pachamarca", "Cosme"]
+      },
+      {
+        "provincia": "Huaytara",
+        "distritos": ["Huaytara", "Ayavi", "Cordova", "Huayacundo Arma", "Laramarca", "Ocoyo", "Pilpichaca", "Querco", "Quito-Arma", "San Antonio de Cusicancha", "San Francisco de Sangayaico", "San Isidro", "Santiago de Chocorvos", "Santiago de Quirahuara", "Santo Domingo de Capillas", "Tambo"]
+      },
+      {
+        "provincia": "Tayacaja",
+        "distritos": ["Pampas", "Acostambo", "Acraquia", "Ahuaycha", "Colcabamba", "Daniel Hernandez", "Huachocolpa", "Huaribamba", "Ñahuimpuquio", "Pazos", "Quishuar", "Salcabamba", "Salcahuasi", "San Marcos de Rocchac", "Surcubamba", "Tintay Puncu", "Quichuas", "Andaymarca", "Roble", "Pichos", "Santiago de Tucuma"]
+      }
+    ]
+  },
+  {
+    "departamento": "Huanuco",
+    "provincias": [
+      {
+        "provincia": "Huanuco",
+        "distritos": ["Huanuco", "Amarilis", "Chinchao", "Churubamba", "Margos", "Quisqui", "San Francisco de Cayran", "San Pedro de Chaulan", "Santa Maria del Valle", "Yarumayo", "Pillco Marca", "Yacus"]
+      },
+      {
+        "provincia": "Ambo",
+        "distritos": ["Ambo", "Cayna", "Colpas", "Conchamarca", "Huacar", "San Francisco", "San Rafael", "Tomay Kichwa"]
+      },
+      {
+        "provincia": "Dos de Mayo",
+        "distritos": ["La Union", "Chuquis", "Marias", "Pachas", "Quivilla", "Ripan", "Shunqui", "Sillapata", "Yanas"]
+      },
+      {
+        "provincia": "Huacaybamba",
+        "distritos": ["Huacaybamba", "Canchabamba", "Cochabamba", "Pinra"]
+      },
+      {
+        "provincia": "Huamalies",
+        "distritos": ["Llata", "Arancay", "Chavin de Pariarca", "Jacas Grande", "Jircan", "Miraflores", "Monzon", "Punchao", "Puños", "Singa", "Tantamayo"]
+      },
+      {
+        "provincia": "Leoncio Prado",
+        "distritos": ["Rupa-Rupa", "Daniel Alomia Robles", "Hermilio Valdizan", "Jose Crespo y Castillo", "Luyando", "Mariano Damaso Beraun", "Pucayacu", "Castillo Grande", "Pueblo Nuevo", "Santo Domingo de Anda"]
+      },
+      {
+        "provincia": "Marañon",
+        "distritos": ["Huacrachuco", "Cholon", "San Buenaventura"]
+      },
+      {
+        "provincia": "Pachitea",
+        "distritos": ["Panao", "Chaglla", "Molino", "Umari"]
+      },
+      {
+        "provincia": "Puerto Inca",
+        "distritos": ["Puerto Inca", "Codo del Pozuzo", "Honoria", "Tournavista", "Yuyapichis"]
+      },
+      {
+        "provincia": "Lauricocha",
+        "distritos": ["Jesus", "Baños", "Jivia", "Queropalca", "Rondos", "San Francisco de Asis", "San Miguel de Cauri"]
+      },
+      {
+        "provincia": "Yarowilca",
+        "distritos": ["Chavinillo", "Cahuac", "Chacabamba", "Aparicio Pomares", "Jacas Chico", "Obas", "Pampamarca", "Choras"]
+      }
+    ]
+  },
+  {
+    "departamento": "Ica",
+    "provincias": [
+      {
+        "provincia": "Ica",
+        "distritos": ["Ica", "La Tinguiña", "Los Aquijes", "Ocucaje", "Pachacutec", "Parcona", "Pueblo Nuevo", "Salas", "San Jose de Los Molinos", "San Juan Bautista", "Santiago", "Subtanjalla", "Tate", "Yauca del Rosario"]
+      },
+      {
+        "provincia": "Chincha",
+        "distritos": ["Chincha Alta", "Alto Laran", "Chavin", "Chincha Baja", "El Carmen", "Grocio Prado", "Pueblo Nuevo", "San Juan de Yanac", "San Pedro de Huacarpana", "Sunampe", "Tambo de Mora"]
+      },
+      {
+        "provincia": "Nasca",
+        "distritos": ["Nasca", "Changuillo", "El Ingenio", "Marcona", "Vista Alegre"]
+      },
+      {
+        "provincia": "Palpa",
+        "distritos": ["Palpa", "Llipata", "Rio Grande", "Santa Cruz", "Tibillo"]
+      },
+      {
+        "provincia": "Pisco",
+        "distritos": ["Pisco", "Huancano", "Humay", "Independencia", "Paracas", "San Andres", "San Clemente", "Tupac Amaru Inca"]
+      }
+    ]
+  },
+  {
+    "departamento": "Junin",
+    "provincias": [
+      {
+        "provincia": "Huancayo",
+        "distritos": ["Huancayo", "Carhuacallanga", "Chacapampa", "Chicche", "Chilca", "Chongos Alto", "Chupuro", "Colca", "Cullhuas", "El Tambo", "Huacrapuquio", "Hualhuas", "Huancan", "Huasicancha", "Huayucachi", "Ingenio", "Pariahuanca", "Pilcomayo", "Pucara", "Quichuay", "Quilcas", "San Agustin de Cajas", "San Jeronimo de Tunan", "Saño", "Sapallanga", "Sicaya", "Santo Domingo de Acobamba", "Viques"]
+      },
+      {
+        "provincia": "Concepcion",
+        "distritos": ["Concepcion", "Aco", "Andamarca", "Chambara", "Cochas", "Comas", "Heroinas Toledo", "Manzanares", "Mariscal Castilla", "Matahuasi", "Mito", "Nueve de Julio", "Orcotuna", "San Jose de Quero", "Santa Rosa de Ocopa"]
+      },
+      {
+        "provincia": "Chanchamayo",
+        "distritos": ["Chanchamayo", "Perene", "Pichanaqui", "San Luis de Shuaro", "San Ramon", "Vitoc"]
+      },
+      {
+        "provincia": "Jauja",
+        "distritos": ["Jauja", "Acolla", "Apata", "Ataura", "Canchayllo", "Curicaca", "El Mantaro", "Huamali", "Huaripampa", "Huertas", "Janjaillo", "Julcan", "Leonor Ordoñez", "Llocllapampa", "Marco", "Masma", "Masma Chicche", "Molinos", "Monobamba", "Muqui", "Muquiyauyo", "Paca", "Paccha", "Pancan", "Parco", "Pomacancha", "Ricran", "San Lorenzo", "San Pedro de Chunan", "Sausa", "Sincos", "Tunan Marca", "Yauli", "Yauyos"]
+      },
+      {
+        "provincia": "Junin",
+        "distritos": ["Junin", "Carhuamayo", "Ondores", "Ulcumayo"]
+      },
+      {
+        "provincia": "Satipo",
+        "distritos": ["Satipo", "Coviriali", "Llaylla", "Mazamari", "Pampa Hermosa", "Pangoa", "Rio Negro", "Rio Tambo", "Vizcatan del Ene"]
+      },
+      {
+        "provincia": "Tarma",
+        "distritos": ["Tarma", "Acobamba", "Huaricolca", "Huasahuasi", "La Union", "Palca", "Palcamayo", "San Pedro de Cajas", "Tapo"]
+      },
+      {
+        "provincia": "Yauli",
+        "distritos": ["La Oroya", "Chacapalpa", "Huay-Huay", "Marcapomacocha", "Morococha", "Paccha", "Santa Barbara de Carhuacayan", "Santa Rosa de Sacco", "Suitucancha", "Yauli"]
+      },
+      {
+        "provincia": "Chupaca",
+        "distritos": ["Chupaca", "Ahuac", "Chongos Bajo", "Huachac", "Huamancaca Chico", "San Juan de Iscos", "San Juan de Jarpa", "Tres de Diciembre", "Yanacancha"]
+      }
+    ]
+  },
+  {
+    "departamento": "La Libertad",
+    "provincias": [
+      {
+        "provincia": "Trujillo",
+        "distritos": ["Trujillo", "El Porvenir", "Florencia de Mora", "Huanchaco", "La Esperanza", "Laredo", "Moche", "Poroto", "Salaverry", "Simbal", "Victor Larco Herrera"]
+      },
+      {
+        "provincia": "Ascope",
+        "distritos": ["Ascope", "Chicama", "Chocope", "Magdalena de Cao", "Paijan", "Razuri", "Santiago de Cao", "Casa Grande"]
+      },
+      {
+        "provincia": "Bolivar",
+        "distritos": ["Bolivar", "Bambamarca", "Condormarca", "Longotea", "Uchumarca", "Ucuncha"]
+      },
+      {
+        "provincia": "Chepen",
+        "distritos": ["Chepen", "Pacanga", "Pueblo Nuevo"]
+      },
+      {
+        "provincia": "Julcan",
+        "distritos": ["Julcan", "Calamarca", "Carabamba", "Huaso"]
+      },
+      {
+        "provincia": "Otuzco",
+        "distritos": ["Otuzco", "Agallpampa", "Charat", "Huaranchal", "La Cuesta", "Mache", "Paranday", "Salpo", "Sinsicap", "Usquil"]
+      },
+      {
+        "provincia": "Pacasmayo",
+        "distritos": ["San Pedro de Lloc", "Guadalupe", "Jequetepeque", "Pacasmayo", "San Jose"]
+      },
+      {
+        "provincia": "Pataz",
+        "distritos": ["Tayabamba", "Buldibuyo", "Chillia", "Huancaspata", "Huaylillas", "Huayo", "Ongon", "Parcoy", "Pataz", "Pias", "Santiago de Challas", "Taurija", "Urpay"]
+      },
+      {
+        "provincia": "Sanchez Carrion",
+        "distritos": ["Huamachuco", "Chugay", "Cochorco", "Curgos", "Marcabal", "Sanagoran", "Sarin", "Sartimbamba"]
+      },
+      {
+        "provincia": "Santiago de Chuco",
+        "distritos": ["Santiago de Chuco", "Angasmarca", "Cachicadan", "Mollebamba", "Mollepata", "Quiruvilca", "Santa Cruz de Chuca", "Sitabamba"]
+      },
+      {
+        "provincia": "Gran Chimu",
+        "distritos": ["Cascas", "Lucma", "Marmot", "Sayapullo"]
+      },
+      {
+        "provincia": "Viru",
+        "distritos": ["Viru", "Chao", "Guadalupito"]
+      }
+    ]
+  },
+  {
+    "departamento": "Lambayeque",
+    "provincias": [
+      {
+        "provincia": "Chiclayo",
+        "distritos": ["Chiclayo", "Chongoyape", "Eten", "Eten Puerto", "Jose Leonardo Ortiz", "La Victoria", "Lagunas", "Monsefu", "Nueva Arica", "Oyotun", "Picsi", "Pimentel", "Reque", "Santa Rosa", "Saña", "Cayalti", "Patapo", "Pomalca", "Pucala", "Tuman"]
+      },
+      {
+        "provincia": "Ferreñafe",
+        "distritos": ["Ferreñafe", "Cañaris", "Incahuasi", "Manuel Antonio Mesones Muro", "Pitipo", "Pueblo Nuevo"]
+      },
+      {
+        "provincia": "Lambayeque",
+        "distritos": ["Lambayeque", "Chochope", "Illimo", "Jayanca", "Mochumi", "Morrope", "Motupe", "Olmos", "Pacora", "Salas", "San Jose", "Tucume"]
+      }
+    ]
+  },
+  {
+    "departamento": "Lima",
+    "provincias": [
+      {
+        "provincia": "Lima",
+        "distritos": ["Lima", "Ancon", "Ate", "Barranco", "Breña", "Carabayllo", "Chaclacayo", "Chorrillos", "Cieneguilla", "Comas", "El Agustino", "Independencia", "Jesus Maria", "La Molina", "La Victoria", "Lince", "Los Olivos", "Lurigancho", "Lurin", "Magdalena del Mar", "Miraflores", "Pachacamac", "Pucusana", "Pueblo Libre", "Puente Piedra", "Punta Hermosa", "Punta Negra", "Rimac", "San Bartolo", "San Borja", "San Isidro", "San Juan de Lurigancho", "San Juan de Miraflores", "San Luis", "San Martin de Porres", "San Miguel", "Santa Anita", "Santa Maria del Mar", "Santa Rosa", "Santiago de Surco", "Surquillo", "Villa El Salvador", "Villa Maria del Triunfo"]
+      },
+      {
+        "provincia": "Barranca",
+        "distritos": ["Barranca", "Paramonga", "Pativilca", "Supe", "Supe Puerto"]
+      },
+      {
+        "provincia": "Cajatambo",
+        "distritos": ["Cajatambo", "Copa", "Gorgor", "Huancapon", "Manas"]
+      },
+      {
+        "provincia": "Canta",
+        "distritos": ["Canta", "Arahuay", "Huamantanga", "Huaros", "Lachaqui", "San Buenaventura", "Santa Rosa de Quives"]
+      },
+      {
+        "provincia": "Cañete",
+        "distritos": ["San Vicente de Cañete", "Asia", "Calango", "Cerro Azul", "Chilca", "Coayllo", "Imperial", "Lunahuana", "Mala", "Nuevo Imperial", "Pacaran", "Quilmana", "San Antonio", "San Luis", "Santa Cruz de Flores", "Zuñiga"]
+      },
+      {
+        "provincia": "Huaral",
+        "distritos": ["Huaral", "Atavillos Alto", "Atavillos Bajo", "Aucallama", "Chancay", "Ihuari", "Lampian", "Pacaraos", "San Miguel de Acos", "Santa Cruz de Andamarca", "Sumbilca", "Veintisiete de Noviembre"]
+      },
+      {
+        "provincia": "Huarochiri",
+        "distritos": ["Matucana", "Antioquía", "Callahuanca", "Carampoma", "Chicla", "Cuenca", "Huachupampa", "Huanza", "Huarochiri", "Lahuaytambo", "Langa", "Laraos", "Mariatana", "Ricardo Palma", "San Andres de Tupicocha", "San Antonio", "San Bartolome", "San Damian", "San Juan de Tantaranche", "San Lorenzo de Quinti", "San Mateo", "San Mateo de Otao", "San Pedro de Casta", "San Pedro de Huancayre", "Sangallaya", "Santa Cruz de Cocachacra", "Santa Eulalia", "Santiago de Anchucaya", "Santiago de Tuna", "Santo Domingo de los Olleros", "Surco", "San Antonio de Chaclla"]
+      },
+      {
+        "provincia": "Huaura",
+        "distritos": ["Huacho", "Ambar", "Caleta de Carquin", "Checras", "Hualmay", "Huaura", "Leoncio Prado", "Paccho", "Santa Leonor", "Santa Maria", "Sayan", "Vegueta"]
+      },
+      {
+        "provincia": "Oyon",
+        "distritos": ["Oyon", "Andajes", "Caujul", "Cochamarca", "Navan", "Pachangara"]
+      },
+      {
+        "provincia": "Yauyos",
+        "distritos": ["Yauyos", "Alis", "Ayauca", "Ayaviri", "Azangaro", "Cacra", "Carania", "Catahuasi", "Chocos", "Cochas", "Colonia", "Hongos", "Huampara", "Huancaya", "Huangascar", "Huantan", "Huañec", "Laraos", "Lincha", "Madean", "Miraflores", "Omas", "Putinza", "Quinches", "Quinocay", "San Joaquin", "San Pedro de Pilas", "Tanta", "Tauripampa", "Tomas", "Tupe", "Viñac", "Vitis"]
+      }
+    ]
+  },
+  {
+    "departamento": "Loreto",
+    "provincias": [
+      {
+        "provincia": "Maynas",
+        "distritos": ["Iquitos", "Alto Nanay", "Fernando Lores", "Indiana", "Las Amazonas", "Mazan", "Napo", "Punchana", "Torres Causana", "Belen", "San Juan Bautista"]
+      },
+      {
+        "provincia": "Alto Amazonas",
+        "distritos": ["Yurimaguas", "Balsapuerto", "Jeberos", "Lagunas", "Santa Cruz", "Teniente Cesar Lopez Rojas"]
+      },
+      {
+        "provincia": "Loreto",
+        "distritos": ["Nauta", "Parinari", "Tigre", "Trompeteros", "Urarinas"]
+      },
+      {
+        "provincia": "Mariscal Ramon Castilla",
+        "distritos": ["Ramon Castilla", "Pebas", "Yavari", "San Pablo"]
+      },
+      {
+        "provincia": "Requena",
+        "distritos": ["Requena", "Alto Tapiche", "Capelo", "Emilio San Martin", "Maquia", "Puinahua", "Saquena", "Soplin", "Tapiche", "Jenaro Herrera", "Yaquerana"]
+      },
+      {
+        "provincia": "Ucayali",
+        "distritos": ["Contamana", "Inahuaya", "Padre Marquez", "Pampa Hermosa", "Sarayacu", "Vargas Guerra"]
+      },
+      {
+        "provincia": "Datem del Marañon",
+        "distritos": ["Barranca", "Andoas", "Cahuapanas", "Manseriche", "Morona", "Pastaza"]
+      },
+      {
+        "provincia": "Putumayo",
+        "distritos": ["Putumayo", "Rosa Panduro", "Teniente Manuel Clavero", "Yaguas"]
+      }
+    ]
+  },
+  {
+    "departamento": "Madre de Dios",
+    "provincias": [
+      {
+        "provincia": "Tambopata",
+        "distritos": ["Tambopata", "Inambari", "Las Piedras", "Laberinto"]
+      },
+      {
+        "provincia": "Manu",
+        "distritos": ["Manu", "Fitzcarrald", "Madre de Dios", "Huepetuhe"]
+      },
+      {
+        "provincia": "Tahuamanu",
+        "distritos": ["Iñapari", "Iberia", "Tahuamanu"]
+      }
+    ]
+  },
+  {
+    "departamento": "Moquegua",
+    "provincias": [
+      {
+        "provincia": "Mariscal Nieto",
+        "distritos": ["Moquegua", "Carumas", "Cuchumbaya", "Samegua", "San Cristobal", "Torata"]
+      },
+      {
+        "provincia": "General Sanchez Cerro",
+        "distritos": ["Omate", "Chojata", "Coalaque", "Ichuña", "La Capilla", "Lloque", "Matalaque", "Puquina", "Quinistaquillas", "Ubinas", "Yunga"]
+      },
+      {
+        "provincia": "Ilo",
+        "distritos": ["Ilo", "El Algarrobal", "Pacocha"]
+      }
+    ]
+  },
+  {
+    "departamento": "Pasco",
+    "provincias": [
+      {
+        "provincia": "Pasco",
+        "distritos": ["Chaupimarca", "Huachon", "Huariaca", "Huayllay", "Ninacaca", "Pallanchacra", "Paucartambo", "San Francisco de Asis de Yarusyacan", "Simon Bolivar", "Ticlacayan", "Tinyahuarco", "Vicco", "Yanacancha"]
+      },
+      {
+        "provincia": "Daniel Alcides Carrion",
+        "distritos": ["Yanahuanca", "Chacayan", "Goyllarisquizga", "Paucar", "San Pedro de Pillao", "Santa Ana de Tusi", "Tapuc", "Vilcabamba"]
+      },
+      {
+        "provincia": "Oxapampa",
+        "distritos": ["Oxapampa", "Chontabamba", "Huancabamba", "Palcazu", "Pozuzo", "Puerto Bermudez", "Villa Rica", "Constitucion"]
+      }
+    ]
+  },
+  {
+    "departamento": "Piura",
+    "provincias": [
+      {
+        "provincia": "Piura",
+        "distritos": ["Piura", "Castilla", "Catacaos", "Cura Mori", "El Tallan", "La Arena", "La Union", "Las Lomas", "Tambo Grande", "Veintiseis de Octubre"]
+      },
+      {
+        "provincia": "Ayabaca",
+        "distritos": ["Ayabaca", "Frias", "Jilili", "Lagunas", "Montero", "Pacaipampa", "Paimas", "Sapillica", "Sicchez", "Suyo"]
+      },
+      {
+        "provincia": "Huancabamba",
+        "distritos": ["Huancabamba", "Canchaque", "El Carmen de la Frontera", "Huarmaca", "Lalaquiz", "San Miguel de El Faique", "Sondor", "Sondorillo"]
+      },
+      {
+        "provincia": "Morropon",
+        "distritos": ["Chulucanas", "Buenos Aires", "Chalaco", "La Matanza", "Morropon", "Salitral", "San Juan de Bigote", "Santa Catalina de Mossa", "Santo Domingo", "Yamango"]
+      },
+      {
+        "provincia": "Paita",
+        "distritos": ["Paita", "Amotape", "Arenal", "Colan", "La Huaca", "Tamarindo", "Vichayal"]
+      },
+      {
+        "provincia": "Sullana",
+        "distritos": ["Sullana", "Bellavista", "Ignacio Escudero", "Lancones", "Marcavelica", "Miguel Checa", "Querecotillo", "Salitral"]
+      },
+      {
+        "provincia": "Talara",
+        "distritos": ["Pariñas", "El Alto", "La Brea", "Lobitos", "Los Organos", "Mancora"]
+      },
+      {
+        "provincia": "Sechura",
+        "distritos": ["Sechura", "Bellavista de la Union", "Bernal", "Cristo Nos Valga", "Vice", "Rinconada Llicuar"]
+      }
+    ]
+  },
+  {
+    "departamento": "Puno",
+    "provincias": [
+      {
+        "provincia": "Puno",
+        "distritos": ["Puno", "Acora", "Amantani", "Atuncolla", "Capachica", "Chucuito", "Coata", "Huata", "Mañazo", "Paucarcolla", "Pichacani", "Plateria", "San Antonio", "Tiquillaca", "Vilque"]
+      },
+      {
+        "provincia": "Azangaro",
+        "distritos": ["Azangaro", "Achaya", "Arapa", "Asillo", "Caminaca", "Chupa", "Jose Domingo Choquehuanca", "Muñani", "Potoni", "Saman", "San Anton", "San Jose", "San Juan de Salinas", "Santiago de Pupuja", "Tirapata"]
+      },
+      {
+        "provincia": "Carabaya",
+        "distritos": ["Macusani", "Ajoyani", "Ayapata", "Coasa", "Corani", "Crucero", "Ituata", "Ollachea", "San Gaban", "Usicayos"]
+      },
+      {
+        "provincia": "Chucuito",
+        "distritos": ["Juli", "Desaguadero", "Huacullani", "Kelluyo", "Pisacoma", "Pomata", "Zepita"]
+      },
+      {
+        "provincia": "El Collao",
+        "distritos": ["Ilave", "Capazo", "Pilcuyo", "Santa Rosa", "Conduriri"]
+      },
+      {
+        "provincia": "Huancane",
+        "distritos": ["Huancane", "Cojata", "Huatasani", "Inchupalla", "Pusi", "Rosaspata", "Taraco", "Vilque Chico"]
+      },
+      {
+        "provincia": "Lampa",
+        "distritos": ["Lampa", "Cabanilla", "Calapuja", "Nicasio", "Ocuviri", "Palca", "Paratia", "Pucara", "Santa Lucia", "Vilavila"]
+      },
+      {
+        "provincia": "Melgar",
+        "distritos": ["Ayaviri", "Antauta", "Cupi", "Llalli", "Macari", "Nuñoa", "Orurillo", "Santa Rosa", "Umachiri"]
+      },
+      {
+        "provincia": "Moho",
+        "distritos": ["Moho", "Conima", "Huayrapata", "Tilali"]
+      },
+      {
+        "provincia": "San Antonio de Putina",
+        "distritos": ["Putina", "Ananea", "Pedro Vilca Apaza", "Quilcapuncu", "Sina"]
+      },
+      {
+        "provincia": "San Roman",
+        "distritos": ["Juliaca", "Cabana", "Cabanillas", "Caracoto", "San Miguel"]
+      },
+      {
+        "provincia": "Sandia",
+        "distritos": ["Sandia", "Cuyocuyo", "Limbani", "Patambuco", "Phara", "Quiaca", "San Juan del Oro", "Yanahuaya", "Alto Inambari", "San Pedro de Putina Punco"]
+      },
+      {
+        "provincia": "Yunguyo",
+        "distritos": ["Yunguyo", "Anapia", "Copani", "Cuturapi", "Ollaraya", "Tinicachi", "Unicachi"]
+      }
+    ]
+  },
+  {
+    "departamento": "San Martin",
+    "provincias": [
+      {
+        "provincia": "Moyobamba",
+        "distritos": ["Moyobamba", "Calzada", "Habana", "Jepelacio", "Soritor", "Yantalo"]
+      },
+      {
+        "provincia": "Bellavista",
+        "distritos": ["Bellavista", "Alto Biavo", "Bajo Biavo", "Huallaga", "San Pablo", "San Rafael"]
+      },
+      {
+        "provincia": "El Dorado",
+        "distritos": ["San Jose de Sisa", "Agua Blanca", "San Martin", "Santa Rosa", "Shatoja"]
+      },
+      {
+        "provincia": "Huallaga",
+        "distritos": ["Saposoa", "Alto Saposoa", "El Eslabon", "Piscoyacu", "Sacanche", "Tingo de Saposoa"]
+      },
+      {
+        "provincia": "Lamas",
+        "distritos": ["Lamas", "Alonso de Alvarado", "Barranquita", "Caynarachi", "Cuñumbuqui", "Pinto Recodo", "Rumisapa", "San Roque de Cumbaza", "Shanao", "Tabalosos", "Zapatero"]
+      },
+      {
+        "provincia": "Mariscal Caceres",
+        "distritos": ["Juanjui", "Campanilla", "Huicungo", "Pachiza", "Pajarillo"]
+      },
+      {
+        "provincia": "Picota",
+        "distritos": ["Picota", "Buenos Aires", "Caspisapa", "Pilluana", "Pucacaca", "San Cristobal", "San Hilarion", "Shamboyacu", "Tingo de Ponasa", "Tres Unidos"]
+      },
+      {
+        "provincia": "Rioja",
+        "distritos": ["Rioja", "Awajun", "Elias Soplin Vargas", "Nueva Cajamarca", "Pardo Miguel", "Posic", "San Fernando", "Yorongos", "Yuracyacu"]
+      },
+      {
+        "provincia": "San Martin",
+        "distritos": ["Tarapoto", "Alberto Leveau", "Cacatachi", "Chazuta", "Chipurana", "El Porvenir", "Huimbayoc", "Juan Guerra", "La Banda de Shilcayo", "Morales", "Papaplaya", "San Antonio", "Sauce", "Shapaja"]
+      },
+      {
+        "provincia": "Tocache",
+        "distritos": ["Tocache", "Nuevo Progreso", "Polvora", "Shunte", "Uchiza"]
+      }
+    ]
+  },
+  {
+    "departamento": "Tacna",
+    "provincias": [
+      {
+        "provincia": "Tacna",
+        "distritos": ["Tacna", "Alto de la Alianza", "Calana", "Ciudad Nueva", "Coronel Gregorio Albarracin Lanchipa", "Inclan", "Pachia", "Palca", "Pocollay", "Sama", "La Yarada-Los Palos"]
+      },
+      {
+        "provincia": "Candarave",
+        "distritos": ["Candarave", "Cairani", "Camilaca", "Curibaya", "Huanuara", "Quilahuani"]
+      },
+      {
+        "provincia": "Jorge Basadre",
+        "distritos": ["Locumba", "Ilabaya", "Ite"]
+      },
+      {
+        "provincia": "Tarata",
+        "distritos": ["Tarata", "Heroes Albarracin", "Estique", "Estique-Pampa", "Sitajara", "Susapaya", "Tarucachi", "Ticaco"]
+      }
+    ]
+  },
+  {
+    "departamento": "Tumbes",
+    "provincias": [
+      {
+        "provincia": "Tumbes",
+        "distritos": ["Tumbes", "Corrales", "La Cruz", "Pampas de Hospital", "San Jacinto", "San Juan de la Virgen"]
+      },
+      {
+        "provincia": "Contralmirante Villar",
+        "distritos": ["Zorritos", "Casitas", "Canoas de Punta Sal"]
+      },
+      {
+        "provincia": "Zarumilla",
+        "distritos": ["Zarumilla", "Aguas Verdes", "Matapalo", "Papayal"]
+      }
+    ]
+  },
+  {
+    "departamento": "Ucayali",
+    "provincias": [
+      {
+        "provincia": "Coronel Portillo",
+        "distritos": ["Calleria", "Campoverde", "Iparia", "Masisea", "Yarinacocha", "Nueva Requena", "Manantay"]
+      },
+      {
+        "provincia": "Atalaya",
+        "distritos": ["Raymondi", "Sepahua", "Tahuania", "Yurua"]
+      },
+      {
+        "provincia": "Padre Abad",
+        "distritos": ["Padre Abad", "Irazola", "Curimana", "Neshuya", "Alexander Von Humboldt"]
+      },
+      {
+        "provincia": "Purus",
+        "distritos": ["Purus"]
+      }
+    ]
+  }
+]

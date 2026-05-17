@@ -79,7 +79,7 @@ export default function DashboardPage() {
     try {
       const data = await api.get('/productos');
       // No transformables son inventario puro, no aparecen en Mis productos
-      setProducts((data.data || []).filter(p => p.tipo_producto !== 'no_transformable'));
+      setProducts((data.data || []).filter(p => p.tipo_producto !== 'no_transformable' || p.disponible_venta));
     } catch (err) {
       toast.error('Error cargando productos');
     } finally {
@@ -149,7 +149,7 @@ export default function DashboardPage() {
       }
       // Refresh products to update precios_canal
       const res = await api.get('/productos');
-      setProducts((res.data || []).filter(p => p.tipo_producto !== 'no_transformable'));
+      setProducts((res.data || []).filter(p => p.tipo_producto !== 'no_transformable' || p.disponible_venta));
       // Update the modal product reference
       const updated = (res.data || []).find(p => p.id === productoId);
       if (updated) setCanalesModal(updated);
@@ -195,7 +195,7 @@ export default function DashboardPage() {
         return next;
       });
       const data = await api.get('/productos');
-      setProducts((data.data || []).filter(p => p.tipo_producto !== 'no_transformable'));
+      setProducts((data.data || []).filter(p => p.tipo_producto !== 'no_transformable' || p.disponible_venta));
     } catch { toast.error('Error actualizando carta'); }
   };
 

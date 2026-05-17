@@ -6,6 +6,7 @@ import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
 import { formatDate } from '../utils/format';
 import SearchableSelect from '../components/SearchableSelect';
+import { API_BASE } from '../config/api';
 import {
   Package,
   AlertTriangle,
@@ -15,6 +16,10 @@ import {
   ChevronUp,
   SlidersHorizontal,
   ArrowUpDown,
+  X,
+  ImageIcon,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 function StatusBadge({ stock, minimo }) {
@@ -69,6 +74,14 @@ export default function StockPage() {
 
   // All products (for the entrada selector — not filtered by control_stock)
   const [allProductos, setAllProductos] = useState([]);
+
+  // Sidebar edición producto
+  const [sidebarProduct, setSidebarProduct] = useState(null);
+  const [sidebarNombre, setSidebarNombre] = useState('');
+  const [sidebarImagenUrl, setSidebarImagenUrl] = useState('');
+  const [sidebarDisponibleVenta, setSidebarDisponibleVenta] = useState(false);
+  const [savingSidebar, setSavingSidebar] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Nuevo producto modal
   const [showNuevoProducto, setShowNuevoProducto] = useState(false);
@@ -227,6 +240,68 @@ export default function StockPage() {
     }
   };
 
+  // Sidebar functions
+  const openSidebar = (prod) => {
+    setSidebarProduct(prod);
+    setSidebarNombre(prod.nombre);
+    setSidebarImagenUrl(prod.imagen_url || '');
+    setSidebarDisponibleVenta(!!prod.disponible_venta);
+    // Load movements for this product
+    if (!movimientos[prod.id]) {
+      setLoadingMov(p => ({ ...p, [prod.id]: true }));
+      api.get(`/stock/movimientos?producto_id=${prod.id}`)
+        .then(r => setMovimientos(p => ({ ...p, [prod.id]: r.data || [] })))
+        .catch(() => {})
+        .finally(() => setLoadingMov(p => ({ ...p, [prod.id]: false })));
+    }
+  };
+
+  const handleSaveSidebar = async () => {
+    if (!sidebarProduct) return;
+    setSavingSidebar(true);
+    try {
+      await api.put(`/productos/${sidebarProduct.id}`, {
+        nombre: sidebarNombre.trim() || sidebarProduct.nombre,
+        imagen_url: sidebarImagenUrl || null,
+        disponible_venta: sidebarDisponibleVenta,
+      });
+      toast.success('Producto actualizado');
+      setSidebarProduct(null);
+      setMovimientos({});
+      loadStock();
+      loadAllProductos();
+    } catch (err) {
+      toast.error(err.message || 'Error actualizando producto');
+    } finally {
+      setSavingSidebar(false);
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !sidebarProduct) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error('Imagen debe ser menor a 5MB'); return; }
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('imagen', file);
+      const baseUrl = API_BASE.replace('/api', '');
+      const res = await fetch(`${baseUrl}/api/upload/producto/${sidebarProduct.id}`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) {
+        setSidebarImagenUrl(data.url);
+        toast.success('Imagen subida');
+      }
+    } catch {
+      toast.error('Error subiendo imagen');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const npCostoUnitario = (Number(npCantidad) > 0 && Number(npCostoTotal) > 0)
     ? Math.round((Number(npCostoTotal) / Number(npCantidad)) * 100) / 100
     : null;
@@ -340,9 +415,15 @@ export default function StockPage() {
                     <tbody key={prod.id}>
                       <tr
                         className={cx.tr + ' cursor-pointer'}
-                        onClick={() => toggleExpand(prod.id)}
+                        onClick={() => prod.tipo_producto === 'no_transformable' ? openSidebar(prod) : toggleExpand(prod.id)}
                       >
-                        <td className={cx.td + ' font-medium text-stone-800'}>{prod.nombre}</td>
+                        <td className={cx.td + ' font-medium text-stone-800'}>
+                          <div className="flex items-center gap-2">
+                            {prod.imagen_url && <img src={prod.imagen_url} className="w-7 h-7 rounded object-cover" alt="" />}
+                            <span>{prod.nombre}</span>
+                            {prod.disponible_venta && <span className={cx.badge('bg-emerald-50 text-emerald-600')}>En venta</span>}
+                          </div>
+                        </td>
                         <td className={cx.td + ' text-stone-500 text-xs font-mono'}>{prod.sku || '--'}</td>
                         <td className={cx.td + ' font-semibold text-stone-800'}>{stock}</td>
                         <td className={cx.td + ' text-stone-500'}>{minimo}</td>
@@ -433,10 +514,14 @@ export default function StockPage() {
                 <div key={prod.id}>
                   <div
                     className="p-4 flex items-center justify-between cursor-pointer hover:bg-stone-50/50 transition-colors"
-                    onClick={() => toggleExpand(prod.id)}
+                    onClick={() => prod.tipo_producto === 'no_transformable' ? openSidebar(prod) : toggleExpand(prod.id)}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-stone-800 truncate">{prod.nombre}</p>
+                      <div className="flex items-center gap-2">
+                        {prod.imagen_url && <img src={prod.imagen_url} className="w-7 h-7 rounded object-cover" alt="" />}
+                        <p className="text-sm font-medium text-stone-800 truncate">{prod.nombre}</p>
+                        {prod.disponible_venta && <span className={cx.badge('bg-emerald-50 text-emerald-600')}>En venta</span>}
+                      </div>
                       <div className="flex items-center gap-3 mt-1">
                         {prod.sku && <span className="text-[10px] text-stone-400 font-mono">{prod.sku}</span>}
                         <StatusBadge stock={stock} minimo={minimo} />
@@ -685,6 +770,137 @@ export default function StockPage() {
                     <Plus size={14} /> Crear e ingresar
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sidebar edición producto no transformable */}
+      {sidebarProduct && (
+        <div className="fixed inset-0 z-[60] flex">
+          <div className="flex-1 bg-black/20" onClick={() => setSidebarProduct(null)} />
+          <div className="w-full sm:w-96 bg-white h-full shadow-xl overflow-y-auto flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-stone-100">
+              <h3 className="text-lg font-semibold text-stone-900">Detalle de producto</h3>
+              <button onClick={() => setSidebarProduct(null)} className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors duration-100">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 p-5 space-y-5">
+              {/* Image */}
+              <div>
+                <label className="block cursor-pointer">
+                  {sidebarImagenUrl ? (
+                    <div className="relative group">
+                      <img src={sidebarImagenUrl} className="w-full aspect-video object-cover rounded-xl" alt="" />
+                      <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="text-white text-xs font-medium">Cambiar imagen</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full aspect-video bg-stone-100 rounded-xl border-2 border-dashed border-stone-300 flex flex-col items-center justify-center gap-2 hover:border-stone-400 transition-colors">
+                      <ImageIcon size={24} className="text-stone-300" />
+                      <span className="text-xs text-stone-400">Click para subir imagen</span>
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                </label>
+                {uploadingImage && (
+                  <div className="mt-2 flex items-center gap-2 text-xs text-stone-500">
+                    <div className="w-3.5 h-3.5 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
+                    Subiendo...
+                  </div>
+                )}
+              </div>
+
+              {/* Name */}
+              <div>
+                <label className={cx.label}>Nombre</label>
+                <input
+                  type="text"
+                  value={sidebarNombre}
+                  onChange={e => setSidebarNombre(e.target.value)}
+                  className={cx.input}
+                />
+              </div>
+
+              {/* Read-only info */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-stone-50 rounded-lg p-3">
+                  <p className="text-[10px] text-stone-400 uppercase font-semibold">SKU</p>
+                  <p className="text-sm font-mono text-stone-700 mt-0.5">{sidebarProduct.sku || '--'}</p>
+                </div>
+                <div className="bg-stone-50 rounded-lg p-3">
+                  <p className="text-[10px] text-stone-400 uppercase font-semibold">Costo unitario</p>
+                  <p className="text-sm font-semibold text-stone-700 mt-0.5">{formatCurrency(sidebarProduct.costo_neto || 0)}</p>
+                </div>
+                <div className="bg-stone-50 rounded-lg p-3">
+                  <p className="text-[10px] text-stone-400 uppercase font-semibold">Stock actual</p>
+                  <p className="text-sm font-bold text-stone-900 mt-0.5">{Number(sidebarProduct.stock_actual) || 0}</p>
+                </div>
+                <div className="bg-stone-50 rounded-lg p-3">
+                  <p className="text-[10px] text-stone-400 uppercase font-semibold">Stock mínimo</p>
+                  <p className="text-sm text-stone-700 mt-0.5">{Number(sidebarProduct.stock_minimo) || 0}</p>
+                </div>
+              </div>
+
+              {/* Toggle disponible_venta */}
+              <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
+                <div>
+                  <p className="text-sm font-medium text-stone-800">Disponible para venta directa</p>
+                  <p className="text-[10px] text-stone-400 mt-0.5">Aparece en catálogo y POS</p>
+                </div>
+                <button
+                  onClick={() => setSidebarDisponibleVenta(!sidebarDisponibleVenta)}
+                  className={`w-11 h-6 rounded-full transition-colors duration-200 relative ${
+                    sidebarDisponibleVenta ? 'bg-[#16A34A]' : 'bg-stone-300'
+                  }`}
+                >
+                  <div className={`w-5 h-5 bg-white rounded-full shadow absolute top-0.5 transition-transform duration-200 ${
+                    sidebarDisponibleVenta ? 'translate-x-[22px]' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+
+              {/* Movimientos */}
+              <div>
+                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Historial de movimientos</p>
+                {loadingMov[sidebarProduct.id] ? (
+                  <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="bg-stone-100 rounded-lg h-8 animate-pulse" />)}</div>
+                ) : (movimientos[sidebarProduct.id] || []).length === 0 ? (
+                  <p className="text-xs text-stone-400 text-center py-4">Sin movimientos registrados</p>
+                ) : (
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {(movimientos[sidebarProduct.id] || []).map((mov, i) => (
+                      <div key={i} className="flex items-center justify-between px-3 py-2 bg-stone-50/80 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <MovimientoBadge tipo={mov.tipo} />
+                          <span className="text-xs text-stone-500">{formatDate(mov.created_at)}</span>
+                        </div>
+                        <span className={`text-xs font-semibold ${Number(mov.cantidad) >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                          {Number(mov.cantidad) >= 0 ? '+' : ''}{mov.cantidad}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-5 border-t border-stone-100">
+              <button
+                onClick={handleSaveSidebar}
+                disabled={savingSidebar}
+                className={cx.btnPrimary + ' w-full py-3 flex items-center justify-center gap-2'}
+              >
+                {savingSidebar ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : 'Guardar cambios'}
               </button>
             </div>
           </div>
