@@ -216,98 +216,130 @@ function PackItemsEditor({ productoId, onItemsChange }) {
   }
 
   const [packTab, setPackTab] = useState('listos'); // listos | inventario
+  const [packSearch, setPackSearch] = useState('');
 
   const productosListos = allProducts.filter(p => p.tipo_producto === 'transformable');
   const productosInventario = allProducts.filter(p => p.tipo_producto === 'no_transformable');
   const availableProducts = (packTab === 'listos' ? productosListos : productosInventario)
-    .filter(p => !items.some(i => i.item_producto_id === p.id));
+    .filter(p => !items.some(i => i.item_producto_id === p.id))
+    .filter(p => !packSearch || p.nombre.toLowerCase().includes(packSearch.toLowerCase()));
 
-  const ItemRow = ({ item }) => (
-    <tr className="border-b border-stone-100 last:border-0">
-      <td className="px-3 py-2 text-stone-800 font-medium">{item.nombre || item.item_nombre || '--'}</td>
-      <td className="px-3 py-2 text-center">
-        <input
-          type="number" min="1" step="1"
-          value={item.cantidad}
-          onChange={e => handleUpdateCantidad(item.id, e.target.value)}
-          className="w-16 bg-stone-50 rounded-lg px-2 py-1 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400"
-        />
-      </td>
-      <td className="px-3 py-2 text-right text-stone-500">{formatCurrency(Number(item.costo_neto) || 0)}</td>
-      <td className="px-3 py-2 text-right text-stone-800 font-medium">{formatCurrency((Number(item.costo_neto) || 0) * (Number(item.cantidad) || 1))}</td>
-      <td className="px-2 py-2">
-        <button onClick={() => handleRemove(item.id)} className={cx.btnIcon + ' hover:text-rose-600'}>
-          <Trash2 size={13} />
-        </button>
-      </td>
-    </tr>
-  );
+  // Find image for items in the pack
+  const getProductImage = (itemProductoId) => {
+    const prod = allProducts.find(p => p.id === itemProductoId);
+    return prod?.imagen_url || null;
+  };
 
   return (
     <div className="space-y-4">
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-stone-200">
-        <button
-          onClick={() => setPackTab('listos')}
-          className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors duration-100 ${
-            packTab === 'listos' ? 'border-[#16A34A] text-[#16A34A]' : 'border-transparent text-stone-400 hover:text-stone-600'
-          }`}
-        >
-          Productos listos ({productosListos.length})
-        </button>
-        <button
-          onClick={() => setPackTab('inventario')}
-          className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors duration-100 ${
-            packTab === 'inventario' ? 'border-[#16A34A] text-[#16A34A]' : 'border-transparent text-stone-400 hover:text-stone-600'
-          }`}
-        >
-          De inventario ({productosInventario.length})
-        </button>
-      </div>
-
-      {/* Add item */}
-      <div>
-        <SearchableSelect
-          options={availableProducts}
-          value={null}
-          onChange={handleAdd}
-          placeholder={packTab === 'listos' ? 'Buscar producto listo...' : 'Buscar producto de inventario...'}
-          disabled={savingItem}
-        />
-      </div>
-
-      {/* Items table */}
+      {/* Selected items — shown first */}
       {items.length > 0 && (
-        <div className="border border-stone-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-stone-50 border-b border-stone-200">
-                <th className="text-left px-3 py-2 text-[10px] font-semibold text-stone-400 uppercase">Producto</th>
-                <th className="text-center px-3 py-2 text-[10px] font-semibold text-stone-400 uppercase">Cant.</th>
-                <th className="text-right px-3 py-2 text-[10px] font-semibold text-stone-400 uppercase">Costo unit.</th>
-                <th className="text-right px-3 py-2 text-[10px] font-semibold text-stone-400 uppercase">Subtotal</th>
-                <th className="w-8"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map(item => <ItemRow key={item.id} item={item} />)}
-            </tbody>
-            <tfoot>
-              <tr className="bg-stone-50 border-t border-stone-200">
-                <td colSpan="3" className="px-3 py-2 text-xs font-semibold text-stone-600">Costo total del pack</td>
-                <td className="px-3 py-2 text-right font-bold text-[var(--accent)]">{formatCurrency(totalCosto)}</td>
-                <td></td>
-              </tr>
-            </tfoot>
-          </table>
+        <div className="space-y-2">
+          <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">En el pack ({items.length})</p>
+          {items.map(item => (
+            <div key={item.id} className="flex items-center gap-2.5 bg-stone-50 rounded-xl p-2.5 group">
+              {getProductImage(item.item_producto_id) ? (
+                <img src={getProductImage(item.item_producto_id)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" alt="" />
+              ) : (
+                <div className="w-10 h-10 rounded-lg bg-stone-200 flex items-center justify-center flex-shrink-0">
+                  <Package size={14} className="text-stone-400" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-stone-800 truncate">{item.nombre || item.item_nombre || '--'}</p>
+                <p className="text-[10px] text-stone-400">{formatCurrency(Number(item.costo_neto) || 0)} c/u</p>
+              </div>
+              <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-lg">
+                <button
+                  onClick={() => handleUpdateCantidad(item.id, Math.max(1, (Number(item.cantidad) || 1) - 1))}
+                  className="w-7 h-7 flex items-center justify-center text-stone-500 hover:text-stone-800 transition-colors duration-100 rounded-l-lg hover:bg-stone-50 text-xs"
+                >-</button>
+                <input
+                  type="number" min="1" step="1"
+                  value={item.cantidad}
+                  onChange={e => handleUpdateCantidad(item.id, e.target.value)}
+                  className="w-8 text-sm font-bold text-center text-stone-800 border-0 focus:outline-none bg-transparent"
+                />
+                <button
+                  onClick={() => handleUpdateCantidad(item.id, (Number(item.cantidad) || 1) + 1)}
+                  className="w-7 h-7 flex items-center justify-center text-stone-500 hover:text-stone-800 transition-colors duration-100 rounded-r-lg hover:bg-stone-50 text-xs"
+                >+</button>
+              </div>
+              <span className="text-sm font-semibold text-stone-800 w-20 text-right">{formatCurrency((Number(item.costo_neto) || 0) * (Number(item.cantidad) || 1))}</span>
+              <button onClick={() => handleRemove(item.id)} className="text-stone-300 hover:text-rose-500 transition-colors duration-100 opacity-0 group-hover:opacity-100">
+                <Trash2 size={13} />
+              </button>
+            </div>
+          ))}
+          <div className="flex justify-between items-center pt-2 border-t border-stone-100">
+            <span className="text-xs font-semibold text-stone-500">Costo total del pack</span>
+            <span className="text-sm font-bold text-[var(--accent)]">{formatCurrency(totalCosto)}</span>
+          </div>
         </div>
       )}
 
-      {items.length === 0 && (
-        <p className="text-sm text-stone-400 text-center py-4">
-          {packTab === 'listos' ? 'Agrega productos con receta al pack' : 'Agrega productos de inventario al pack'}
-        </p>
-      )}
+      {/* Tabs + product grid */}
+      <div>
+        <div className="flex items-center gap-1 border-b border-stone-200 mb-3">
+          <button
+            onClick={() => { setPackTab('listos'); setPackSearch(''); }}
+            className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors duration-100 ${
+              packTab === 'listos' ? 'border-[#16A34A] text-[#16A34A]' : 'border-transparent text-stone-400 hover:text-stone-600'
+            }`}
+          >
+            Productos listos ({productosListos.length})
+          </button>
+          <button
+            onClick={() => { setPackTab('inventario'); setPackSearch(''); }}
+            className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors duration-100 ${
+              packTab === 'inventario' ? 'border-[#16A34A] text-[#16A34A]' : 'border-transparent text-stone-400 hover:text-stone-600'
+            }`}
+          >
+            De inventario ({productosInventario.length})
+          </button>
+        </div>
+
+        {/* Search */}
+        {(packTab === 'listos' ? productosListos : productosInventario).length > 6 && (
+          <input
+            type="text"
+            value={packSearch}
+            onChange={e => setPackSearch(e.target.value)}
+            className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-sm placeholder:text-stone-400 focus:outline-none focus:border-stone-400 transition-colors duration-100 mb-3"
+            placeholder="Buscar..."
+          />
+        )}
+
+        {/* Product cards grid */}
+        {availableProducts.length > 0 ? (
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto">
+            {availableProducts.map(p => (
+              <button
+                key={p.id}
+                onClick={() => handleAdd(p)}
+                disabled={savingItem}
+                className="bg-white rounded-xl border border-stone-200 p-2 text-center hover:border-[#16A34A] hover:shadow-md transition-colors duration-100 group"
+              >
+                {p.imagen_url ? (
+                  <img src={p.imagen_url} className="w-full aspect-square object-cover rounded-lg mb-1.5" alt={p.nombre} />
+                ) : (
+                  <div className="w-full aspect-square bg-stone-100 rounded-lg mb-1.5 flex items-center justify-center">
+                    <Package size={18} className="text-stone-300" />
+                  </div>
+                )}
+                <p className="text-[10px] font-medium text-stone-800 truncate">{p.nombre}</p>
+                <p className="text-[10px] text-stone-400">{formatCurrency(p.costo_neto || 0)}</p>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-stone-400 text-center py-6">
+            {(packTab === 'listos' ? productosListos : productosInventario).length === 0
+              ? (packTab === 'listos' ? 'No hay productos con receta' : 'No hay productos de inventario')
+              : 'Todos los productos ya están en el pack'}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
