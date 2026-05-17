@@ -122,6 +122,9 @@ export default function StockPage() {
     return arr;
   }, [productos, sortAsc]);
 
+  const noTransformables = useMemo(() => productos.filter(p => p.tipo_producto === 'no_transformable'), [productos]);
+  const transformables = useMemo(() => sorted.filter(p => p.tipo_producto !== 'no_transformable'), [sorted]);
+
   const summaryCards = useMemo(() => {
     const total = productos.length;
     const agotados = productos.filter((p) => (Number(p.stock_actual) || 0) === 0).length;
@@ -372,14 +375,53 @@ export default function StockPage() {
         </div>
       </div>
 
-      {/* Stock table */}
+      {/* Non-transformable product cards */}
+      {noTransformables.length > 0 && (
+        <div className="mb-5">
+          <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">Productos de inventario ({noTransformables.length})</p>
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2.5">
+            {noTransformables.map(prod => {
+              const stock = Number(prod.stock_actual) || 0;
+              return (
+                <button
+                  key={prod.id}
+                  onClick={() => openSidebar(prod)}
+                  className="bg-white rounded-xl border border-stone-200 p-2.5 text-center hover:border-stone-400 hover:shadow transition-colors duration-100 group relative"
+                >
+                  {prod.imagen_url ? (
+                    <img src={prod.imagen_url} className="w-full aspect-square object-cover rounded-lg mb-1.5" alt={prod.nombre} />
+                  ) : (
+                    <div className="w-full aspect-square bg-stone-100 rounded-lg mb-1.5 flex items-center justify-center">
+                      <Package size={20} className="text-stone-300" />
+                    </div>
+                  )}
+                  <p className="text-[11px] font-medium text-stone-800 truncate">{prod.nombre}</p>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className={`text-[10px] font-bold ${stock === 0 ? 'text-rose-500' : stock <= (Number(prod.stock_minimo) || 0) ? 'text-amber-500' : 'text-emerald-600'}`}>
+                      {stock} uds
+                    </span>
+                    <span className="text-[10px] text-stone-400">{formatCurrency(prod.costo_neto || 0)}</span>
+                  </div>
+                  {prod.disponible_venta && (
+                    <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                      <Eye size={10} className="text-white" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Stock table — transformable products */}
       {productos.length === 0 ? (
         <div className={`${cx.card} p-10 text-center`}>
           <Package size={32} className="mx-auto text-stone-300 mb-3" />
           <p className="text-stone-500 text-sm">No hay productos con control de stock activo.</p>
-          <p className="text-stone-400 text-xs mt-1">Activa el control de stock al crear o editar un producto.</p>
+          <p className="text-stone-400 text-xs mt-1">Ingresa productos desde el botón "Ingresar producto" o registra compras.</p>
         </div>
-      ) : (
+      ) : transformables.length > 0 && (
         <div className={cx.card + ' overflow-hidden'}>
           {/* Desktop table */}
           <div className="hidden lg:block overflow-x-auto">
@@ -407,7 +449,7 @@ export default function StockPage() {
                   <th className={cx.th + ' w-10'}></th>
                 </tr>
               </thead>
-              {sorted.map((prod) => {
+              {transformables.map((prod) => {
                   const stock = Number(prod.stock_actual) || 0;
                   const minimo = Number(prod.stock_minimo) || 0;
                   const isExpanded = expandedId === prod.id;
@@ -415,7 +457,7 @@ export default function StockPage() {
                     <tbody key={prod.id}>
                       <tr
                         className={cx.tr + ' cursor-pointer'}
-                        onClick={() => prod.tipo_producto === 'no_transformable' ? openSidebar(prod) : toggleExpand(prod.id)}
+                        onClick={() => toggleExpand(prod.id)}
                       >
                         <td className={cx.td + ' font-medium text-stone-800'}>
                           <div className="flex items-center gap-2">
@@ -506,7 +548,7 @@ export default function StockPage() {
 
           {/* Mobile cards */}
           <div className="lg:hidden divide-y divide-stone-100">
-            {sorted.map((prod) => {
+            {transformables.map((prod) => {
               const stock = Number(prod.stock_actual) || 0;
               const minimo = Number(prod.stock_minimo) || 0;
               const isExpanded = expandedId === prod.id;
@@ -514,7 +556,7 @@ export default function StockPage() {
                 <div key={prod.id}>
                   <div
                     className="p-4 flex items-center justify-between cursor-pointer hover:bg-stone-50/50 transition-colors"
-                    onClick={() => prod.tipo_producto === 'no_transformable' ? openSidebar(prod) : toggleExpand(prod.id)}
+                    onClick={() => toggleExpand(prod.id)}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
