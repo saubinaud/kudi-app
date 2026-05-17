@@ -960,7 +960,7 @@ export default function PLVentasPage() {
                             <select
                               value={v.estado_pago || 'pendiente'}
                               onChange={e => updateVentaEstado(v.id, { estado_pago: e.target.value })}
-                              className={`text-[10px] px-2 py-1 rounded-full border-0 cursor-pointer ${
+                              className={`text-[10px] px-2 py-1 rounded-full border-0 cursor-pointer appearance-none ${
                                 v.estado_pago === 'pendiente' ? 'bg-amber-100 text-amber-700' :
                                 v.estado_pago === 'contra_entrega' ? 'bg-orange-100 text-orange-700' :
                                 v.estado_pago === 'reembolsado' ? 'bg-red-100 text-red-700' :

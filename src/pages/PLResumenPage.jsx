@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
-import { useTerminos } from '../context/TerminosContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
 import PeriodoSelector from '../components/PeriodoSelector';
@@ -36,7 +35,6 @@ export default function PLResumenPage() {
   const api = useApi();
   const toast = useToast();
   const navigate = useNavigate();
-  const t = useTerminos();
 
   const [periodos, setPeriodos] = useState([]);
   const [periodo, setPeriodo] = useState(() => {
@@ -220,8 +218,8 @@ export default function PLResumenPage() {
               <p className="text-xs font-bold text-stone-500 uppercase tracking-wider">Costo de ventas</p>
             </div>
             <div className="px-3 sm:px-6 py-3 space-y-2">
-              <PLRow label={t.insumos || 'Insumos'} amount={data.cogs.insumos} indent note={pct(data.cogs.insumos, ingresosNetos)} />
-              <PLRow label={t.materiales || 'Empaque'} amount={data.cogs.empaque} indent />
+              <PLRow label="Insumos" amount={data.cogs.insumos} indent note={pct(data.cogs.insumos, ingresosNetos)} />
+              <PLRow label="Empaque" amount={data.cogs.empaque} indent />
               {data.cogs.costo_producto > 0 && (
                 <PLRow label="Costo de producto" amount={data.cogs.costo_producto} indent note={pct(data.cogs.costo_producto, ingresosNetos)} />
               )}
@@ -290,13 +288,13 @@ export default function PLResumenPage() {
                     <PLRow label="Producto terminado" amount={data.desmedros.productos} indent />
                   )}
                   {data.desmedros.preparaciones > 0 && (
-                    <PLRow label={t.preparaciones || 'Preparaciones'} amount={data.desmedros.preparaciones} indent />
+                    <PLRow label="Preparaciones" amount={data.desmedros.preparaciones} indent />
                   )}
                   {data.desmedros.insumos > 0 && (
-                    <PLRow label={t.insumos || 'Insumos'} amount={data.desmedros.insumos} indent />
+                    <PLRow label="Insumos" amount={data.desmedros.insumos} indent />
                   )}
                   {data.desmedros.materiales > 0 && (
-                    <PLRow label={t.materiales || 'Materiales'} amount={data.desmedros.materiales} indent />
+                    <PLRow label="Materiales" amount={data.desmedros.materiales} indent />
                   )}
                 </div>
                 <div className="px-3 sm:px-6 py-3 border-t border-stone-200 bg-stone-50/50">

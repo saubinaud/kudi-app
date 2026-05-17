@@ -300,6 +300,8 @@ export default function PerfilPage() {
                 ]}
               />
             </div>
+            {/* Giro de negocio oculto — rubros removidos */}
+            {false && (
             <div>
               <label className={cx.label}>Giro de negocio</label>
               <CustomSelect
@@ -308,6 +310,7 @@ export default function PerfilPage() {
                 options={[{ value: '', label: 'General' }, ...giros]}
               />
             </div>
+            )}
             <div className="flex gap-2">
               <button
                 onClick={handleSaveProfile}
@@ -361,10 +364,13 @@ export default function PerfilPage() {
                 {user?.precio_decimales === 'decimales' ? 'Con decimales' : user?.precio_decimales === 'enteros' ? 'Sin decimales' : 'Variable (ambos)'}
               </p>
             </div>
+            {/* Giro de negocio oculto — rubros removidos */}
+            {false && (
             <div>
               <label className={cx.label}>Giro de negocio</label>
               <p className="text-stone-800 text-sm">{user?.giro_nombre || 'General'}</p>
             </div>
+            )}
             <div>
               <label className={cx.label}>Rol</label>
               <p className="text-stone-800 text-sm capitalize">{user?.rol || 'cliente'}</p>

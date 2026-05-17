@@ -348,11 +348,11 @@ export default function PLGastosPage() {
   if (periodos.length === 0) {
     return (
       <div className="max-w-7xl mx-auto pb-12">
-        <h1 className="text-xl font-bold text-stone-900 mb-5">Gastos</h1>
+        <h1 className="text-xl font-bold text-stone-900 mb-5">Pagos</h1>
         <div className={`${cx.card} p-12 text-center`}>
           <Wallet size={40} className="text-stone-300 mx-auto mb-4" />
           <p className="text-stone-500 text-sm mb-6">
-            Para registrar gastos, primero necesitas crear un periodo contable.
+            Para registrar pagos, primero necesitas crear un periodo contable.
           </p>
           <button
             onClick={crearPrimerPeriodo}
@@ -371,7 +371,7 @@ export default function PLGastosPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-stone-900">Gastos</h1>
+          <h1 className="text-xl font-bold text-stone-900">Pagos</h1>
           <PeriodoSelector
             periodos={periodos}
             value={periodo}

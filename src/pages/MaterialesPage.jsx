@@ -6,8 +6,6 @@ import { formatCurrency } from '../utils/format';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CustomSelect from '../components/CustomSelect';
 import { Plus, Save, X, Trash2, Pencil, Search } from 'lucide-react';
-import { useTerminos } from '../context/TerminosContext';
-
 const UNIDADES = ['uni', 'g', 'ml', 'oz', 'kg', 'L', 'mt', 'cm'];
 
 const emptyRow = () => ({
@@ -24,7 +22,6 @@ const emptyRow = () => ({
 export default function MaterialesPage() {
   const api = useApi();
   const toast = useToast();
-  const t = useTerminos();
   const [materiales, setMateriales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -146,7 +143,7 @@ export default function MaterialesPage() {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div>
-          <h2 className="text-xl font-bold text-stone-900">{t.materiales}</h2>
+          <h2 className="text-xl font-bold text-stone-900">Materiales</h2>
           <p className="text-stone-500 text-sm mt-0.5">{materiales.filter((m) => !m._new).length} materiales registrados</p>
         </div>
         <button onClick={addNew} disabled={editingId !== null} className={cx.btnPrimary + ' flex items-center gap-2'}>
