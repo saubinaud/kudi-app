@@ -20,6 +20,8 @@ import {
   ImageIcon,
   Eye,
   EyeOff,
+  Grid3X3,
+  LayoutList,
 } from 'lucide-react';
 
 function StatusBadge({ stock, minimo }) {
@@ -55,6 +57,7 @@ export default function StockPage() {
   const [loading, setLoading] = useState(true);
   const [resumen, setResumen] = useState({});
   const [sortAsc, setSortAsc] = useState(true);
+  const [viewMode, setViewMode] = useState('table'); // table | gallery
   const [expandedId, setExpandedId] = useState(null);
   const [movimientos, setMovimientos] = useState({});
   const [loadingMov, setLoadingMov] = useState({});
@@ -122,8 +125,6 @@ export default function StockPage() {
     return arr;
   }, [productos, sortAsc]);
 
-  const noTransformables = useMemo(() => productos.filter(p => p.tipo_producto === 'no_transformable'), [productos]);
-  const transformables = useMemo(() => sorted.filter(p => p.tipo_producto !== 'no_transformable'), [sorted]);
 
   const summaryCards = useMemo(() => {
     const total = productos.length;
@@ -327,7 +328,25 @@ export default function StockPage() {
     <div className="max-w-5xl mx-auto pb-12">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
-        <h1 className="text-xl font-bold text-stone-900">Inventario</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold text-stone-900">Inventario</h1>
+          <div className="flex gap-0.5 bg-stone-100 rounded-lg p-0.5">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`p-1.5 rounded-md transition-colors duration-100 ${viewMode === 'table' ? 'bg-white shadow-sm text-[#16A34A]' : 'text-stone-400 hover:text-stone-600'}`}
+              title="Vista lista"
+            >
+              <LayoutList size={16} />
+            </button>
+            <button
+              onClick={() => setViewMode('gallery')}
+              className={`p-1.5 rounded-md transition-colors duration-100 ${viewMode === 'gallery' ? 'bg-white shadow-sm text-[#16A34A]' : 'text-stone-400 hover:text-stone-600'}`}
+              title="Vista galería"
+            >
+              <Grid3X3 size={16} />
+            </button>
+          </div>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowNuevoProducto(true)}
@@ -375,12 +394,19 @@ export default function StockPage() {
         </div>
       </div>
 
-      {/* Non-transformable product cards */}
-      {noTransformables.length > 0 && (
-        <div className="mb-5">
-          <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">Productos de inventario ({noTransformables.length})</p>
-          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2.5">
-            {noTransformables.map(prod => {
+      {/* Stock list */}
+      {productos.length === 0 ? (
+        <div className={`${cx.card} p-10 text-center`}>
+          <Package size={32} className="mx-auto text-stone-300 mb-3" />
+          <p className="text-stone-500 text-sm">No hay productos con control de stock activo.</p>
+          <p className="text-stone-400 text-xs mt-1">Ingresa productos desde el botón "Ingresar producto" o registra compras.</p>
+        </div>
+      ) : (
+        <>
+        {/* Gallery view */}
+        {viewMode === 'gallery' && (
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2.5 mb-5">
+            {sorted.map(prod => {
               const stock = Number(prod.stock_actual) || 0;
               return (
                 <button
@@ -411,17 +437,10 @@ export default function StockPage() {
               );
             })}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Stock table — transformable products */}
-      {productos.length === 0 ? (
-        <div className={`${cx.card} p-10 text-center`}>
-          <Package size={32} className="mx-auto text-stone-300 mb-3" />
-          <p className="text-stone-500 text-sm">No hay productos con control de stock activo.</p>
-          <p className="text-stone-400 text-xs mt-1">Ingresa productos desde el botón "Ingresar producto" o registra compras.</p>
-        </div>
-      ) : transformables.length > 0 && (
+        {/* Table view */}
+        {viewMode === 'table' && (
         <div className={cx.card + ' overflow-hidden'}>
           {/* Desktop table */}
           <div className="hidden lg:block overflow-x-auto">
@@ -449,7 +468,7 @@ export default function StockPage() {
                   <th className={cx.th + ' w-10'}></th>
                 </tr>
               </thead>
-              {transformables.map((prod) => {
+              {sorted.map((prod) => {
                   const stock = Number(prod.stock_actual) || 0;
                   const minimo = Number(prod.stock_minimo) || 0;
                   const isExpanded = expandedId === prod.id;
@@ -548,7 +567,7 @@ export default function StockPage() {
 
           {/* Mobile cards */}
           <div className="lg:hidden divide-y divide-stone-100">
-            {transformables.map((prod) => {
+            {sorted.map((prod) => {
               const stock = Number(prod.stock_actual) || 0;
               const minimo = Number(prod.stock_minimo) || 0;
               const isExpanded = expandedId === prod.id;
@@ -621,6 +640,9 @@ export default function StockPage() {
             })}
           </div>
         </div>
+      )}
+        )}
+        </>
       )}
 
       {/* Entrada modal */}

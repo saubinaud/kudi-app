@@ -453,6 +453,7 @@ export default function DashboardPage() {
           {[
             { value: 'todos', label: 'Todos' },
             { value: 'transformable', label: 'Transformables' },
+            ...(products.some(p => p.tipo_producto === 'no_transformable') ? [{ value: 'no_transformable', label: 'No transformables' }] : []),
             { value: 'pack', label: 'Packs' },
           ].map(t => (
             <button key={t.value} onClick={() => setTipoFilter(t.value)}
