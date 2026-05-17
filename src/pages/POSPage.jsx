@@ -691,9 +691,9 @@ export default function POSPage() {
       {showClientSidebar && (
         <div className="fixed inset-0 z-[60] flex">
           <div className="flex-1 bg-black/20" onClick={() => setShowClientSidebar(false)} />
-          <div className="w-full sm:w-96 bg-white h-full shadow-xl overflow-y-auto flex flex-col">
+          <div className="w-full sm:w-96 bg-white h-full shadow-xl flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100 flex-shrink-0">
               <h3 className="font-bold text-stone-900 text-sm">Cliente y dirección</h3>
               <button onClick={() => setShowClientSidebar(false)} className="text-stone-400 hover:text-stone-600 transition-colors duration-100">
                 <X size={18} />
@@ -701,7 +701,7 @@ export default function POSPage() {
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+            <div className="flex-1 px-5 py-4 space-y-5 overflow-y-auto" style={{ overflowX: 'clip' }}>
               {/* DNI / RUC search */}
               <div>
                 <label className={cx.label}>Documento (opcional)</label>
@@ -781,7 +781,9 @@ export default function POSPage() {
                   <label className={cx.label}>Dirección de entrega</label>
                   <div className="mt-1 space-y-2">
                     <UbigeoSelect
-                      value={{ departamento: direccion.departamento, provincia: direccion.provincia, distrito: direccion.distrito }}
+                      departamento={direccion.departamento}
+                      provincia={direccion.provincia}
+                      distrito={direccion.distrito}
                       onChange={({ departamento, provincia, distrito }) => setDireccion(d => ({ ...d, departamento, provincia, distrito }))}
                     />
                     <input

@@ -3,29 +3,35 @@ import { ChevronDown } from 'lucide-react';
 
 export default function CustomSelect({ options = [], value, onChange, placeholder = 'Seleccionar...', className = '', compact = false }) {
   const [open, setOpen] = useState(false);
-  const [flipUp, setFlipUp] = useState(false);
+  const [dropStyle, setDropStyle] = useState({});
   const ref = useRef(null);
-  const dropdownRef = useRef(null);
 
   useEffect(() => {
     function handleClick(e) {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     }
+    function handleScroll() { if (open) setOpen(false); }
     document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
-
-  // Flip detection: check if dropdown would overflow viewport bottom
-  const checkFlip = useCallback(() => {
-    if (!ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    const dropdownHeight = Math.min(options.length * (compact ? 28 : 36) + 8, 200);
-    const spaceBelow = window.innerHeight - rect.bottom;
-    setFlipUp(spaceBelow < dropdownHeight && rect.top > dropdownHeight);
-  }, [options.length, compact]);
+    window.addEventListener('scroll', handleScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [open]);
 
   const handleToggle = () => {
-    if (!open) checkFlip();
+    if (!open && ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      const dropdownHeight = Math.min(options.length * (compact ? 28 : 36) + 8, 200);
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const flipUp = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+      setDropStyle({
+        position: 'fixed',
+        left: rect.left,
+        width: Math.max(rect.width, compact ? 80 : rect.width),
+        ...(flipUp ? { bottom: window.innerHeight - rect.top + 4 } : { top: rect.bottom + 4 }),
+      });
+    }
     setOpen(!open);
   };
 
@@ -48,10 +54,8 @@ export default function CustomSelect({ options = [], value, onChange, placeholde
 
       {open && (
         <div
-          ref={dropdownRef}
-          className={`absolute z-[9999] bg-white border border-stone-200 rounded-lg shadow-lg overflow-hidden ${compact ? 'min-w-[80px]' : 'w-full'} ${
-            flipUp ? 'bottom-full mb-1' : 'top-full mt-1'
-          }`}
+          className="z-[9999] bg-white border border-stone-200 rounded-lg shadow-lg overflow-hidden"
+          style={dropStyle}
         >
           <div className="max-h-48 overflow-y-auto py-1">
             {options.map((o) => (
