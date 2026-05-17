@@ -57,7 +57,7 @@ export default function POSPage() {
       api.get('/precios/categorias'),
       api.get('/canales/zonas').catch(() => ({ data: [] })),
     ]).then(([prodRes, catRes, zonasRes]) => {
-      setProductos(prodRes.data || []);
+      setProductos((prodRes.data || []).filter(p => p.tipo_producto !== 'no_transformable'));
       setCartas(catRes.data || catRes || []);
       setZonas(zonasRes.data || []);
     }).catch(() => toast.error('Error cargando productos'))

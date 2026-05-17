@@ -19,6 +19,7 @@ import {
   ChevronUp,
   ImageIcon,
   BookmarkPlus,
+  Package,
 } from 'lucide-react';
 import { useTerminos } from '../context/TerminosContext';
 

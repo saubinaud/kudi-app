@@ -78,7 +78,8 @@ export default function DashboardPage() {
   const loadProducts = async () => {
     try {
       const data = await api.get('/productos');
-      setProducts(data.data || []);
+      // No transformables son inventario puro, no aparecen en Mis productos
+      setProducts((data.data || []).filter(p => p.tipo_producto !== 'no_transformable'));
     } catch (err) {
       toast.error('Error cargando productos');
     } finally {
@@ -148,7 +149,7 @@ export default function DashboardPage() {
       }
       // Refresh products to update precios_canal
       const res = await api.get('/productos');
-      setProducts(res.data || []);
+      setProducts((res.data || []).filter(p => p.tipo_producto !== 'no_transformable'));
       // Update the modal product reference
       const updated = (res.data || []).find(p => p.id === productoId);
       if (updated) setCanalesModal(updated);
@@ -194,7 +195,7 @@ export default function DashboardPage() {
         return next;
       });
       const data = await api.get('/productos');
-      setProducts(data.data || []);
+      setProducts((data.data || []).filter(p => p.tipo_producto !== 'no_transformable'));
     } catch { toast.error('Error actualizando carta'); }
   };
 
@@ -452,7 +453,6 @@ export default function DashboardPage() {
           {[
             { value: 'todos', label: 'Todos' },
             { value: 'transformable', label: 'Transformables' },
-            { value: 'no_transformable', label: 'No transformables' },
             { value: 'pack', label: 'Packs' },
           ].map(t => (
             <button key={t.value} onClick={() => setTipoFilter(t.value)}
