@@ -17,6 +17,10 @@ export default function POSPage() {
   const [productos, setProductos] = useState([]);
   const [loadingProductos, setLoadingProductos] = useState(true);
 
+  // Cartas (price categories)
+  const [cartas, setCartas] = useState([]);
+  const [selectedCarta, setSelectedCarta] = useState(null); // null = "Todos"
+
   // Search
   const [posSearch, setPosSearch] = useState('');
 
@@ -39,9 +43,13 @@ export default function POSPage() {
   // Fetch products on mount
   useEffect(() => {
     setLoadingProductos(true);
-    api.get('/productos')
-      .then(res => setProductos(res.data || []))
-      .catch(() => toast.error('Error cargando productos'))
+    Promise.all([
+      api.get('/productos'),
+      api.get('/precios/categorias'),
+    ]).then(([prodRes, catRes]) => {
+      setProductos(prodRes.data || []);
+      setCartas(catRes.data || catRes || []);
+    }).catch(() => toast.error('Error cargando productos'))
       .finally(() => setLoadingProductos(false));
   }, []); // eslint-disable-line
 
@@ -51,14 +59,26 @@ export default function POSPage() {
     [productos]
   );
 
-  // Filtered products by search
+  // Filtered products by carta + search
   const posFilteredProducts = useMemo(() => {
-    if (!posSearch) return enrichedProductos;
-    const q = posSearch.toLowerCase();
-    return enrichedProductos.filter(p =>
-      p.nombre.toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q)
-    );
-  }, [enrichedProductos, posSearch]);
+    let list = enrichedProductos;
+
+    // Filter by carta: only show products that have a price in this carta
+    if (selectedCarta) {
+      list = list.filter(p =>
+        (p.precios_categoria || []).some(pc => pc.categoria_id === selectedCarta)
+      );
+    }
+
+    // Search filter
+    if (posSearch) {
+      const q = posSearch.toLowerCase();
+      list = list.filter(p =>
+        p.nombre.toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [enrichedProductos, posSearch, selectedCarta]);
 
   // Cart total
   const cartTotal = useMemo(() =>
@@ -89,13 +109,19 @@ export default function POSPage() {
       updateCartQty(existing, 1);
       return;
     }
+    // Use carta price if a carta is selected
+    let precio = parseFloat(product.precio_final) || 0;
+    if (selectedCarta) {
+      const cartaPrecio = (product.precios_categoria || []).find(pc => pc.categoria_id === selectedCarta);
+      if (cartaPrecio) precio = parseFloat(cartaPrecio.precio) || precio;
+    }
     setCartItems(prev => [...prev, {
       producto_id: product.id || product.value,
       variante_id: null,
       nombre: product.nombre || product.label,
       variante_nombre: null,
       tipo_producto: product.tipo_producto || null,
-      precio: parseFloat(product.precio_final) || 0,
+      precio,
       cantidad: 1,
       descuento: 0,
       descuento_tipo: 'monto',
@@ -406,6 +432,22 @@ export default function POSPage() {
         <div className="flex flex-col lg:flex-row gap-4 pb-20 lg:pb-0">
           {/* LEFT: Product Grid */}
           <div className="flex-1">
+            {/* Carta tabs */}
+            {cartas.length > 0 && (
+              <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
+                <button onClick={() => setSelectedCarta(null)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors duration-100 ${
+                    !selectedCarta ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                  }`}>Todos</button>
+                {cartas.map(c => (
+                  <button key={c.id} onClick={() => setSelectedCarta(c.id)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors duration-100 ${
+                      selectedCarta === c.id ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                    }`}>{c.nombre}</button>
+                ))}
+              </div>
+            )}
+
             {/* Search */}
             <div className="mb-4">
               <input
@@ -441,7 +483,11 @@ export default function POSPage() {
                       </div>
                     )}
                     <p className="text-[11px] font-medium text-stone-800 truncate">{p.nombre}</p>
-                    <p className="text-xs font-bold text-[var(--accent)]">{formatCurrency(p.precio_final)}</p>
+                    <p className="text-xs font-bold text-[var(--accent)]">{formatCurrency(
+                      selectedCarta
+                        ? ((p.precios_categoria || []).find(pc => pc.categoria_id === selectedCarta)?.precio || p.precio_final)
+                        : p.precio_final
+                    )}</p>
                   </button>
                 ))}
               </div>
