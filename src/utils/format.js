@@ -62,3 +62,14 @@ export function formatDateTime(d) {
     timeZone: 'America/Lima',
   });
 }
+
+// Shows date+time only when the time is meaningful (not midnight UTC = local sales without real time)
+export function formatSmartDate(d) {
+  if (!d) return '-';
+  const date = new Date(d);
+  const isMiddnightUTC = date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0;
+  if (isMiddnightUTC) {
+    return formatDate(d);
+  }
+  return formatDateTime(d);
+}

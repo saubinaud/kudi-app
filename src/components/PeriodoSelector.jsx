@@ -51,7 +51,7 @@ export default function PeriodoSelector({ periodos = [], value, onChange, onCrea
         </button>
       </div>
       {/* Month buttons */}
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-nowrap gap-1">
         {MESES.map((mes, i) => {
           const periodo = monthMap[i];
           const isSelected = value && value.year === selectedYear && value.month === i + 1;

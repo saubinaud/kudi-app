@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
@@ -370,8 +370,8 @@ export default function InsumosPage() {
                 );
               }
               return (
-                <>
-                  <tr key={ins.id} className={cx.tr}>
+                <React.Fragment key={ins.id}>
+                  <tr className={cx.tr}>
                     <td className={cx.td}>
                       {ins.presentaciones?.length > 0 && (
                         <button
@@ -444,7 +444,7 @@ export default function InsumosPage() {
                       </td>
                     </tr>
                   )}
-                </>
+                </React.Fragment>
               );
             })}
           </tbody>

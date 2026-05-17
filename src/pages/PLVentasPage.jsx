@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
-import { formatCurrency, formatDate, formatDateTime } from '../utils/format';
+import { formatCurrency, formatDate, formatDateTime, formatSmartDate } from '../utils/format';
 import SearchableSelect from '../components/SearchableSelect';
 import CustomSelect from '../components/CustomSelect';
 import PeriodoSelector from '../components/PeriodoSelector';
@@ -13,6 +13,52 @@ import {
   DollarSign, TrendingUp, Package, ShoppingCart, FileText,
   Ban,
 } from 'lucide-react';
+
+// Badge-style dropdown (replaces native <select> for status fields)
+function StatusBadge({ value, options, onChange, colorMap = {} }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const selected = options.find(o => o.value === value) || options[0];
+  const colors = colorMap[value] || 'bg-stone-100 text-stone-500';
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className={`text-[10px] px-2 py-0.5 rounded-full cursor-pointer font-medium whitespace-nowrap transition-colors duration-100 ${colors}`}
+      >
+        {selected.label}
+      </button>
+      {open && (
+        <div className="absolute z-[9999] mt-1 left-1/2 -translate-x-1/2 bg-white border border-stone-200 rounded-lg shadow-lg overflow-hidden min-w-[120px]">
+          <div className="py-1">
+            {options.map(o => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => { onChange(o.value); setOpen(false); }}
+                className={`w-full text-left px-3 py-1.5 text-xs transition-colors duration-100 ${
+                  o.value === value ? 'bg-stone-50 font-medium text-stone-900' : 'text-stone-600 hover:bg-stone-50'
+                }`}
+              >
+                <span className={`inline-block w-1.5 h-1.5 rounded-full mr-2 ${(colorMap[o.value] || 'bg-stone-300').split(' ')[0]}`} />
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Month names in Spanish
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -775,7 +821,7 @@ export default function PLVentasPage() {
               <tbody>
                 {ventasFinal.map((v) => (
                   <tr key={v.id} className={cx.tr + ' cursor-pointer'} onClick={() => openDetalle(v.id)}>
-                    <td className={cx.td + ' text-xs whitespace-nowrap text-stone-600'}>{formatDateTime(v.fecha)}</td>
+                    <td className={cx.td + ' text-xs whitespace-nowrap text-stone-600'}>{formatSmartDate(v.fecha)}</td>
                     <td className={cx.td + ' whitespace-nowrap'}>
                       <span className="font-mono text-xs font-semibold text-[#16A34A]">{v.nro_pedido || v.codigo_pedido || '—'}</span>
                     </td>
@@ -789,47 +835,47 @@ export default function PLVentasPage() {
                     </td>
                     <td className={cx.td + ' text-right font-semibold text-stone-900 whitespace-nowrap'}>{formatCurrency(v.total)}</td>
                     <td className={cx.td + ' text-center'} onClick={e => e.stopPropagation()}>
-                      {v.estado_pago === 'pagado' ? (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Pagado</span>
-                      ) : v.estado_pago === 'cancelado' ? (
+                      {v.estado_pago === 'cancelado' ? (
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">Cancelado</span>
                       ) : (
-                        <select
+                        <StatusBadge
                           value={v.estado_pago || 'pendiente'}
-                          onChange={e => updateVentaEstado(v.id, { estado_pago: e.target.value })}
-                          className={`text-[10px] px-1.5 py-0.5 rounded-full border-0 cursor-pointer appearance-none ${
-                            v.estado_pago === 'pendiente' ? 'bg-amber-100 text-amber-700' :
-                            v.estado_pago === 'contra_entrega' ? 'bg-orange-100 text-orange-700' :
-                            v.estado_pago === 'reembolsado' ? 'bg-red-100 text-red-700' :
-                            'bg-stone-100 text-stone-600'
-                          }`}
-                        >
-                          <option value="pendiente">Pendiente</option>
-                          <option value="pagado">Pagado</option>
-                          <option value="contra_entrega">Contra entrega</option>
-                          <option value="reembolsado">Reembolsado</option>
-                        </select>
+                          onChange={val => updateVentaEstado(v.id, { estado_pago: val })}
+                          options={[
+                            { value: 'pendiente', label: 'Pendiente' },
+                            { value: 'pagado', label: 'Pagado' },
+                            { value: 'contra_entrega', label: 'Contra entrega' },
+                            { value: 'reembolsado', label: 'Reembolsado' },
+                          ]}
+                          colorMap={{
+                            pendiente: 'bg-amber-100 text-amber-700',
+                            pagado: 'bg-emerald-100 text-emerald-700',
+                            contra_entrega: 'bg-orange-100 text-orange-700',
+                            reembolsado: 'bg-red-100 text-red-700',
+                          }}
+                        />
                       )}
                     </td>
                     <td className={cx.td + ' text-center'} onClick={e => e.stopPropagation()}>
                       {v.estado_pago !== 'cancelado' ? (
-                        <select
+                        <StatusBadge
                           value={v.estado_entrega || 'pendiente'}
-                          onChange={e => updateVentaEstado(v.id, { estado_entrega: e.target.value })}
-                          className={`text-[10px] px-1.5 py-0.5 rounded-full border-0 cursor-pointer appearance-none ${
-                            (v.estado_entrega || 'pendiente') === 'entregado' ? 'bg-emerald-100 text-emerald-700' :
-                            v.estado_entrega === 'enviado' ? 'bg-violet-100 text-violet-700' :
-                            v.estado_entrega === 'listo_envio' ? 'bg-orange-100 text-orange-700' :
-                            v.estado_entrega === 'preparando' ? 'bg-blue-100 text-blue-700' :
-                            'bg-stone-100 text-stone-500'
-                          }`}
-                        >
-                          <option value="pendiente">Pendiente</option>
-                          <option value="preparando">Preparando</option>
-                          <option value="listo_envio">Listo p/envio</option>
-                          <option value="enviado">Enviado</option>
-                          <option value="entregado">Entregado</option>
-                        </select>
+                          onChange={val => updateVentaEstado(v.id, { estado_entrega: val })}
+                          options={[
+                            { value: 'pendiente', label: 'Pendiente' },
+                            { value: 'preparando', label: 'Preparando' },
+                            { value: 'listo_envio', label: 'Listo p/envio' },
+                            { value: 'enviado', label: 'Enviado' },
+                            { value: 'entregado', label: 'Entregado' },
+                          ]}
+                          colorMap={{
+                            pendiente: 'bg-stone-100 text-stone-500',
+                            preparando: 'bg-blue-100 text-blue-700',
+                            listo_envio: 'bg-orange-100 text-orange-700',
+                            enviado: 'bg-violet-100 text-violet-700',
+                            entregado: 'bg-emerald-100 text-emerald-700',
+                          }}
+                        />
                       ) : (
                         <span className="text-[10px] text-stone-400">—</span>
                       )}
@@ -961,39 +1007,41 @@ export default function PLVentasPage() {
                           {v.estado_pago === 'pagado' ? (
                             <span className="text-[10px] px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">Pagado</span>
                           ) : (
-                            <select
+                            <StatusBadge
                               value={v.estado_pago || 'pendiente'}
-                              onChange={e => updateVentaEstado(v.id, { estado_pago: e.target.value })}
-                              className={`text-[10px] px-2 py-1 rounded-full border-0 cursor-pointer appearance-none ${
-                                v.estado_pago === 'pendiente' ? 'bg-amber-100 text-amber-700' :
-                                v.estado_pago === 'contra_entrega' ? 'bg-orange-100 text-orange-700' :
-                                v.estado_pago === 'reembolsado' ? 'bg-red-100 text-red-700' :
-                                'bg-stone-100 text-stone-600'
-                              }`}
-                            >
-                              <option value="pendiente">Pendiente</option>
-                              <option value="pagado">Pagado</option>
-                              <option value="contra_entrega">Contra entrega</option>
-                              <option value="reembolsado">Reembolsado</option>
-                            </select>
+                              onChange={val => updateVentaEstado(v.id, { estado_pago: val })}
+                              options={[
+                                { value: 'pendiente', label: 'Pendiente' },
+                                { value: 'pagado', label: 'Pagado' },
+                                { value: 'contra_entrega', label: 'Contra entrega' },
+                                { value: 'reembolsado', label: 'Reembolsado' },
+                              ]}
+                              colorMap={{
+                                pendiente: 'bg-amber-100 text-amber-700',
+                                pagado: 'bg-emerald-100 text-emerald-700',
+                                contra_entrega: 'bg-orange-100 text-orange-700',
+                                reembolsado: 'bg-red-100 text-red-700',
+                              }}
+                            />
                           )}
-                          <select
+                          <StatusBadge
                             value={v.estado_entrega || 'pendiente'}
-                            onChange={e => updateVentaEstado(v.id, { estado_entrega: e.target.value })}
-                            className={`text-[10px] px-2 py-1 rounded-full border-0 cursor-pointer appearance-none ${
-                              (v.estado_entrega || 'pendiente') === 'entregado' ? 'bg-emerald-100 text-emerald-700' :
-                              v.estado_entrega === 'enviado' ? 'bg-violet-100 text-violet-700' :
-                              v.estado_entrega === 'listo_envio' ? 'bg-orange-100 text-orange-700' :
-                              v.estado_entrega === 'preparando' ? 'bg-blue-100 text-blue-700' :
-                              'bg-stone-100 text-stone-500'
-                            }`}
-                          >
-                            <option value="pendiente">Pendiente</option>
-                            <option value="preparando">Preparando</option>
-                            <option value="listo_envio">Listo p/envio</option>
-                            <option value="enviado">Enviado</option>
-                            <option value="entregado">Entregado</option>
-                          </select>
+                            onChange={val => updateVentaEstado(v.id, { estado_entrega: val })}
+                            options={[
+                              { value: 'pendiente', label: 'Pendiente' },
+                              { value: 'preparando', label: 'Preparando' },
+                              { value: 'listo_envio', label: 'Listo p/envio' },
+                              { value: 'enviado', label: 'Enviado' },
+                              { value: 'entregado', label: 'Entregado' },
+                            ]}
+                            colorMap={{
+                              pendiente: 'bg-stone-100 text-stone-500',
+                              preparando: 'bg-blue-100 text-blue-700',
+                              listo_envio: 'bg-orange-100 text-orange-700',
+                              enviado: 'bg-violet-100 text-violet-700',
+                              entregado: 'bg-emerald-100 text-emerald-700',
+                            }}
+                          />
                         </div>
                       )}
                       <div className="flex gap-2 flex-wrap">
@@ -1697,14 +1745,14 @@ export default function PLVentasPage() {
                 </button>
               </div>
               <div className="flex gap-4 mt-3 text-xs text-white/50">
-                <span>{formatDateTime(ventaDetalle.fecha)}</span>
+                <span>{formatSmartDate(ventaDetalle.fecha)}</span>
                 <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/70">
                   {ventaDetalle.tipo_venta === 'contra_entrega' ? 'Contra entrega' : 'Directo'}
                 </span>
               </div>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-5">
 
               {/* Estados — two CustomSelects side by side */}
               <div className="grid grid-cols-2 gap-3">
@@ -1733,24 +1781,65 @@ export default function PLVentasPage() {
                 </div>
               </div>
 
-              {/* Cliente section — card style */}
+              {/* Info grid — canal, metodo pago */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                {ventaDetalle.canal_nombre && (
+                  <div>
+                    <p className="text-[10px] text-stone-400 uppercase tracking-wider">Canal</p>
+                    <p className="text-sm font-medium text-stone-800">{ventaDetalle.canal_nombre}
+                      {ventaDetalle.canal_comision ? <span className="text-xs text-stone-400 ml-1">({parseFloat(ventaDetalle.canal_comision)}%)</span> : ''}
+                    </p>
+                  </div>
+                )}
+                {ventaDetalle.metodo_pago && (
+                  <div>
+                    <p className="text-[10px] text-stone-400 uppercase tracking-wider">Metodo de pago</p>
+                    <p className="text-sm font-medium text-stone-800 capitalize">{ventaDetalle.metodo_pago}</p>
+                  </div>
+                )}
+                {ventaDetalle.tipo_envio && ventaDetalle.tipo_envio !== 'sin_envio' && (
+                  <div>
+                    <p className="text-[10px] text-stone-400 uppercase tracking-wider">Tipo de envio</p>
+                    <p className="text-sm font-medium text-stone-800 capitalize">{ventaDetalle.tipo_envio.replace(/_/g, ' ')}</p>
+                  </div>
+                )}
+                {ventaDetalle.facturado && (
+                  <div>
+                    <p className="text-[10px] text-stone-400 uppercase tracking-wider">Comprobante</p>
+                    <p className="text-sm font-medium text-emerald-700">{ventaDetalle.tipo_comprobante === 'factura' ? 'Factura' : 'Boleta'}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Cliente section */}
               {(ventaDetalle.cliente_nombre || ventaDetalle.cliente_razon) && (
                 <div className="bg-stone-50 rounded-xl p-4">
                   <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-2">Cliente</p>
                   <p className="text-sm font-medium text-stone-800">{ventaDetalle.cliente_razon || ventaDetalle.cliente_nombre}</p>
-                  {ventaDetalle.cliente_tel && <p className="text-xs text-stone-500 mt-0.5">{ventaDetalle.cliente_tel}</p>}
-                  {ventaDetalle.cliente_email && <p className="text-xs text-stone-500">{ventaDetalle.cliente_email}</p>}
+                  {ventaDetalle.cliente_doc && <p className="text-xs text-stone-500 mt-0.5 font-mono">{ventaDetalle.cliente_doc}</p>}
+                  <div className="flex gap-4 mt-1">
+                    {ventaDetalle.cliente_tel && <p className="text-xs text-stone-500">{ventaDetalle.cliente_tel}</p>}
+                    {ventaDetalle.cliente_email && <p className="text-xs text-stone-500">{ventaDetalle.cliente_email}</p>}
+                  </div>
                 </div>
               )}
 
-              {/* Direccion — if exists */}
+              {/* Direccion */}
               {ventaDetalle.direccion && (
                 <div className="bg-stone-50 rounded-xl p-4">
                   <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-2">Direccion de envio</p>
                   <p className="text-sm text-stone-700">
-                    {[ventaDetalle.direccion.direccion, ventaDetalle.direccion.distrito, ventaDetalle.direccion.departamento].filter(Boolean).join(', ')}
+                    {[ventaDetalle.direccion.direccion, ventaDetalle.direccion.numero, ventaDetalle.direccion.distrito, ventaDetalle.direccion.departamento].filter(Boolean).join(', ')}
                   </p>
                   {ventaDetalle.direccion.referencia && <p className="text-xs text-stone-400 mt-1">Ref: {ventaDetalle.direccion.referencia}</p>}
+                </div>
+              )}
+
+              {/* Nota */}
+              {ventaDetalle.nota && (
+                <div className="bg-amber-50 rounded-xl p-4">
+                  <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider mb-1">Nota</p>
+                  <p className="text-sm text-stone-700">{ventaDetalle.nota}</p>
                 </div>
               )}
 
@@ -1759,7 +1848,7 @@ export default function PLVentasPage() {
                 <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-3">Productos</p>
                 <div className="bg-stone-50 rounded-xl overflow-hidden">
                   {(ventaDetalle.items || []).map((item, idx) => (
-                    <div key={item.id} className={`flex items-center gap-3 px-4 py-3 ${idx > 0 ? 'border-t border-stone-200' : ''}`}>
+                    <div key={item.id || idx} className={`flex items-center gap-3 px-4 py-3 ${idx > 0 ? 'border-t border-stone-200' : ''}`}>
                       {item.producto_imagen ? (
                         <img src={item.producto_imagen} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" alt="" />
                       ) : (
@@ -1772,32 +1861,58 @@ export default function PLVentasPage() {
                         <p className="text-[10px] text-stone-400 font-mono">{item.producto_sku || ''}</p>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-xs text-stone-500">{item.cantidad} x {formatCurrency(item.precio_unitario)}</p>
+                        <p className="text-xs text-stone-500">{parseFloat(item.cantidad)} x {formatCurrency(item.precio_unitario)}</p>
                         <p className="text-sm font-semibold text-stone-900">{formatCurrency(item.subtotal)}</p>
                       </div>
                     </div>
                   ))}
                 </div>
+              </div>
 
-                {/* Totals */}
-                <div className="mt-4 space-y-2 px-1">
-                  {parseFloat(ventaDetalle.descuento || 0) > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-stone-400">Descuento</span>
-                      <span className="text-rose-600">-{formatCurrency(ventaDetalle.descuento)}</span>
-                    </div>
-                  )}
-                  {parseFloat(ventaDetalle.costo_envio || 0) > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-stone-400">Envio</span>
-                      <span className="text-stone-600">{formatCurrency(ventaDetalle.costo_envio)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between pt-2 border-t border-stone-200">
-                    <span className="text-sm font-bold text-stone-900">Total</span>
-                    <span className="text-lg font-bold text-stone-900">{formatCurrency(ventaDetalle.total)}</span>
-                  </div>
-                </div>
+              {/* Totals — desglose completo */}
+              <div className="space-y-2 px-1">
+                {(() => {
+                  const subtotalItems = (ventaDetalle.items || []).reduce((s, i) => s + parseFloat(i.subtotal || 0), 0);
+                  const descuento = parseFloat(ventaDetalle.descuento || 0) + parseFloat(ventaDetalle.descuento_global || 0);
+                  const envio = parseFloat(ventaDetalle.costo_envio || 0);
+                  const total = parseFloat(ventaDetalle.total || 0);
+                  const igvRate = parseFloat(localStorage.getItem('nodum_igv_rate') || '0.105');
+                  const baseImponible = total / (1 + igvRate);
+                  const igv = total - baseImponible;
+
+                  return (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-stone-400">Subtotal productos</span>
+                        <span className="text-stone-700">{formatCurrency(subtotalItems)}</span>
+                      </div>
+                      {descuento > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-stone-400">Descuento</span>
+                          <span className="text-rose-600">-{formatCurrency(descuento)}</span>
+                        </div>
+                      )}
+                      {envio > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-stone-400">Envio</span>
+                          <span className="text-stone-600">{formatCurrency(envio)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-xs pt-1">
+                        <span className="text-stone-400">Base imponible</span>
+                        <span className="text-stone-500">{formatCurrency(baseImponible)}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-stone-400">IGV ({(igvRate * 100).toFixed(1)}%)</span>
+                        <span className="text-stone-500">{formatCurrency(igv)}</span>
+                      </div>
+                      <div className="flex justify-between pt-3 border-t border-stone-200">
+                        <span className="text-sm font-bold text-stone-900">Total</span>
+                        <span className="text-xl font-bold text-[#0A2F24]">{formatCurrency(total)}</span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Emitir boleta button */}
