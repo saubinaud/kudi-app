@@ -36,6 +36,7 @@ import StockPage from './pages/StockPage';
 import ComisionesPage from './pages/ComisionesPage';
 import ProveedoresPage from './pages/ProveedoresPage';
 import ShopifyPage from './pages/ShopifyPage';
+import POSPage from './pages/POSPage';
 
 
 function ScrollToTop() {
@@ -76,7 +77,7 @@ export default function App() {
               <Route path="/actividad" element={<ActividadPage />} />
               <Route path="/pl" element={<PLTimelinePage />} />
               <Route path="/pl/resumen" element={<PLResumenPage />} />
-              <Route path="/pos" element={<PLVentasPage />} />
+              <Route path="/pos" element={<POSPage />} />
               <Route path="/pl/ventas" element={<PLVentasPage />} />
               <Route path="/pl/gastos" element={<PLGastosPage />} />
               <Route path="/pl/compras" element={<PLComprasPage />} />
