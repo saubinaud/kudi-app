@@ -9,7 +9,7 @@ import CustomSelect from '../components/CustomSelect';
 import PeriodoSelector from '../components/PeriodoSelector';
 import ConfirmDialog from '../components/ConfirmDialog';
 import {
-  Plus, X, Trash2, Pencil, ChevronDown, ChevronUp,
+  Plus, X, Trash2, Pencil, ChevronDown, ChevronUp, ChevronRight,
   DollarSign, TrendingUp, Package, ShoppingCart, FileText,
   Ban,
 } from 'lucide-react';
@@ -760,22 +760,25 @@ export default function PLVentasPage() {
           <div className={`${cx.card} hidden lg:block overflow-hidden overflow-x-auto`}>
             <table className="w-full">
               <thead>
-                <tr className="border-b border-stone-100">
-                  <th className={cx.th} style={{width:'90px'}}>Fecha</th>
+                <tr className="border-b border-stone-200">
+                  <th className={cx.th} style={{width:'100px'}}>Fecha</th>
+                  <th className={cx.th} style={{width:'110px'}}>Nro Orden</th>
                   <th className={cx.th}>Producto</th>
                   <th className={cx.th + ' text-center'} style={{width:'50px'}}>Cant.</th>
-                  <th className={cx.th + ' text-right'} style={{width:'70px'}}>Desc.</th>
-                  <th className={cx.th + ' text-right whitespace-nowrap'} style={{width:'90px'}}>Total</th>
-                  <th className={cx.th + ' text-right whitespace-nowrap'} style={{width:'80px'}}>Envío</th>
-                  <th className={cx.th} style={{width:'85px'}}>Pago</th>
-                  <th className={cx.th} style={{width:'95px'}}>Entrega</th>
-                  <th className={cx.th + ' w-20'}></th>
+                  <th className={cx.th + ' text-right'} style={{width:'90px'}}>Total</th>
+                  <th className={cx.th + ' text-center'} style={{width:'85px'}}>Pago</th>
+                  <th className={cx.th + ' text-center'} style={{width:'95px'}}>Entrega</th>
+                  <th className={cx.th + ' text-center'} style={{width:'70px'}}>Emisión</th>
+                  <th className={cx.th} style={{width:'40px'}}></th>
                 </tr>
               </thead>
               <tbody>
                 {ventasFinal.map((v) => (
                   <tr key={v.id} className={cx.tr + ' cursor-pointer'} onClick={() => openDetalle(v.id)}>
-                    <td className={cx.td + ' text-stone-600 whitespace-nowrap text-xs'}>{formatDateTime(v.fecha)}{v.codigo_pedido && <span className="text-stone-400 font-mono ml-1">{v.codigo_pedido}</span>}</td>
+                    <td className={cx.td + ' text-xs whitespace-nowrap text-stone-600'}>{formatDateTime(v.fecha)}</td>
+                    <td className={cx.td}>
+                      <span className="font-mono text-xs font-semibold text-[#16A34A]">{v.nro_pedido || v.codigo_pedido || '—'}</span>
+                    </td>
                     <td className={cx.td + ' font-medium text-stone-900'}>
                       {ventaDisplayName(v)}
                     </td>
@@ -784,14 +787,8 @@ export default function PLVentasPage() {
                         ? v.items.reduce((s, i) => s + (parseInt(i.cantidad) || 0), 0)
                         : v.cantidad}
                     </td>
-                    <td className={cx.td + ' text-right text-stone-400'}>
-                      {parseFloat(v.descuento) > 0 || parseFloat(v.descuento_global) > 0
-                        ? `-${formatCurrency((parseFloat(v.descuento) || 0) + (parseFloat(v.descuento_global) || 0))}`
-                        : '-'}
-                    </td>
                     <td className={cx.td + ' text-right font-semibold text-stone-900 whitespace-nowrap'}>{formatCurrency(v.total)}</td>
-                    <td className={cx.td + ' text-right text-stone-500 whitespace-nowrap'}>{parseFloat(v.costo_envio) > 0 ? formatCurrency(v.costo_envio) : '-'}</td>
-                    <td className={cx.td} onClick={e => e.stopPropagation()}>
+                    <td className={cx.td + ' text-center'} onClick={e => e.stopPropagation()}>
                       {v.estado_pago === 'pagado' ? (
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Pagado</span>
                       ) : v.estado_pago === 'cancelado' ? (
@@ -814,7 +811,7 @@ export default function PLVentasPage() {
                         </select>
                       )}
                     </td>
-                    <td className={cx.td} onClick={e => e.stopPropagation()}>
+                    <td className={cx.td + ' text-center'} onClick={e => e.stopPropagation()}>
                       {v.estado_pago !== 'cancelado' ? (
                         <select
                           value={v.estado_entrega || 'pendiente'}
@@ -837,21 +834,28 @@ export default function PLVentasPage() {
                         <span className="text-[10px] text-stone-400">—</span>
                       )}
                     </td>
+                    <td className={cx.td + ' text-center'} onClick={e => e.stopPropagation()}>
+                      {v.facturado ? (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 whitespace-nowrap">
+                          {v.tipo_comprobante === 'factura' ? 'Factura' : 'Boleta'}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => openEmitirModal(v)}
+                          className="text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-500 hover:bg-[#16A34A] hover:text-white transition-colors duration-100 whitespace-nowrap"
+                        >
+                          Emitir
+                        </button>
+                      )}
+                    </td>
                     <td className={cx.td} onClick={e => e.stopPropagation()}>
                       <div className="flex items-center gap-1 justify-end">
-                        {v.facturado && (
-                          <span className={cx.badge('bg-emerald-50 text-emerald-600')}>Facturado</span>
-                        )}
-                        {!v.facturado && (
-                          <button onClick={() => openEmitirModal(v)} className={cx.btnGhost + ' text-xs text-[var(--accent)]'}>
-                            Emitir
-                          </button>
-                        )}
                         {v.estado_pago !== 'cancelado' && (
                           <button onClick={() => setCancelTarget(v)} className={cx.btnIcon + ' hover:text-rose-600'} title="Cancelar venta"><Ban size={14} /></button>
                         )}
                         <button onClick={() => openEditVenta(v)} className={cx.btnIcon}><Pencil size={14} /></button>
                         <button onClick={() => setDeleteTarget(v)} className={cx.btnIcon + ' hover:text-rose-600'}><Trash2 size={14} /></button>
+                        <ChevronRight size={14} className="text-stone-300" />
                       </div>
                     </td>
                   </tr>
@@ -1674,105 +1678,135 @@ export default function PLVentasPage() {
 
       {/* Sidebar detail panel */}
       {selectedVenta && ventaDetalle && (
-        <div className="fixed inset-0 z-40 flex">
-          <div className="flex-1 bg-black/20" onClick={() => { setSelectedVenta(null); setVentaDetalle(null); }} />
-          <div className="w-[480px] max-w-full bg-white h-full shadow-2xl overflow-y-auto">
-            <div className="p-6">
-              {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-bold text-stone-900">{ventaDetalle.nro_pedido}</h2>
-                <button onClick={() => { setSelectedVenta(null); setVentaDetalle(null); }} className="text-stone-400 hover:text-stone-600 transition-colors duration-100">
-                  <X size={20} />
+        <div className="fixed inset-0 z-50 flex">
+          <div className="flex-1 bg-black/30 backdrop-blur-sm" onClick={() => { setSelectedVenta(null); setVentaDetalle(null); }} />
+          <div className="w-[520px] max-w-full bg-white h-full shadow-2xl overflow-y-auto border-l border-stone-200">
+
+            {/* Header — dark green top bar */}
+            <div className="bg-[#0A2F24] px-6 py-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-white/40 uppercase tracking-widest mb-1">Orden</p>
+                  <h2 className="text-2xl font-bold text-[#4ADE80] font-mono tracking-wide">
+                    {ventaDetalle.nro_pedido || ventaDetalle.codigo_pedido}
+                  </h2>
+                </div>
+                <button onClick={() => { setSelectedVenta(null); setVentaDetalle(null); }}
+                  className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-white/20 transition-colors duration-100">
+                  <X size={16} />
                 </button>
               </div>
+              <div className="flex gap-4 mt-3 text-xs text-white/50">
+                <span>{formatDateTime(ventaDetalle.fecha)}</span>
+                <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/70">
+                  {ventaDetalle.tipo_venta === 'contra_entrega' ? 'Contra entrega' : 'Directo'}
+                </span>
+              </div>
+            </div>
 
-              <div className="space-y-4">
-                {/* Fecha + tipo */}
+            <div className="p-6 space-y-6">
+
+              {/* Estados — two CustomSelects side by side */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-xs text-stone-400 uppercase tracking-wider mb-1">Informacion</p>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div><span className="text-stone-400">Fecha:</span> <span className="text-stone-700">{formatDateTime(ventaDetalle.fecha)}</span></div>
-                    <div><span className="text-stone-400">Tipo:</span> <span className="text-stone-700">{ventaDetalle.tipo_venta === 'contra_entrega' ? 'Contra entrega' : 'Directo'}</span></div>
-                  </div>
+                  <label className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider block mb-1.5">Estado de pago</label>
+                  <CustomSelect value={ventaDetalle.estado_pago || 'pendiente'}
+                    onChange={v => { updateVentaEstado(ventaDetalle.id, { estado_pago: v }); setVentaDetalle(d => ({...d, estado_pago: v})); }}
+                    options={[
+                      { value: 'pendiente', label: 'Pendiente' },
+                      { value: 'pagado', label: 'Pagado' },
+                      { value: 'contra_entrega', label: 'Contra entrega' },
+                      { value: 'reembolsado', label: 'Reembolsado' },
+                    ]} />
                 </div>
-
-                {/* Cliente */}
-                {(ventaDetalle.cliente_nombre || ventaDetalle.cliente_razon) && (
-                  <div>
-                    <p className="text-xs text-stone-400 uppercase tracking-wider mb-1">Cliente</p>
-                    <p className="text-sm text-stone-700">{ventaDetalle.cliente_razon || ventaDetalle.cliente_nombre}</p>
-                    {ventaDetalle.cliente_telefono && <p className="text-xs text-stone-400">{ventaDetalle.cliente_telefono}</p>}
-                  </div>
-                )}
-
-                {/* Direccion */}
-                {ventaDetalle.direccion && (
-                  <div>
-                    <p className="text-xs text-stone-400 uppercase tracking-wider mb-1">Direccion de envio</p>
-                    <p className="text-sm text-stone-700">{ventaDetalle.direccion.direccion}, {ventaDetalle.direccion.distrito}</p>
-                  </div>
-                )}
-
-                {/* Products table */}
                 <div>
-                  <p className="text-xs text-stone-400 uppercase tracking-wider mb-2">Productos</p>
-                  <div className="space-y-2">
-                    {(ventaDetalle.items || []).map(item => (
-                      <div key={item.id} className="flex items-center justify-between text-sm py-1 border-b border-stone-100">
-                        <div className="flex-1">
-                          <p className="text-stone-700">{item.producto_nombre}{item.variante_nombre ? ` (${item.variante_nombre})` : ''}</p>
-                          {item.producto_sku && <p className="text-[10px] text-stone-400 font-mono">{item.producto_sku}</p>}
+                  <label className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider block mb-1.5">Estado de entrega</label>
+                  <CustomSelect value={ventaDetalle.estado_entrega || 'pendiente'}
+                    onChange={v => { updateVentaEstado(ventaDetalle.id, { estado_entrega: v }); setVentaDetalle(d => ({...d, estado_entrega: v})); }}
+                    options={[
+                      { value: 'pendiente', label: 'Pendiente' },
+                      { value: 'preparando', label: 'Preparando' },
+                      { value: 'listo_envio', label: 'Listo para envio' },
+                      { value: 'enviado', label: 'Enviado' },
+                      { value: 'entregado', label: 'Entregado' },
+                    ]} />
+                </div>
+              </div>
+
+              {/* Cliente section — card style */}
+              {(ventaDetalle.cliente_nombre || ventaDetalle.cliente_razon) && (
+                <div className="bg-stone-50 rounded-xl p-4">
+                  <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-2">Cliente</p>
+                  <p className="text-sm font-medium text-stone-800">{ventaDetalle.cliente_razon || ventaDetalle.cliente_nombre}</p>
+                  {ventaDetalle.cliente_tel && <p className="text-xs text-stone-500 mt-0.5">{ventaDetalle.cliente_tel}</p>}
+                  {ventaDetalle.cliente_email && <p className="text-xs text-stone-500">{ventaDetalle.cliente_email}</p>}
+                </div>
+              )}
+
+              {/* Direccion — if exists */}
+              {ventaDetalle.direccion && (
+                <div className="bg-stone-50 rounded-xl p-4">
+                  <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-2">Direccion de envio</p>
+                  <p className="text-sm text-stone-700">
+                    {[ventaDetalle.direccion.direccion, ventaDetalle.direccion.distrito, ventaDetalle.direccion.departamento].filter(Boolean).join(', ')}
+                  </p>
+                  {ventaDetalle.direccion.referencia && <p className="text-xs text-stone-400 mt-1">Ref: {ventaDetalle.direccion.referencia}</p>}
+                </div>
+              )}
+
+              {/* Products */}
+              <div>
+                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-3">Productos</p>
+                <div className="bg-stone-50 rounded-xl overflow-hidden">
+                  {(ventaDetalle.items || []).map((item, idx) => (
+                    <div key={item.id} className={`flex items-center gap-3 px-4 py-3 ${idx > 0 ? 'border-t border-stone-200' : ''}`}>
+                      {item.producto_imagen ? (
+                        <img src={item.producto_imagen} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" alt="" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-stone-200 flex items-center justify-center flex-shrink-0">
+                          <Package size={14} className="text-stone-400" />
                         </div>
-                        <div className="text-right">
-                          <p className="text-stone-600">{item.cantidad} x S/ {parseFloat(item.precio_unitario).toFixed(2)}</p>
-                          <p className="text-stone-900 font-medium">S/ {parseFloat(item.subtotal).toFixed(2)}</p>
-                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-stone-800 truncate">{item.producto_nombre}{item.variante_nombre ? ` · ${item.variante_nombre}` : ''}</p>
+                        <p className="text-[10px] text-stone-400 font-mono">{item.producto_sku || ''}</p>
                       </div>
-                    ))}
-                  </div>
-                  <div className="mt-3 pt-3 border-t border-stone-200 space-y-1 text-sm">
-                    {parseFloat(ventaDetalle.descuento || 0) > 0 && (
-                      <div className="flex justify-between"><span className="text-stone-400">Descuento</span><span className="text-rose-600">-S/ {parseFloat(ventaDetalle.descuento).toFixed(2)}</span></div>
-                    )}
-                    {parseFloat(ventaDetalle.costo_envio || 0) > 0 && (
-                      <div className="flex justify-between"><span className="text-stone-400">Envio</span><span>S/ {parseFloat(ventaDetalle.costo_envio).toFixed(2)}</span></div>
-                    )}
-                    <div className="flex justify-between font-bold text-stone-900">
-                      <span>Total</span><span>S/ {parseFloat(ventaDetalle.total).toFixed(2)}</span>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-xs text-stone-500">{item.cantidad} x {formatCurrency(item.precio_unitario)}</p>
+                        <p className="text-sm font-semibold text-stone-900">{formatCurrency(item.subtotal)}</p>
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
 
-                {/* Estados editables */}
-                <div>
-                  <p className="text-xs text-stone-400 uppercase tracking-wider mb-2">Estados</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className={cx.label}>Pago</label>
-                      <CustomSelect value={ventaDetalle.estado_pago || 'pendiente'}
-                        onChange={v => { updateVentaEstado(ventaDetalle.id, { estado_pago: v }); setVentaDetalle(d => ({...d, estado_pago: v})); }}
-                        options={[
-                          { value: 'pendiente', label: 'Pendiente' },
-                          { value: 'pagado', label: 'Pagado' },
-                          { value: 'contra_entrega', label: 'Contra entrega' },
-                          { value: 'reembolsado', label: 'Reembolsado' },
-                        ]} />
+                {/* Totals */}
+                <div className="mt-4 space-y-2 px-1">
+                  {parseFloat(ventaDetalle.descuento || 0) > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-stone-400">Descuento</span>
+                      <span className="text-rose-600">-{formatCurrency(ventaDetalle.descuento)}</span>
                     </div>
-                    <div>
-                      <label className={cx.label}>Entrega</label>
-                      <CustomSelect value={ventaDetalle.estado_entrega || 'pendiente'}
-                        onChange={v => { updateVentaEstado(ventaDetalle.id, { estado_entrega: v }); setVentaDetalle(d => ({...d, estado_entrega: v})); }}
-                        options={[
-                          { value: 'pendiente', label: 'Pendiente' },
-                          { value: 'preparando', label: 'Preparando' },
-                          { value: 'listo_envio', label: 'Listo p/envio' },
-                          { value: 'enviado', label: 'Enviado' },
-                          { value: 'entregado', label: 'Entregado' },
-                        ]} />
+                  )}
+                  {parseFloat(ventaDetalle.costo_envio || 0) > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-stone-400">Envio</span>
+                      <span className="text-stone-600">{formatCurrency(ventaDetalle.costo_envio)}</span>
                     </div>
+                  )}
+                  <div className="flex justify-between pt-2 border-t border-stone-200">
+                    <span className="text-sm font-bold text-stone-900">Total</span>
+                    <span className="text-lg font-bold text-stone-900">{formatCurrency(ventaDetalle.total)}</span>
                   </div>
                 </div>
               </div>
+
+              {/* Emitir boleta button */}
+              {!ventaDetalle.facturado && ventaDetalle.estado_pago !== 'cancelado' && (
+                <button onClick={() => openEmitirModal(ventaDetalle)}
+                  className="w-full py-3 bg-[#16A34A] hover:bg-[#15803D] text-white font-semibold rounded-xl transition-colors duration-100 text-sm">
+                  Emitir comprobante
+                </button>
+              )}
             </div>
           </div>
         </div>
