@@ -640,7 +640,6 @@ export default function StockPage() {
             })}
           </div>
         </div>
-      )}
         )}
         </>
       )}
