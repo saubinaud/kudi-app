@@ -97,6 +97,12 @@ export default function PLComprasPage() {
   const [newMaterialData, setNewMaterialData] = useState({ ...EMPTY_MATERIAL });
   const [savingMaterial, setSavingMaterial] = useState(false);
 
+  // Side panel: nuevo producto (no transformable)
+  const [showNewProducto, setShowNewProducto] = useState(false);
+  const [newProductoTarget, setNewProductoTarget] = useState(null);
+  const [newProductoData, setNewProductoData] = useState({ nombre: '', costo_total: '', cantidad: '' });
+  const [savingProducto, setSavingProducto] = useState(false);
+
   // Modal form
   const [form, setForm] = useState({ fecha: todayStr(), proveedor: '', proveedor_id: '', nota: '', cuenta_id: '', tipo_comprobante: '', linea_negocio_id: null, descripcion: '' });
   const [items, setItems] = useState([{ ...EMPTY_ITEM }]);
@@ -405,6 +411,53 @@ export default function PLComprasPage() {
       toast.error(err.message || 'Error creando material');
     } finally {
       setSavingMaterial(false);
+    }
+  };
+
+  // Save nuevo producto inline
+  const saveNuevoProducto = async () => {
+    if (!newProductoData.nombre.trim() || !newProductoData.cantidad || !newProductoData.costo_total) {
+      toast.error('Completa nombre, cantidad y costo total');
+      return;
+    }
+    const cantidad = Number(newProductoData.cantidad);
+    const costoTotal = Number(newProductoData.costo_total);
+    if (cantidad <= 0 || costoTotal <= 0) { toast.error('Cantidad y costo deben ser mayores a 0'); return; }
+    const costoUnitario = Math.round((costoTotal / cantidad) * 100) / 100;
+    setSavingProducto(true);
+    try {
+      const res = await api.post('/productos', {
+        nombre: newProductoData.nombre.trim(),
+        tipo_producto: 'no_transformable',
+        costo_neto: costoUnitario,
+        margen: 50,
+      });
+      const nuevo = res.data;
+      setProductos((prev) => [...prev, nuevo]);
+      if (newProductoTarget !== null) {
+        // Auto-fill the compra item
+        const idx = newProductoTarget;
+        setItems((prev) => {
+          const next = [...prev];
+          next[idx] = {
+            ...next[idx],
+            producto_id: nuevo.id,
+            nombre_item: nuevo.nombre,
+            precio_unitario: costoUnitario,
+            cantidad: cantidad,
+            unidad: 'uni',
+          };
+          return next;
+        });
+      }
+      toast.success('Producto creado');
+      setShowNewProducto(false);
+      setNewProductoData({ nombre: '', costo_total: '', cantidad: '' });
+      setNewProductoTarget(null);
+    } catch (err) {
+      toast.error(err.message || 'Error creando producto');
+    } finally {
+      setSavingProducto(false);
     }
   };
 
@@ -810,13 +863,19 @@ export default function PLComprasPage() {
                         </div>
                       )}
                       {item.tipo === 'producto' && (
-                        <div className="mb-2">
+                        <div className="mb-2 space-y-1">
                           <SearchableSelect
                             options={productosNopack}
                             value={item.producto_id}
                             onChange={(prod) => selectProducto(idx, prod)}
                             placeholder="Buscar producto..."
                           />
+                          <button
+                            onClick={() => { setNewProductoTarget(idx); setShowNewProducto(true); }}
+                            className="text-[11px] text-[var(--accent)] hover:underline transition-colors duration-100"
+                          >
+                            + Crear nuevo producto
+                          </button>
                         </div>
                       )}
 
@@ -1133,6 +1192,79 @@ export default function PLComprasPage() {
                 {savingMaterial ? 'Guardando...' : 'Crear material'}
               </button>
               <button onClick={() => setShowNewMaterial(false)} className={cx.btnSecondary}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Side panel: nuevo producto */}
+      {showNewProducto && (
+        <div className="fixed inset-0 z-[60] flex">
+          <div className="flex-1 bg-black/20" onClick={() => setShowNewProducto(false)} />
+          <div className="w-96 bg-white h-full shadow-xl p-6 overflow-y-auto flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-stone-900">Nuevo producto</h3>
+              <button onClick={() => setShowNewProducto(false)} className={cx.btnIcon}><X size={18} /></button>
+            </div>
+            <p className="text-xs text-stone-400 mb-4">Crea un producto de compra/reventa. El costo unitario se calcula automáticamente.</p>
+            <div className="space-y-3 flex-1">
+              <div>
+                <label className={cx.label}>Nombre del producto *</label>
+                <input
+                  type="text"
+                  value={newProductoData.nombre}
+                  onChange={(e) => setNewProductoData((d) => ({ ...d, nombre: e.target.value }))}
+                  className={cx.input}
+                  placeholder="Ej: Pulsera artesanal"
+                  autoFocus
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={cx.label}>Cantidad *</label>
+                  <input
+                    type="number"
+                    value={newProductoData.cantidad}
+                    onChange={(e) => setNewProductoData((d) => ({ ...d, cantidad: e.target.value }))}
+                    className={cx.input}
+                    placeholder="20"
+                    min="1"
+                    step="1"
+                  />
+                </div>
+                <div>
+                  <label className={cx.label}>Costo total (S/) *</label>
+                  <input
+                    type="number"
+                    value={newProductoData.costo_total}
+                    onChange={(e) => setNewProductoData((d) => ({ ...d, costo_total: e.target.value }))}
+                    className={cx.input}
+                    placeholder="300.00"
+                    min="0.01"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+              {Number(newProductoData.cantidad) > 0 && Number(newProductoData.costo_total) > 0 && (
+                <div className="bg-stone-50 rounded-lg px-4 py-3 flex justify-between items-center">
+                  <span className="text-xs text-stone-500">Costo unitario</span>
+                  <span className="text-sm font-bold text-[#0A2F24]">
+                    S/ {(Number(newProductoData.costo_total) / Number(newProductoData.cantidad)).toFixed(2)}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={saveNuevoProducto}
+                disabled={savingProducto}
+                className={cx.btnPrimary + ' flex-1'}
+              >
+                {savingProducto ? 'Creando...' : 'Crear producto'}
+              </button>
+              <button onClick={() => setShowNewProducto(false)} className={cx.btnSecondary}>
                 Cancelar
               </button>
             </div>
