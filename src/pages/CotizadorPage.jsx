@@ -215,16 +215,63 @@ function PackItemsEditor({ productoId, onItemsChange }) {
     return <div className="space-y-2 py-4">{[1,2].map(i => <div key={i} className="bg-stone-100 rounded-xl h-10 animate-pulse" />)}</div>;
   }
 
+  const [packTab, setPackTab] = useState('listos'); // listos | inventario
+
+  const productosListos = allProducts.filter(p => p.tipo_producto === 'transformable');
+  const productosInventario = allProducts.filter(p => p.tipo_producto === 'no_transformable');
+  const availableProducts = (packTab === 'listos' ? productosListos : productosInventario)
+    .filter(p => !items.some(i => i.item_producto_id === p.id));
+
+  const ItemRow = ({ item }) => (
+    <tr className="border-b border-stone-100 last:border-0">
+      <td className="px-3 py-2 text-stone-800 font-medium">{item.nombre || item.item_nombre || '--'}</td>
+      <td className="px-3 py-2 text-center">
+        <input
+          type="number" min="1" step="1"
+          value={item.cantidad}
+          onChange={e => handleUpdateCantidad(item.id, e.target.value)}
+          className="w-16 bg-stone-50 rounded-lg px-2 py-1 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400"
+        />
+      </td>
+      <td className="px-3 py-2 text-right text-stone-500">{formatCurrency(Number(item.costo_neto) || 0)}</td>
+      <td className="px-3 py-2 text-right text-stone-800 font-medium">{formatCurrency((Number(item.costo_neto) || 0) * (Number(item.cantidad) || 1))}</td>
+      <td className="px-2 py-2">
+        <button onClick={() => handleRemove(item.id)} className={cx.btnIcon + ' hover:text-rose-600'}>
+          <Trash2 size={13} />
+        </button>
+      </td>
+    </tr>
+  );
+
   return (
     <div className="space-y-4">
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-stone-200">
+        <button
+          onClick={() => setPackTab('listos')}
+          className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors duration-100 ${
+            packTab === 'listos' ? 'border-[#16A34A] text-[#16A34A]' : 'border-transparent text-stone-400 hover:text-stone-600'
+          }`}
+        >
+          Productos listos ({productosListos.length})
+        </button>
+        <button
+          onClick={() => setPackTab('inventario')}
+          className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors duration-100 ${
+            packTab === 'inventario' ? 'border-[#16A34A] text-[#16A34A]' : 'border-transparent text-stone-400 hover:text-stone-600'
+          }`}
+        >
+          De inventario ({productosInventario.length})
+        </button>
+      </div>
+
       {/* Add item */}
       <div>
-        <label className={cx.label}>Agregar producto al pack</label>
         <SearchableSelect
-          options={allProducts.filter(p => !items.some(i => i.item_producto_id === p.id))}
+          options={availableProducts}
           value={null}
           onChange={handleAdd}
-          placeholder="Buscar producto..."
+          placeholder={packTab === 'listos' ? 'Buscar producto listo...' : 'Buscar producto de inventario...'}
           disabled={savingItem}
         />
       </div>
@@ -236,7 +283,6 @@ function PackItemsEditor({ productoId, onItemsChange }) {
             <thead>
               <tr className="bg-stone-50 border-b border-stone-200">
                 <th className="text-left px-3 py-2 text-[10px] font-semibold text-stone-400 uppercase">Producto</th>
-                <th className="text-center px-3 py-2 text-[10px] font-semibold text-stone-400 uppercase">SKU</th>
                 <th className="text-center px-3 py-2 text-[10px] font-semibold text-stone-400 uppercase">Cant.</th>
                 <th className="text-right px-3 py-2 text-[10px] font-semibold text-stone-400 uppercase">Costo unit.</th>
                 <th className="text-right px-3 py-2 text-[10px] font-semibold text-stone-400 uppercase">Subtotal</th>
@@ -244,34 +290,11 @@ function PackItemsEditor({ productoId, onItemsChange }) {
               </tr>
             </thead>
             <tbody>
-              {items.map(item => (
-                <tr key={item.id} className="border-b border-stone-100 last:border-0">
-                  <td className="px-3 py-2 text-stone-800 font-medium">{item.nombre || item.item_nombre || '--'}</td>
-                  <td className="px-3 py-2 text-center text-stone-400 font-mono text-xs">{item.sku || '--'}</td>
-                  <td className="px-3 py-2 text-center">
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={item.cantidad}
-                      onChange={e => handleUpdateCantidad(item.id, e.target.value)}
-                      onBlur={e => handleUpdateCantidad(item.id, e.target.value)}
-                      className="w-16 bg-stone-50 rounded-lg px-2 py-1 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400"
-                    />
-                  </td>
-                  <td className="px-3 py-2 text-right text-stone-500">{formatCurrency(Number(item.costo_neto) || 0)}</td>
-                  <td className="px-3 py-2 text-right text-stone-800 font-medium">{formatCurrency((Number(item.costo_neto) || 0) * (Number(item.cantidad) || 1))}</td>
-                  <td className="px-2 py-2">
-                    <button onClick={() => handleRemove(item.id)} className={cx.btnIcon + ' hover:text-rose-600'}>
-                      <Trash2 size={13} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {items.map(item => <ItemRow key={item.id} item={item} />)}
             </tbody>
             <tfoot>
               <tr className="bg-stone-50 border-t border-stone-200">
-                <td colSpan="4" className="px-3 py-2 text-xs font-semibold text-stone-600">Costo total del pack</td>
+                <td colSpan="3" className="px-3 py-2 text-xs font-semibold text-stone-600">Costo total del pack</td>
                 <td className="px-3 py-2 text-right font-bold text-[var(--accent)]">{formatCurrency(totalCosto)}</td>
                 <td></td>
               </tr>
@@ -280,8 +303,10 @@ function PackItemsEditor({ productoId, onItemsChange }) {
         </div>
       )}
 
-      {items.length === 0 && productoId && (
-        <p className="text-sm text-stone-400 text-center py-4">Sin items. Agrega productos usando el selector de arriba.</p>
+      {items.length === 0 && (
+        <p className="text-sm text-stone-400 text-center py-4">
+          {packTab === 'listos' ? 'Agrega productos con receta al pack' : 'Agrega productos de inventario al pack'}
+        </p>
       )}
     </div>
   );
