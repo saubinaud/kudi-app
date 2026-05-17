@@ -121,10 +121,16 @@ export default function CanalesPage() {
         nombre: editForm.nombre.trim(),
         comision_pct: parseFloat(editForm.comision_pct) || 0,
       });
-      toast.success('Canal actualizado');
-      const res = await api.get('/canales');
-      setCanales(res.data || []);
+      toast.success('Canal actualizado — precios recalculados');
+      const [canalesRes, prodsRes] = await Promise.all([
+        api.get('/canales'),
+        api.get('/productos'),
+      ]);
+      setCanales(canalesRes.data || []);
+      setProductos((prodsRes.data || []).filter(p => !p.locked));
       setEditingCanal(null);
+      // Refresh channel view
+      loadCanalPrecios(activeTab);
     } catch (err) {
       toast.error(err.message || 'Error actualizando canal');
     } finally {
@@ -547,6 +553,9 @@ export default function CanalesPage() {
                       const precio = parseFloat(preciosCanal[p.id]) || 0;
                       const calculado = comision < 100 ? parseFloat(p.precio_final) / (1 - comision / 100) : parseFloat(p.precio_final);
                       const subsidiando = precio > 0 && precio < calculado * 0.99;
+                      const cobraMas = precio > calculado * 1.01;
+                      const diffMonto = Math.abs(Math.round((precio - calculado) * 100) / 100);
+                      const diffPct = calculado > 0 ? Math.abs(Math.round(((precio - calculado) / calculado) * 10000) / 100) : 0;
 
                       return (
                         <div key={p.id} className="flex items-center gap-3 px-4 py-3">
@@ -557,7 +566,16 @@ export default function CanalesPage() {
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
-                            {subsidiando && <span className="text-[9px] text-amber-500">Subsidiado</span>}
+                            {subsidiando && (
+                              <span className="text-[9px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded" title={`Subsidias ${formatCurrency(diffMonto)} (${diffPct}%)`}>
+                                Subsidio -{formatCurrency(diffMonto)} ({diffPct}%)
+                              </span>
+                            )}
+                            {cobraMas && (
+                              <span className="text-[9px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded" title={`Cobras ${formatCurrency(diffMonto)} más que el cálculo`}>
+                                +{formatCurrency(diffMonto)} ({diffPct}%)
+                              </span>
+                            )}
                             {editingRow === p.id ? (
                               <div className="flex items-center gap-1">
                                 <input type="number" className={cx.input + ' !py-1 !px-2 w-24 text-sm'}

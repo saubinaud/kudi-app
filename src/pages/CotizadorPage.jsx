@@ -564,9 +564,11 @@ export default function CotizadorPage() {
         if (p.materiales?.length) {
           setMateriales(
             p.materiales.map((mat) => {
-              const precio = Number(mat.cantidad_presentacion) > 0
-                ? Number(mat.precio_presentacion) / Number(mat.cantidad_presentacion)
-                : Number(mat.precio_presentacion) || 0;
+              const precio = Number(mat.costo_wac) > 0
+                ? Number(mat.costo_wac)
+                : Number(mat.cantidad_presentacion) > 0
+                  ? Number(mat.precio_presentacion) / Number(mat.cantidad_presentacion)
+                  : Number(mat.precio_presentacion) || 0;
               return {
                 _id: newTempId(),
                 id: mat.id,
@@ -770,9 +772,11 @@ export default function CotizadorPage() {
               ...m,
               material_id: catalogItem.id,
               nombre: catalogItem.nombre,
-              precio: Number(catalogItem.cantidad_presentacion) > 0
-              ? Number(catalogItem.precio_presentacion) / Number(catalogItem.cantidad_presentacion)
-              : Number(catalogItem.precio_presentacion) || 0,
+              precio: Number(catalogItem.costo_wac) > 0
+              ? Number(catalogItem.costo_wac)
+              : Number(catalogItem.cantidad_presentacion) > 0
+                ? Number(catalogItem.precio_presentacion) / Number(catalogItem.cantidad_presentacion)
+                : Number(catalogItem.precio_presentacion) || 0,
               unidad_medida: catalogItem.unidad_medida,
             }
           : m

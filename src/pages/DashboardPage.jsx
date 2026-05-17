@@ -537,34 +537,8 @@ export default function DashboardPage() {
                     <span className="text-stone-400 text-xs">Margen: {formatPercent(p.margen)}</span>
                     <span className="text-[var(--accent)] font-bold text-sm">{formatCurrency(precioComercial(p.precio_final, precioMode))}</span>
                   </div>
-                  {p.precios_canal?.length > 0 && !selectedCat && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {p.precios_canal.map((cp, i) => (
-                        <span key={i} className="text-[9px] px-1.5 py-0.5 bg-sky-50 text-sky-600 rounded">
-                          {cp.canal_nombre}: {formatCurrency(cp.precio_override)}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
                 {/* Action buttons — always visible on mobile, hover on desktop */}
-                <div className="absolute top-2 right-2 flex gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                  <Link to={`/ficha-tecnica/${p.id}`} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-[var(--accent)]" title="Ficha tecnica">
-                    <Package size={13} />
-                  </Link>
-                  <button onClick={() => openCanalesModal(p)} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-sky-600" title="Canales">
-                    <Truck size={13} />
-                  </button>
-                  <button onClick={() => handleHistory(p)} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-stone-800 hidden lg:block" title="Historial">
-                    <History size={13} />
-                  </button>
-                  <button onClick={() => setDuplicateTarget(p)} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-blue-600 hidden lg:block" title="Duplicar">
-                    <Copy size={14} />
-                  </button>
-                  <button onClick={() => setDeleteTarget(p)} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-rose-600 hidden lg:block" title="Eliminar">
-                    <Trash2 size={13} />
-                  </button>
-                </div>
               </div>
             ))}
           </div>

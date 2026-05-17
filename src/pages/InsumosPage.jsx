@@ -56,11 +56,17 @@ function AddPresentacionForm({ insumoId, onAdded }) {
         </div>
         <div>
           <label className="text-[10px] text-stone-400 block mb-0.5">Cantidad</label>
-          <input className={cx.input + ' text-sm'} type="number" step="0.001" placeholder="25" value={cantidad} onChange={e => setCantidad(e.target.value)} />
+          <input className={cx.input + ' text-sm'} type="number" min="0.001" step="0.001" placeholder="25" value={cantidad} onChange={e => setCantidad(e.target.value)} />
         </div>
         <div>
           <label className="text-[10px] text-stone-400 block mb-0.5">Unidad</label>
-          <input className={cx.input + ' text-sm'} placeholder="kg" value={unidad} onChange={e => setUnidad(e.target.value)} />
+          <CustomSelect
+            compact
+            options={['g','kg','ml','L','uni','oz','cm','mt'].map(u => ({ value: u, label: u }))}
+            value={unidad}
+            onChange={v => setUnidad(v)}
+            placeholder="--"
+          />
         </div>
         <div>
           <label className="text-[10px] text-stone-400 block mb-0.5">Precio (S/)</label>
