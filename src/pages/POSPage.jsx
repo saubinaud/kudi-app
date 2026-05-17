@@ -43,7 +43,7 @@ export default function POSPage() {
   const [tipoEntrega, setTipoEntrega] = useState('recojo'); // recojo | delivery
   const [zonas, setZonas] = useState([]);
   const [zonaSeleccionada, setZonaSeleccionada] = useState(null);
-  const [direccionTexto, setDireccionTexto] = useState('');
+  const [direccion, setDireccion] = useState({ departamento: '', provincia: '', distrito: '', direccion: '' });
 
   // Post-sale success
   const [lastSaleId, setLastSaleId] = useState(null);
@@ -250,7 +250,7 @@ export default function POSPage() {
       setMetodoPago('efectivo');
       setTipoEntrega('recojo');
       setZonaSeleccionada(null);
-      setDireccionTexto('');
+      setDireccion({ departamento: '', provincia: '', distrito: '', direccion: '' });
       setShowCheckout(false);
     } catch (err) {
       toast.error(err.message || 'Error registrando venta');
@@ -288,7 +288,7 @@ export default function POSPage() {
   ];
 
   // Cart panel — reused on both desktop and mobile
-  const CartPanel = ({ isMobile = false }) => (
+  const renderCart = (isMobile = false) => (
     <div className={cx.card + ' flex flex-col' + (!isMobile ? ' lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]' : '')}>
       {/* Cart header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
@@ -462,12 +462,35 @@ export default function POSPage() {
                         placeholder="Zona de envío..."
                       />
                     )}
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <input
+                        type="text"
+                        value={direccion.departamento}
+                        onChange={e => setDireccion(d => ({ ...d, departamento: e.target.value }))}
+                        className="w-full px-2.5 py-1.5 bg-white border border-stone-300 rounded-lg text-stone-800 text-xs placeholder:text-stone-400 focus:outline-none focus:border-stone-500 transition-colors duration-100"
+                        placeholder="Departamento"
+                      />
+                      <input
+                        type="text"
+                        value={direccion.provincia}
+                        onChange={e => setDireccion(d => ({ ...d, provincia: e.target.value }))}
+                        className="w-full px-2.5 py-1.5 bg-white border border-stone-300 rounded-lg text-stone-800 text-xs placeholder:text-stone-400 focus:outline-none focus:border-stone-500 transition-colors duration-100"
+                        placeholder="Provincia"
+                      />
+                      <input
+                        type="text"
+                        value={direccion.distrito}
+                        onChange={e => setDireccion(d => ({ ...d, distrito: e.target.value }))}
+                        className="w-full px-2.5 py-1.5 bg-white border border-stone-300 rounded-lg text-stone-800 text-xs placeholder:text-stone-400 focus:outline-none focus:border-stone-500 transition-colors duration-100"
+                        placeholder="Distrito"
+                      />
+                    </div>
                     <input
                       type="text"
-                      value={direccionTexto}
-                      onChange={e => setDireccionTexto(e.target.value)}
-                      className="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-lg text-stone-800 text-xs placeholder:text-stone-400 focus:outline-none focus:border-stone-500 transition-colors duration-100"
-                      placeholder="Dirección de entrega..."
+                      value={direccion.direccion}
+                      onChange={e => setDireccion(d => ({ ...d, direccion: e.target.value }))}
+                      className="w-full px-2.5 py-1.5 bg-white border border-stone-300 rounded-lg text-stone-800 text-xs placeholder:text-stone-400 focus:outline-none focus:border-stone-500 transition-colors duration-100"
+                      placeholder="Dirección (calle, número, referencia)"
                     />
                   </div>
                 )}
@@ -688,12 +711,12 @@ export default function POSPage() {
 
           {/* RIGHT: Cart — desktop only */}
           <div className="hidden lg:block lg:w-80 xl:w-96 flex-shrink-0">
-            <CartPanel />
+            {renderCart(false)}
           </div>
 
           {/* Cart — mobile only (below grid) */}
           <div className="lg:hidden">
-            <CartPanel isMobile />
+            {renderCart(true)}
           </div>
         </div>
       )}
