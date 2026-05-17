@@ -20,6 +20,7 @@ import {
   ImageIcon,
   BookmarkPlus,
   Package,
+  CheckCircle,
 } from 'lucide-react';
 import { useTerminos } from '../context/TerminosContext';
 
@@ -402,6 +403,8 @@ export default function CotizadorPage() {
 
   const [tipoProducto, setTipoProducto] = useState('transformable');
   const [pendingPackItems, setPendingPackItems] = useState([]);
+  const [inventarioProductos, setInventarioProductos] = useState([]); // productos con disponible_venta
+  const [selectedInventarioId, setSelectedInventarioId] = useState(null);
   const [controlStock, setControlStock] = useState(false);
   const [sku, setSku] = useState('');
   const [stockActual, setStockActual] = useState('');
@@ -493,6 +496,10 @@ export default function CotizadorPage() {
       setCatalogMateriales(c.materiales || []);
       setCatalogPreps(c.preparaciones_pred || []);
       setCatalogEmpaques(c.empaques_pred || []);
+    }).catch(() => {});
+    // Load inventory products available for sale (no_transformable with disponible_venta)
+    api.get('/productos').then((d) => {
+      setInventarioProductos((d.data || []).filter(p => p.tipo_producto === 'no_transformable' && p.disponible_venta));
     }).catch(() => {});
   }, []);
 
@@ -870,7 +877,12 @@ export default function CotizadorPage() {
         ...(overridePrice != null ? { precioFinal: overridePrice } : {}),
       };
 
-      if (id) {
+      if (tipoProducto === 'no_transformable' && selectedInventarioId) {
+        // Update existing inventory product with pricing/packaging
+        await api.put(`/productos/${selectedInventarioId}`, payload);
+        toast.success('Producto configurado para venta');
+        navigate(`/cotizador/${selectedInventarioId}`, { replace: true });
+      } else if (id) {
         await api.put(`/productos/${id}`, payload);
         toast.success('Producto actualizado');
       } else {
@@ -1085,6 +1097,7 @@ export default function CotizadorPage() {
                   onChange={v => setTipoProducto(v)}
                   options={[
                     { value: 'transformable', label: 'Transformable (tiene receta)' },
+                    ...(inventarioProductos.length > 0 ? [{ value: 'no_transformable', label: 'De inventario (compra y reventa)' }] : []),
                     { value: 'pack', label: 'Pack (combinación de productos)' },
                   ]}
                 />
@@ -1206,6 +1219,55 @@ export default function CotizadorPage() {
                     </tr>
                   </tfoot>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* ── No transformable: seleccionar producto de inventario ── */}
+          {tipoProducto === 'no_transformable' && (
+            <div>
+              <h3 className="text-lg font-semibold text-stone-900 mb-3">Producto de inventario<InfoTip text="Selecciona un producto de tu inventario que marcaste como disponible para venta. El costo viene del inventario y tú defines el margen y precio." /></h3>
+              <div className={`${cx.card} p-4`}>
+                {inventarioProductos.length === 0 ? (
+                  <p className="text-sm text-stone-400 text-center py-4">No hay productos de inventario marcados para venta. Ve a Inventario y activa "Disponible para venta" en un producto.</p>
+                ) : (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                    {inventarioProductos.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => {
+                          setSelectedInventarioId(p.id);
+                          setNombre(p.nombre);
+                          setImagenUrl(p.imagen_url || '');
+                          setCostoGuardado(parseFloat(p.costo_neto) || 0);
+                        }}
+                        className={`rounded-xl border p-2.5 text-center transition-colors duration-100 ${
+                          selectedInventarioId === p.id
+                            ? 'border-[#16A34A] bg-emerald-50 ring-2 ring-[#16A34A]/20'
+                            : 'border-stone-200 hover:border-stone-400 hover:shadow'
+                        }`}
+                      >
+                        {p.imagen_url ? (
+                          <img src={p.imagen_url} className="w-full aspect-square object-cover rounded-lg mb-1.5" alt={p.nombre} />
+                        ) : (
+                          <div className="w-full aspect-square bg-stone-100 rounded-lg mb-1.5 flex items-center justify-center">
+                            <Package size={18} className="text-stone-300" />
+                          </div>
+                        )}
+                        <p className="text-[10px] font-medium text-stone-800 truncate">{p.nombre}</p>
+                        <p className="text-[10px] text-stone-400">{formatCurrency(p.costo_neto || 0)} c/u</p>
+                        <p className="text-[10px] text-stone-400">Stock: {p.stock_actual || 0}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {selectedInventarioId && (
+                  <div className="mt-4 pt-4 border-t border-stone-100">
+                    <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                      <CheckCircle size={12} /> Producto seleccionado — define el margen y empaque abajo
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
