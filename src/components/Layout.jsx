@@ -79,6 +79,8 @@ export default function Layout() {
 
   const t = user?.giro_terminos || {};
 
+  const HIDDEN_ROUTES = ['/shopify', '/proyeccion', '/comisiones', '/analisis'];
+
   const sidebarGroups = [
     {
       key: 'catalogo',
@@ -87,25 +89,33 @@ export default function Layout() {
       links: [
         { to: '/dashboard', label: t.productos || 'Productos', icon: LayoutDashboard, perm: 'dashboard' },
         { to: '/cotizador', label: 'Nuevo producto', icon: Calculator, perm: 'cotizador' },
-        { to: '/insumos', label: t.insumos || 'Ingredientes', icon: Salad, perm: 'insumos' },
+        { to: '/insumos', label: t.insumos || 'Insumos', icon: Salad, perm: 'insumos' },
         { to: '/materiales', label: t.materiales || 'Materiales', icon: Package, perm: 'materiales' },
         { to: '/preparaciones-predeterminadas', label: t.prep_pred || 'Recetas base', icon: ChefHat, perm: 'preparaciones' },
         { to: '/empaques-predeterminados', label: 'Empaques predet.', icon: BoxSelect, perm: 'empaques' },
-        { to: '/analisis', label: 'Rentabilidad', icon: TrendingUp, perm: 'dashboard' },
         { to: '/stock', label: 'Inventario', icon: Package, perm: 'dashboard' },
-
         { to: '/canales', label: 'Canales y Envio', icon: Truck, perm: 'canales' },
       ],
     },
     {
-      key: 'ventas',
-      label: 'Ventas',
+      key: 'ingresos',
+      label: 'Ingresos',
       icon: ShoppingCart,
       links: [
-        { to: '/pl/ventas', label: 'Registro', icon: ShoppingCart, perm: 'ventas' },
-        { to: '/pedidos', label: 'Contra Entrega', icon: ClipboardList, perm: 'ventas' },
-        { to: '/comisiones', label: 'Comisiones', icon: Users, perm: 'ventas' },
-        { to: '/proyeccion', label: 'Proyeccion', icon: TrendingUp, perm: 'ventas' },
+        { to: '/pos', label: 'POS', icon: ShoppingCart, perm: 'ventas' },
+        { to: '/pl/ventas', label: 'Ventas', icon: DollarSign, perm: 'ventas' },
+        { to: '/comprobantes', label: 'Facturacion', icon: FileText, perm: 'facturacion' },
+        { to: '/clientes', label: 'Clientes', icon: Users, perm: 'facturacion' },
+      ],
+    },
+    {
+      key: 'gastos',
+      label: 'Gastos',
+      icon: Receipt,
+      links: [
+        { to: '/pl/compras', label: 'Compras', icon: ShoppingBag, perm: 'finanzas' },
+        { to: '/pl/gastos', label: 'Pagos', icon: Receipt, perm: 'finanzas' },
+        { to: '/perdidas', label: 'Perdidas', icon: TrendingDown, perm: 'finanzas' },
       ],
     },
     {
@@ -115,28 +125,8 @@ export default function Layout() {
       links: [
         { to: '/pl', label: 'Timeline', icon: Activity, perm: 'finanzas', end: true },
         { to: '/pl/resumen', label: 'Estado de resultados', icon: BarChart3, perm: 'finanzas' },
-        { to: '/pl/compras', label: 'Compras', icon: ShoppingBag, perm: 'finanzas' },
-        { to: '/proveedores', label: 'Proveedores', icon: Truck, perm: 'finanzas' },
-        { to: '/pl/gastos', label: 'Gastos', icon: Receipt, perm: 'finanzas' },
         { to: '/pl/cashflow', label: 'Flujo de Caja', icon: Wallet, perm: 'finanzas' },
-        { to: '/perdidas', label: 'Perdidas / Mermas', icon: TrendingDown, perm: 'finanzas' },
-      ],
-    },
-    {
-      key: 'facturacion',
-      label: 'Facturacion',
-      icon: FileText,
-      links: [
-        { to: '/comprobantes', label: 'Comprobantes', icon: FileText, perm: 'facturacion' },
-        { to: '/clientes', label: 'Clientes', icon: Users, perm: 'facturacion' },
-      ],
-    },
-    {
-      key: 'integraciones',
-      label: 'Integraciones',
-      icon: Link2,
-      links: [
-        { to: '/shopify', label: 'Shopify', icon: ShoppingBag, perm: 'dashboard' },
+        { to: '/proveedores', label: 'Proveedores', icon: Truck, perm: 'finanzas' },
       ],
     },
   ];
@@ -254,6 +244,7 @@ export default function Layout() {
         {sidebarGroups.map((group) => {
           const visibleLinks = group.links
             .map(l => ({ ...l, _state: permState(l.perm) }))
+            .filter(l => !HIDDEN_ROUTES.includes(l.to))
             .filter(l => isAdmin || l._state !== 'hidden');
           if (visibleLinks.length === 0) return null;
           const isGroupCollapsed = collapsedGroups[group.key];

@@ -76,6 +76,7 @@ export default function App() {
               <Route path="/actividad" element={<ActividadPage />} />
               <Route path="/pl" element={<PLTimelinePage />} />
               <Route path="/pl/resumen" element={<PLResumenPage />} />
+              <Route path="/pos" element={<PLVentasPage />} />
               <Route path="/pl/ventas" element={<PLVentasPage />} />
               <Route path="/pl/gastos" element={<PLGastosPage />} />
               <Route path="/pl/compras" element={<PLComprasPage />} />
