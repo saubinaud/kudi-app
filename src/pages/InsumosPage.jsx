@@ -25,11 +25,13 @@ function AddPresentacionForm({ insumoId, onAdded }) {
   const [cantidad, setCantidad] = useState('');
   const [unidad, setUnidad] = useState('');
   const [precio, setPrecio] = useState('');
+  const [saving, setSaving] = useState(false);
   const api = useApi();
   const toast = useToast();
 
   const save = async () => {
     if (!nombre || !cantidad) return;
+    setSaving(true);
     try {
       await api.post(`/insumos/${insumoId}/presentaciones`, {
         nombre,
@@ -38,46 +40,37 @@ function AddPresentacionForm({ insumoId, onAdded }) {
         precio: parseFloat(precio) || null,
       });
       toast.success('Presentacion agregada');
-      setNombre('');
-      setCantidad('');
-      setUnidad('');
-      setPrecio('');
+      setNombre(''); setCantidad(''); setUnidad(''); setPrecio('');
       onAdded();
-    } catch (e) {
-      toast.error(e.message);
-    }
+    } catch (e) { toast.error(e.message); }
+    finally { setSaving(false); }
   };
 
   return (
-    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-stone-200">
-      <input
-        className={cx.input + ' !py-1 text-xs flex-1'}
-        placeholder="Nombre"
-        value={nombre}
-        onChange={(e) => setNombre(e.target.value)}
-      />
-      <input
-        className={cx.input + ' !py-1 text-xs w-20'}
-        placeholder="Cant."
-        type="number"
-        value={cantidad}
-        onChange={(e) => setCantidad(e.target.value)}
-      />
-      <input
-        className={cx.input + ' !py-1 text-xs w-16'}
-        placeholder="Unid."
-        value={unidad}
-        onChange={(e) => setUnidad(e.target.value)}
-      />
-      <input
-        className={cx.input + ' !py-1 text-xs w-24'}
-        placeholder="Precio"
-        type="number"
-        step="0.01"
-        value={precio}
-        onChange={(e) => setPrecio(e.target.value)}
-      />
-      <button onClick={save} className={cx.btnPrimary + ' !py-1 !px-3 text-xs'}>+</button>
+    <div className="mt-3 pt-3 border-t border-stone-200">
+      <p className="text-xs font-semibold text-stone-500 mb-2">Agregar presentacion</p>
+      <div className="grid grid-cols-4 gap-2">
+        <div>
+          <label className="text-[10px] text-stone-400 block mb-0.5">Nombre</label>
+          <input className={cx.input + ' text-sm'} placeholder="Ej: Saco 25kg" value={nombre} onChange={e => setNombre(e.target.value)} />
+        </div>
+        <div>
+          <label className="text-[10px] text-stone-400 block mb-0.5">Cantidad</label>
+          <input className={cx.input + ' text-sm'} type="number" step="0.001" placeholder="25" value={cantidad} onChange={e => setCantidad(e.target.value)} />
+        </div>
+        <div>
+          <label className="text-[10px] text-stone-400 block mb-0.5">Unidad</label>
+          <input className={cx.input + ' text-sm'} placeholder="kg" value={unidad} onChange={e => setUnidad(e.target.value)} />
+        </div>
+        <div>
+          <label className="text-[10px] text-stone-400 block mb-0.5">Precio (S/)</label>
+          <div className="flex gap-1">
+            <input className={cx.input + ' text-sm flex-1'} type="number" step="0.01" placeholder="75.00" value={precio} onChange={e => setPrecio(e.target.value)} />
+            <button onClick={save} disabled={saving || !nombre || !cantidad}
+              className={cx.btnPrimary + ' !px-3 !py-2 text-sm'}>+</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -418,12 +411,12 @@ export default function InsumosPage() {
                             <table className="w-full text-sm">
                               <thead>
                                 <tr className="border-b border-stone-200">
-                                  <th className="text-left py-1 pr-4 text-[10px] font-semibold text-stone-400 uppercase">Nombre</th>
-                                  <th className="text-right py-1 pr-4 text-[10px] font-semibold text-stone-400 uppercase w-20">Cantidad</th>
-                                  <th className="text-left py-1 pr-4 text-[10px] font-semibold text-stone-400 uppercase w-16">Unidad</th>
-                                  <th className="text-right py-1 pr-4 text-[10px] font-semibold text-stone-400 uppercase w-24">Precio</th>
-                                  <th className="text-right py-1 pr-4 text-[10px] font-semibold text-stone-400 uppercase w-28">Costo/unidad</th>
-                                  <th className="text-left py-1 text-[10px] font-semibold text-stone-400 uppercase w-20">Principal</th>
+                                  <th className="text-left py-1 pr-4 text-[10px] font-semibold text-stone-400 uppercase flex-1">Nombre</th>
+                                  <th className="text-right py-1 pr-4 text-[10px] font-semibold text-stone-400 uppercase w-24">Cantidad</th>
+                                  <th className="text-left py-1 pr-4 text-[10px] font-semibold text-stone-400 uppercase w-20">Unidad</th>
+                                  <th className="text-right py-1 pr-4 text-[10px] font-semibold text-stone-400 uppercase w-28">Precio</th>
+                                  <th className="text-right py-1 pr-4 text-[10px] font-semibold text-stone-400 uppercase w-32">Costo/unidad</th>
+                                  <th className="text-left py-1 text-[10px] font-semibold text-stone-400 uppercase w-24">Principal</th>
                                 </tr>
                               </thead>
                               <tbody>

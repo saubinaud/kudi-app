@@ -1159,13 +1159,23 @@ export default function CotizadorPage() {
 
           {/* ── No transformable message ── */}
           {tipoProducto === 'no_transformable' && (
-            <div>
-              <h3 className="text-lg font-semibold text-stone-900 mb-3">Receta</h3>
-              <div className={`${cx.card} p-4`}>
-                <p className="text-sm text-stone-400 py-8 text-center">
-                  Este producto se compra y revende. No requiere receta.<br />
-                  El costo se actualiza automaticamente con cada compra registrada.
-                </p>
+            <div className={cx.card + ' p-6 mt-4'}>
+              <h3 className="text-sm font-semibold text-stone-700 mb-3">Producto de compra y reventa</h3>
+              <p className="text-xs text-stone-400 mb-4">El costo se actualiza con cada compra registrada. Puedes ajustar el costo manualmente aqui.</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={cx.label}>Costo neto (S/)</label>
+                  <input type="number" step="0.01" min="0" value={costoGuardado || ''}
+                    onChange={e => setCostoGuardado(parseFloat(e.target.value) || 0)}
+                    className={cx.input} placeholder="0.00" />
+                </div>
+                <div>
+                  <label className={cx.label}>Stock actual</label>
+                  <input type="number" step="1" min="0" value={stockActual || ''}
+                    onChange={e => setStockActual(e.target.value)}
+                    className={cx.input} placeholder="0" readOnly />
+                  <p className="text-[10px] text-stone-400 mt-1">Se actualiza al registrar compras</p>
+                </div>
               </div>
             </div>
           )}

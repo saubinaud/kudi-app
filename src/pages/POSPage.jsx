@@ -280,32 +280,38 @@ export default function POSPage() {
               <h3 className="font-bold text-stone-900">Datos del cliente</h3>
 
               {/* Document type + number */}
-              <div className="flex gap-2">
-                <select
-                  value={posCliente.tipo_doc}
-                  onChange={e => setPosCliente(p => ({ ...p, tipo_doc: e.target.value }))}
-                  className={cx.input + ' w-24 text-sm'}
-                >
-                  <option value="DNI">DNI</option>
-                  <option value="RUC">RUC</option>
-                </select>
-                <div className="relative flex-1">
-                  <input
-                    type="text"
-                    value={posCliente.num_doc}
-                    onChange={e => {
-                      const v = e.target.value.replace(/\D/g, '');
-                      setPosCliente(p => ({ ...p, num_doc: v }));
-                      if (posCliente.tipo_doc === 'DNI' && v.length === 8) buscarDocumento('DNI', v);
-                      if (posCliente.tipo_doc === 'RUC' && v.length === 11) buscarDocumento('RUC', v);
-                    }}
-                    className={cx.input + ' text-sm'}
-                    placeholder={posCliente.tipo_doc === 'DNI' ? '12345678' : '20123456789'}
-                    maxLength={posCliente.tipo_doc === 'DNI' ? 8 : 11}
-                  />
-                  {buscandoDoc && (
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
-                  )}
+              <div className="flex gap-2 items-end">
+                <div style={{width:'70px', flexShrink:0}}>
+                  <label className="text-[10px] text-stone-400 block mb-0.5">Tipo</label>
+                  <select
+                    value={posCliente.tipo_doc}
+                    onChange={e => setPosCliente(p => ({ ...p, tipo_doc: e.target.value }))}
+                    className={cx.input + ' text-sm appearance-none !px-2'}
+                  >
+                    <option value="DNI">DNI</option>
+                    <option value="RUC">RUC</option>
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="text-[10px] text-stone-400 block mb-0.5">Numero de documento</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={posCliente.num_doc}
+                      onChange={e => {
+                        const v = e.target.value.replace(/\D/g, '');
+                        setPosCliente(p => ({ ...p, num_doc: v }));
+                        if (posCliente.tipo_doc === 'DNI' && v.length === 8) buscarDocumento('DNI', v);
+                        if (posCliente.tipo_doc === 'RUC' && v.length === 11) buscarDocumento('RUC', v);
+                      }}
+                      className={cx.input + ' text-sm'}
+                      placeholder={posCliente.tipo_doc === 'DNI' ? '12345678' : '20123456789'}
+                      maxLength={posCliente.tipo_doc === 'DNI' ? 8 : 11}
+                    />
+                    {buscandoDoc && (
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
+                    )}
+                  </div>
                 </div>
               </div>
 

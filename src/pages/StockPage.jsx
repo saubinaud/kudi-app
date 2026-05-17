@@ -59,6 +59,7 @@ export default function StockPage() {
   const [entradaProductoId, setEntradaProductoId] = useState(null);
   const [entradaCantidad, setEntradaCantidad] = useState('');
   const [entradaNota, setEntradaNota] = useState('');
+  const [entradaFechaVencimiento, setEntradaFechaVencimiento] = useState('');
   const [savingEntrada, setSavingEntrada] = useState(false);
 
   const [ajusteProducto, setAjusteProducto] = useState(null);
@@ -139,12 +140,14 @@ export default function StockPage() {
         producto_id: entradaProductoId,
         cantidad: Number(entradaCantidad),
         nota: entradaNota.trim() || null,
+        fecha_vencimiento: entradaFechaVencimiento || null,
       });
       toast.success('Entrada registrada');
       setShowEntrada(false);
       setEntradaProductoId(null);
       setEntradaCantidad('');
       setEntradaNota('');
+      setEntradaFechaVencimiento('');
       setMovimientos({});
       loadStock();
     } catch (err) {
@@ -469,6 +472,15 @@ export default function StockPage() {
                   onChange={(e) => setEntradaNota(e.target.value)}
                   className={cx.input}
                   placeholder="Ej: Compra proveedor"
+                />
+              </div>
+              <div>
+                <label className={cx.label}>Fecha de vencimiento (opcional)</label>
+                <input
+                  type="date"
+                  value={entradaFechaVencimiento}
+                  onChange={(e) => setEntradaFechaVencimiento(e.target.value)}
+                  className={cx.input}
                 />
               </div>
             </div>
