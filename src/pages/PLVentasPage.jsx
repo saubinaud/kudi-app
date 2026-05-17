@@ -776,7 +776,7 @@ export default function PLVentasPage() {
                 {ventasFinal.map((v) => (
                   <tr key={v.id} className={cx.tr + ' cursor-pointer'} onClick={() => openDetalle(v.id)}>
                     <td className={cx.td + ' text-xs whitespace-nowrap text-stone-600'}>{formatDateTime(v.fecha)}</td>
-                    <td className={cx.td}>
+                    <td className={cx.td + ' whitespace-nowrap'}>
                       <span className="font-mono text-xs font-semibold text-[#16A34A]">{v.nro_pedido || v.codigo_pedido || '—'}</span>
                     </td>
                     <td className={cx.td + ' font-medium text-stone-900'}>
