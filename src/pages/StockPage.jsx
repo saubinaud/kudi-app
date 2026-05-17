@@ -457,7 +457,7 @@ export default function StockPage() {
                     <tbody key={prod.id}>
                       <tr
                         className={cx.tr + ' cursor-pointer'}
-                        onClick={() => toggleExpand(prod.id)}
+                        onClick={() => openSidebar(prod)}
                       >
                         <td className={cx.td + ' font-medium text-stone-800'}>
                           <div className="flex items-center gap-2">
@@ -556,7 +556,7 @@ export default function StockPage() {
                 <div key={prod.id}>
                   <div
                     className="p-4 flex items-center justify-between cursor-pointer hover:bg-stone-50/50 transition-colors"
-                    onClick={() => toggleExpand(prod.id)}
+                    onClick={() => openSidebar(prod)}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
