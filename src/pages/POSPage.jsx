@@ -4,7 +4,8 @@ import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
 import CustomSelect from '../components/CustomSelect';
-import { X, Package, CheckCircle, Minus, Plus, ShoppingCart, Banknote, CreditCard, Smartphone, ArrowLeft, Trash2, MapPin, Store, Truck as TruckIcon, User } from 'lucide-react';
+import UbigeoSelect from '../components/UbigeoSelect';
+import { X, Package, CheckCircle, Minus, Plus, ShoppingCart, Banknote, CreditCard, Smartphone, ArrowLeft, Trash2, MapPin, Store, Truck as TruckIcon, User, ChevronRight, AlertTriangle } from 'lucide-react';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -33,6 +34,7 @@ export default function POSPage() {
 
   // Checkout
   const [showCheckout, setShowCheckout] = useState(false);
+  const [showClientSidebar, setShowClientSidebar] = useState(false);
   const [posCliente, setPosCliente] = useState({ tipo_doc: 'DNI', num_doc: '', nombre: '', email: '', telefono: '' });
   const [clienteEncontrado, setClienteEncontrado] = useState(false);
   const [buscandoDoc, setBuscandoDoc] = useState(false);
@@ -43,7 +45,7 @@ export default function POSPage() {
   const [tipoEntrega, setTipoEntrega] = useState('recojo'); // recojo | delivery
   const [zonas, setZonas] = useState([]);
   const [zonaSeleccionada, setZonaSeleccionada] = useState(null);
-  const [direccion, setDireccion] = useState({ departamento: '', provincia: '', distrito: '', direccion: '' });
+  const [direccion, setDireccion] = useState({ departamento: '', provincia: '', distrito: '', direccion: '', referencia: '' });
 
   // Post-sale success
   const [lastSaleId, setLastSaleId] = useState(null);
@@ -250,8 +252,9 @@ export default function POSPage() {
       setMetodoPago('efectivo');
       setTipoEntrega('recojo');
       setZonaSeleccionada(null);
-      setDireccion({ departamento: '', provincia: '', distrito: '', direccion: '' });
+      setDireccion({ departamento: '', provincia: '', distrito: '', direccion: '', referencia: '' });
       setShowCheckout(false);
+      setShowClientSidebar(false);
     } catch (err) {
       toast.error(err.message || 'Error registrando venta');
     } finally {
@@ -400,7 +403,7 @@ export default function POSPage() {
           {showCheckout ? (
             <div className="space-y-4">
               {/* Back button */}
-              <button onClick={() => setShowCheckout(false)} className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800 transition-colors duration-100 -mb-1">
+              <button onClick={() => { setShowCheckout(false); setShowClientSidebar(false); }} className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800 transition-colors duration-100 -mb-1">
                 <ArrowLeft size={12} />
                 Volver al carrito
               </button>
@@ -451,121 +454,41 @@ export default function POSPage() {
                     <TruckIcon size={14} /> Delivery
                   </button>
                 </div>
-                {tipoEntrega === 'delivery' && (
-                  <div className="mt-2.5 space-y-2">
-                    {zonas.length > 0 && (
-                      <CustomSelect
-                        compact
-                        options={zonas.map(z => ({ value: z.id, label: `${z.nombre} — ${formatCurrency(z.costo)}` }))}
-                        value={zonaSeleccionada}
-                        onChange={v => setZonaSeleccionada(v)}
-                        placeholder="Zona de envío..."
-                      />
-                    )}
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <input
-                        type="text"
-                        value={direccion.departamento}
-                        onChange={e => setDireccion(d => ({ ...d, departamento: e.target.value }))}
-                        className="w-full px-2.5 py-1.5 bg-white border border-stone-300 rounded-lg text-stone-800 text-xs placeholder:text-stone-400 focus:outline-none focus:border-stone-500 transition-colors duration-100"
-                        placeholder="Departamento"
-                      />
-                      <input
-                        type="text"
-                        value={direccion.provincia}
-                        onChange={e => setDireccion(d => ({ ...d, provincia: e.target.value }))}
-                        className="w-full px-2.5 py-1.5 bg-white border border-stone-300 rounded-lg text-stone-800 text-xs placeholder:text-stone-400 focus:outline-none focus:border-stone-500 transition-colors duration-100"
-                        placeholder="Provincia"
-                      />
-                      <input
-                        type="text"
-                        value={direccion.distrito}
-                        onChange={e => setDireccion(d => ({ ...d, distrito: e.target.value }))}
-                        className="w-full px-2.5 py-1.5 bg-white border border-stone-300 rounded-lg text-stone-800 text-xs placeholder:text-stone-400 focus:outline-none focus:border-stone-500 transition-colors duration-100"
-                        placeholder="Distrito"
-                      />
-                    </div>
-                    <input
-                      type="text"
-                      value={direccion.direccion}
-                      onChange={e => setDireccion(d => ({ ...d, direccion: e.target.value }))}
-                      className="w-full px-2.5 py-1.5 bg-white border border-stone-300 rounded-lg text-stone-800 text-xs placeholder:text-stone-400 focus:outline-none focus:border-stone-500 transition-colors duration-100"
-                      placeholder="Dirección (calle, número, referencia)"
+                {tipoEntrega === 'delivery' && zonas.length > 0 && (
+                  <div className="mt-2.5">
+                    <CustomSelect
+                      compact
+                      options={zonas.map(z => ({ value: z.id, label: `${z.nombre} — ${formatCurrency(z.costo)}` }))}
+                      value={zonaSeleccionada}
+                      onChange={v => setZonaSeleccionada(v)}
+                      placeholder="Zona de envío..."
                     />
                   </div>
                 )}
               </div>
 
-              {/* Client data */}
-              <div>
-                <label className="text-xs text-stone-500 font-medium block mb-2">Cliente (opcional)</label>
-                <div className="flex gap-2 items-start">
-                  <div className="w-[85px] flex-shrink-0">
-                    <CustomSelect
-                      compact
-                      options={[{ value: 'DNI', label: 'DNI' }, { value: 'RUC', label: 'RUC' }]}
-                      value={posCliente.tipo_doc}
-                      onChange={v => setPosCliente(p => ({ ...p, tipo_doc: v, num_doc: '', nombre: '' }))}
-                    />
-                  </div>
-                  <div className="flex-1 relative">
-                    <input
-                      type="text"
-                      value={posCliente.num_doc}
-                      onChange={e => {
-                        const v = e.target.value.replace(/\D/g, '');
-                        setPosCliente(p => ({ ...p, num_doc: v }));
-                        const tipo = posCliente.tipo_doc;
-                        if (tipo === 'DNI' && v.length === 8) buscarDocumento('DNI', v);
-                        if (tipo === 'RUC' && v.length === 11) buscarDocumento('RUC', v);
-                      }}
-                      className="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-lg text-stone-800 text-xs placeholder:text-stone-400 focus:outline-none focus:border-stone-500 transition-colors duration-100"
-                      placeholder={posCliente.tipo_doc === 'DNI' ? '12345678' : '20123456789'}
-                      maxLength={posCliente.tipo_doc === 'DNI' ? 8 : 11}
-                    />
-                    {buscandoDoc && (
-                      <div className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
-                    )}
-                  </div>
+              {/* Client + address compact button */}
+              <button
+                onClick={() => setShowClientSidebar(true)}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-stone-200 hover:border-stone-300 bg-stone-50/50 transition-colors duration-100 text-left"
+              >
+                <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center flex-shrink-0">
+                  <User size={14} className="text-stone-400" />
                 </div>
-                {/* Found client name */}
-                {clienteEncontrado && posCliente.nombre && (
-                  <p className="text-xs text-emerald-600 font-medium mt-1.5 px-1 flex items-center gap-1">
-                    <CheckCircle size={12} /> {posCliente.nombre}
-                  </p>
-                )}
-                {/* Manual client fields — show when doc entered but not found, or always if doc > 0 */}
-                {posCliente.num_doc.length > 0 && !clienteEncontrado && !buscandoDoc && (
-                  <div className="mt-2.5 space-y-2">
-                    {(posCliente.tipo_doc === 'DNI' && posCliente.num_doc.length === 8) || (posCliente.tipo_doc === 'RUC' && posCliente.num_doc.length === 11) ? (
-                      <p className="text-[11px] text-amber-600 px-1">No encontrado — ingresa los datos manualmente</p>
-                    ) : null}
-                    <input
-                      type="text"
-                      value={posCliente.nombre}
-                      onChange={e => setPosCliente(p => ({ ...p, nombre: e.target.value }))}
-                      className="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-lg text-stone-800 text-xs placeholder:text-stone-400 focus:outline-none focus:border-stone-500 transition-colors duration-100"
-                      placeholder="Nombre del cliente"
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="email"
-                        value={posCliente.email}
-                        onChange={e => setPosCliente(p => ({ ...p, email: e.target.value }))}
-                        className="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-lg text-stone-800 text-xs placeholder:text-stone-400 focus:outline-none focus:border-stone-500 transition-colors duration-100"
-                        placeholder="Email"
-                      />
-                      <input
-                        type="tel"
-                        value={posCliente.telefono}
-                        onChange={e => setPosCliente(p => ({ ...p, telefono: e.target.value }))}
-                        className="w-full px-3 py-1.5 bg-white border border-stone-300 rounded-lg text-stone-800 text-xs placeholder:text-stone-400 focus:outline-none focus:border-stone-500 transition-colors duration-100"
-                        placeholder="Teléfono"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
+                <div className="flex-1 min-w-0">
+                  {posCliente.nombre || direccion.distrito ? (
+                    <>
+                      <p className="text-xs font-medium text-stone-800 truncate">{posCliente.nombre || 'Sin nombre'}</p>
+                      <p className="text-[11px] text-stone-400 truncate">
+                        {[posCliente.num_doc, direccion.distrito].filter(Boolean).join(' · ') || 'Cliente y dirección'}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-stone-500">Agregar cliente y dirección</p>
+                  )}
+                </div>
+                <ChevronRight size={14} className="text-stone-300 flex-shrink-0" />
+              </button>
 
               {/* Total + confirm */}
               <div className="bg-stone-50 rounded-xl p-4 -mx-1">
@@ -761,6 +684,135 @@ export default function POSPage() {
           >
             {saving ? '...' : `Cobrar ${formatCurrency(cartTotal)}`}
           </button>
+        </div>
+      )}
+
+      {/* Client + address sidebar */}
+      {showClientSidebar && (
+        <div className="fixed inset-0 z-[60] flex">
+          <div className="flex-1 bg-black/20" onClick={() => setShowClientSidebar(false)} />
+          <div className="w-full sm:w-96 bg-white h-full shadow-xl overflow-y-auto flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+              <h3 className="font-bold text-stone-900 text-sm">Cliente y dirección</h3>
+              <button onClick={() => setShowClientSidebar(false)} className="text-stone-400 hover:text-stone-600 transition-colors duration-100">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+              {/* DNI / RUC search */}
+              <div>
+                <label className={cx.label}>Documento (opcional)</label>
+                <div className="flex gap-2 items-start mt-1">
+                  <div className="w-[85px] flex-shrink-0">
+                    <CustomSelect
+                      compact
+                      options={[{ value: 'DNI', label: 'DNI' }, { value: 'RUC', label: 'RUC' }]}
+                      value={posCliente.tipo_doc}
+                      onChange={v => setPosCliente(p => ({ ...p, tipo_doc: v, num_doc: '', nombre: '' }))}
+                    />
+                  </div>
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      value={posCliente.num_doc}
+                      onChange={e => {
+                        const v = e.target.value.replace(/\D/g, '');
+                        setPosCliente(p => ({ ...p, num_doc: v }));
+                        const tipo = posCliente.tipo_doc;
+                        if (tipo === 'DNI' && v.length === 8) buscarDocumento('DNI', v);
+                        if (tipo === 'RUC' && v.length === 11) buscarDocumento('RUC', v);
+                      }}
+                      className={cx.input + ' text-sm'}
+                      placeholder={posCliente.tipo_doc === 'DNI' ? '12345678' : '20123456789'}
+                      maxLength={posCliente.tipo_doc === 'DNI' ? 8 : 11}
+                    />
+                    {buscandoDoc && (
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Found */}
+                {clienteEncontrado && posCliente.nombre && (
+                  <p className="text-xs text-emerald-600 font-medium mt-2 px-1 flex items-center gap-1">
+                    <CheckCircle size={12} /> {posCliente.nombre}
+                  </p>
+                )}
+
+                {/* Not found — manual fields */}
+                {posCliente.num_doc.length > 0 && !clienteEncontrado && !buscandoDoc && (
+                  <div className="mt-3 space-y-2">
+                    {((posCliente.tipo_doc === 'DNI' && posCliente.num_doc.length === 8) || (posCliente.tipo_doc === 'RUC' && posCliente.num_doc.length === 11)) && (
+                      <p className="text-[11px] text-amber-600 px-1 flex items-center gap-1">
+                        <AlertTriangle size={11} /> No encontrado — ingresa los datos manualmente
+                      </p>
+                    )}
+                    <input
+                      type="text"
+                      value={posCliente.nombre}
+                      onChange={e => setPosCliente(p => ({ ...p, nombre: e.target.value }))}
+                      className={cx.input + ' text-sm'}
+                      placeholder="Nombre del cliente"
+                    />
+                    <input
+                      type="email"
+                      value={posCliente.email}
+                      onChange={e => setPosCliente(p => ({ ...p, email: e.target.value }))}
+                      className={cx.input + ' text-sm'}
+                      placeholder="Email"
+                    />
+                    <input
+                      type="tel"
+                      value={posCliente.telefono}
+                      onChange={e => setPosCliente(p => ({ ...p, telefono: e.target.value }))}
+                      className={cx.input + ' text-sm'}
+                      placeholder="Teléfono"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Delivery address — only when delivery selected */}
+              {tipoEntrega === 'delivery' && (
+                <div>
+                  <label className={cx.label}>Dirección de entrega</label>
+                  <div className="mt-1 space-y-2">
+                    <UbigeoSelect
+                      value={{ departamento: direccion.departamento, provincia: direccion.provincia, distrito: direccion.distrito }}
+                      onChange={({ departamento, provincia, distrito }) => setDireccion(d => ({ ...d, departamento, provincia, distrito }))}
+                    />
+                    <input
+                      type="text"
+                      value={direccion.direccion}
+                      onChange={e => setDireccion(d => ({ ...d, direccion: e.target.value }))}
+                      className={cx.input + ' text-sm'}
+                      placeholder="Dirección (calle, número)"
+                    />
+                    <input
+                      type="text"
+                      value={direccion.referencia}
+                      onChange={e => setDireccion(d => ({ ...d, referencia: e.target.value }))}
+                      className={cx.input + ' text-sm'}
+                      placeholder="Referencia"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-stone-100 px-5 py-4">
+              <button
+                onClick={() => setShowClientSidebar(false)}
+                className={cx.btnPrimary + ' w-full py-3 text-sm font-semibold'}
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
