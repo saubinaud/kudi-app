@@ -77,7 +77,7 @@ export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const t = user?.giro_terminos || {};
+  const t = {}; // Kudi universal — no per-giro terminology
 
   const HIDDEN_ROUTES = ['/shopify', '/proyeccion', '/comisiones', '/analisis'];
 
