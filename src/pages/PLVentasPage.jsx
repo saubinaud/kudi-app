@@ -103,12 +103,23 @@ export default function PLVentasPage() {
   // Cancel sale state
   const [cancelTarget, setCancelTarget] = useState(null);
 
-  // Ventas filter
-  const [ventaFilter, setVentaFilter] = useState('todas');
-  const contraEntregaCount = useMemo(() => ventas.filter(v => v.estado_pago === 'contra_entrega').length, [ventas]);
-  const filteredVentas = useMemo(() => ventaFilter === 'contra_entrega'
-    ? ventas.filter(v => v.estado_pago === 'contra_entrega')
-    : ventas, [ventas, ventaFilter]);
+  // Sidebar detail panel
+  const [selectedVenta, setSelectedVenta] = useState(null);
+  const [ventaDetalle, setVentaDetalle] = useState(null);
+
+  // Section tabs + estado filter
+  const [seccionTab, setSeccionTab] = useState('todas');
+  const [estadoFilter, setEstadoFilter] = useState('todos');
+
+  const ventasBySeccion = useMemo(() => {
+    if (seccionTab === 'todas') return ventas;
+    return ventas.filter(v => v.tipo_venta === seccionTab);
+  }, [ventas, seccionTab]);
+
+  const ventasFinal = useMemo(() => {
+    if (estadoFilter === 'todos') return ventasBySeccion;
+    return ventasBySeccion.filter(v => v.estado_entrega === estadoFilter);
+  }, [ventasBySeccion, estadoFilter]);
 
   // Load periodos + productos on mount
   useEffect(() => {
@@ -518,6 +529,15 @@ export default function PLVentasPage() {
     }
   };
 
+  // Open sidebar detail
+  const openDetalle = async (ventaId) => {
+    setSelectedVenta(ventaId);
+    try {
+      const res = await api.get(`/pl/ventas/${ventaId}/detalle`);
+      setVentaDetalle(res?.data || res);
+    } catch (e) { toast.error('Error al cargar detalle'); }
+  };
+
   // Cancel sale handler
   const handleCancelVenta = async () => {
     if (!cancelTarget) return;
@@ -679,17 +699,52 @@ export default function PLVentasPage() {
       )}
 
       {/* Ventas list */}
-      {contraEntregaCount > 0 && !loadingVentas && ventas.length > 0 && (
-        <div className="flex gap-2 mb-3">
-          <button onClick={() => setVentaFilter('todas')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-100 ${ventaFilter === 'todas' ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}>
-            Todas ({ventas.length})
-          </button>
-          <button onClick={() => setVentaFilter('contra_entrega')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-100 ${ventaFilter === 'contra_entrega' ? 'bg-orange-600 text-white' : 'bg-orange-50 text-orange-700 hover:bg-orange-100'}`}>
-            Contra entrega ({contraEntregaCount})
-          </button>
-        </div>
+      {/* Section tabs */}
+      {!loadingVentas && ventas.length > 0 && (
+        <>
+          <div className="flex gap-1 mb-4">
+            {[
+              { value: 'todas', label: 'Total ordenes' },
+              { value: 'directo', label: 'Directo' },
+              { value: 'contra_entrega', label: 'Contra entrega' },
+            ].map(t => {
+              const count = t.value === 'todas' ? ventas.length : ventas.filter(v => v.tipo_venta === t.value).length;
+              return (
+                <button key={t.value} onClick={() => setSeccionTab(t.value)}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-100 ${
+                    seccionTab === t.value ? 'bg-[#0A2F24] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                  }`}>
+                  {t.label} ({count})
+                </button>
+              );
+            })}
+          </div>
+          {/* Estado filter tabs */}
+          <div className="flex gap-1 mb-4 flex-wrap">
+            {[
+              { value: 'todos', label: 'Todos' },
+              { value: 'pendiente', label: 'Pendiente' },
+              { value: 'preparando', label: 'Preparando' },
+              { value: 'listo_envio', label: 'Listo p/envio' },
+              { value: 'enviado', label: 'Enviado' },
+              { value: 'entregado', label: 'Entregado' },
+            ].map(t => (
+              <button key={t.value} onClick={() => setEstadoFilter(t.value)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors duration-100 ${
+                  estadoFilter === t.value
+                    ? t.value === 'pendiente' ? 'bg-stone-700 text-white'
+                    : t.value === 'preparando' ? 'bg-blue-600 text-white'
+                    : t.value === 'listo_envio' ? 'bg-orange-500 text-white'
+                    : t.value === 'enviado' ? 'bg-violet-600 text-white'
+                    : t.value === 'entregado' ? 'bg-emerald-600 text-white'
+                    : 'bg-stone-200 text-stone-700'
+                    : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+                }`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </>
       )}
       {loadingVentas ? (
         <div className="space-y-4">
@@ -708,8 +763,6 @@ export default function PLVentasPage() {
                 <tr className="border-b border-stone-100">
                   <th className={cx.th} style={{width:'90px'}}>Fecha</th>
                   <th className={cx.th}>Producto</th>
-                  {ventaFilter === 'contra_entrega' && <th className={cx.th}>Cliente</th>}
-                  {ventaFilter === 'contra_entrega' && <th className={cx.th}>Direccion</th>}
                   <th className={cx.th + ' text-center'} style={{width:'50px'}}>Cant.</th>
                   <th className={cx.th + ' text-right'} style={{width:'70px'}}>Desc.</th>
                   <th className={cx.th + ' text-right whitespace-nowrap'} style={{width:'90px'}}>Total</th>
@@ -720,23 +773,12 @@ export default function PLVentasPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredVentas.map((v) => (
-                  <tr key={v.id} className={cx.tr}>
+                {ventasFinal.map((v) => (
+                  <tr key={v.id} className={cx.tr + ' cursor-pointer'} onClick={() => openDetalle(v.id)}>
                     <td className={cx.td + ' text-stone-600 whitespace-nowrap text-xs'}>{formatDateTime(v.fecha)}{v.codigo_pedido && <span className="text-stone-400 font-mono ml-1">{v.codigo_pedido}</span>}</td>
                     <td className={cx.td + ' font-medium text-stone-900'}>
                       {ventaDisplayName(v)}
                     </td>
-                    {ventaFilter === 'contra_entrega' && (
-                      <td className={cx.td + ' text-stone-600 text-xs'}>
-                        {v.cliente_nombre || '-'}
-                        {v.cliente_telefono && <span className="block text-stone-400">{v.cliente_telefono}</span>}
-                      </td>
-                    )}
-                    {ventaFilter === 'contra_entrega' && (
-                      <td className={cx.td + ' text-stone-600 text-xs max-w-[200px] truncate'}>
-                        {v.direccion_envio || (v.shopify_shipping_address ? [v.shopify_shipping_address.address1, v.shopify_shipping_address.city, v.shopify_shipping_address.province].filter(Boolean).join(', ') : '-')}
-                      </td>
-                    )}
                     <td className={cx.td + ' text-center text-stone-600'}>
                       {v.items?.length > 1
                         ? v.items.reduce((s, i) => s + (parseInt(i.cantidad) || 0), 0)
@@ -749,7 +791,7 @@ export default function PLVentasPage() {
                     </td>
                     <td className={cx.td + ' text-right font-semibold text-stone-900 whitespace-nowrap'}>{formatCurrency(v.total)}</td>
                     <td className={cx.td + ' text-right text-stone-500 whitespace-nowrap'}>{parseFloat(v.costo_envio) > 0 ? formatCurrency(v.costo_envio) : '-'}</td>
-                    <td className={cx.td}>
+                    <td className={cx.td} onClick={e => e.stopPropagation()}>
                       {v.estado_pago === 'pagado' ? (
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Pagado</span>
                       ) : v.estado_pago === 'cancelado' ? (
@@ -758,7 +800,7 @@ export default function PLVentasPage() {
                         <select
                           value={v.estado_pago || 'pendiente'}
                           onChange={e => updateVentaEstado(v.id, { estado_pago: e.target.value })}
-                          className={`text-[10px] px-1.5 py-0.5 rounded-full border-0 cursor-pointer ${
+                          className={`text-[10px] px-1.5 py-0.5 rounded-full border-0 cursor-pointer appearance-none ${
                             v.estado_pago === 'pendiente' ? 'bg-amber-100 text-amber-700' :
                             v.estado_pago === 'contra_entrega' ? 'bg-orange-100 text-orange-700' :
                             v.estado_pago === 'reembolsado' ? 'bg-red-100 text-red-700' :
@@ -772,20 +814,22 @@ export default function PLVentasPage() {
                         </select>
                       )}
                     </td>
-                    <td className={cx.td}>
+                    <td className={cx.td} onClick={e => e.stopPropagation()}>
                       {v.estado_pago !== 'cancelado' ? (
                         <select
                           value={v.estado_entrega || 'pendiente'}
                           onChange={e => updateVentaEstado(v.id, { estado_entrega: e.target.value })}
-                          className={`text-[10px] px-1.5 py-0.5 rounded-full border-0 cursor-pointer ${
+                          className={`text-[10px] px-1.5 py-0.5 rounded-full border-0 cursor-pointer appearance-none ${
                             (v.estado_entrega || 'pendiente') === 'entregado' ? 'bg-emerald-100 text-emerald-700' :
-                            v.estado_entrega === 'enviado' ? 'bg-blue-100 text-blue-700' :
-                            v.estado_entrega === 'preparando' ? 'bg-violet-100 text-violet-700' :
+                            v.estado_entrega === 'enviado' ? 'bg-violet-100 text-violet-700' :
+                            v.estado_entrega === 'listo_envio' ? 'bg-orange-100 text-orange-700' :
+                            v.estado_entrega === 'preparando' ? 'bg-blue-100 text-blue-700' :
                             'bg-stone-100 text-stone-500'
                           }`}
                         >
                           <option value="pendiente">Pendiente</option>
                           <option value="preparando">Preparando</option>
+                          <option value="listo_envio">Listo p/envio</option>
                           <option value="enviado">Enviado</option>
                           <option value="entregado">Entregado</option>
                         </select>
@@ -793,7 +837,7 @@ export default function PLVentasPage() {
                         <span className="text-[10px] text-stone-400">—</span>
                       )}
                     </td>
-                    <td className={cx.td}>
+                    <td className={cx.td} onClick={e => e.stopPropagation()}>
                       <div className="flex items-center gap-1 justify-end">
                         {v.facturado && (
                           <span className={cx.badge('bg-emerald-50 text-emerald-600')}>Facturado</span>
@@ -818,7 +862,7 @@ export default function PLVentasPage() {
 
           {/* Mobile: accordion cards */}
           <div className={`${cx.card} divide-y divide-stone-100 lg:hidden`}>
-            {filteredVentas.map((v) => {
+            {ventasFinal.map((v) => {
               const isExpanded = collapsed[v.id] === true;
               return (
                 <div key={v.id} className="p-4">
@@ -932,15 +976,17 @@ export default function PLVentasPage() {
                           <select
                             value={v.estado_entrega || 'pendiente'}
                             onChange={e => updateVentaEstado(v.id, { estado_entrega: e.target.value })}
-                            className={`text-[10px] px-2 py-1 rounded-full border-0 cursor-pointer ${
+                            className={`text-[10px] px-2 py-1 rounded-full border-0 cursor-pointer appearance-none ${
                               (v.estado_entrega || 'pendiente') === 'entregado' ? 'bg-emerald-100 text-emerald-700' :
-                              v.estado_entrega === 'enviado' ? 'bg-blue-100 text-blue-700' :
-                              v.estado_entrega === 'preparando' ? 'bg-violet-100 text-violet-700' :
+                              v.estado_entrega === 'enviado' ? 'bg-violet-100 text-violet-700' :
+                              v.estado_entrega === 'listo_envio' ? 'bg-orange-100 text-orange-700' :
+                              v.estado_entrega === 'preparando' ? 'bg-blue-100 text-blue-700' :
                               'bg-stone-100 text-stone-500'
                             }`}
                           >
                             <option value="pendiente">Pendiente</option>
                             <option value="preparando">Preparando</option>
+                            <option value="listo_envio">Listo p/envio</option>
                             <option value="enviado">Enviado</option>
                             <option value="entregado">Entregado</option>
                           </select>
@@ -1620,6 +1666,112 @@ export default function PLVentasPage() {
                 <button onClick={() => setEmitirModal(null)} className={cx.btnSecondary}>
                   Cancelar
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sidebar detail panel */}
+      {selectedVenta && ventaDetalle && (
+        <div className="fixed inset-0 z-40 flex">
+          <div className="flex-1 bg-black/20" onClick={() => { setSelectedVenta(null); setVentaDetalle(null); }} />
+          <div className="w-[480px] max-w-full bg-white h-full shadow-2xl overflow-y-auto">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-bold text-stone-900">{ventaDetalle.nro_pedido}</h2>
+                <button onClick={() => { setSelectedVenta(null); setVentaDetalle(null); }} className="text-stone-400 hover:text-stone-600 transition-colors duration-100">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Fecha + tipo */}
+                <div>
+                  <p className="text-xs text-stone-400 uppercase tracking-wider mb-1">Informacion</p>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div><span className="text-stone-400">Fecha:</span> <span className="text-stone-700">{formatDateTime(ventaDetalle.fecha)}</span></div>
+                    <div><span className="text-stone-400">Tipo:</span> <span className="text-stone-700">{ventaDetalle.tipo_venta === 'contra_entrega' ? 'Contra entrega' : 'Directo'}</span></div>
+                  </div>
+                </div>
+
+                {/* Cliente */}
+                {(ventaDetalle.cliente_nombre || ventaDetalle.cliente_razon) && (
+                  <div>
+                    <p className="text-xs text-stone-400 uppercase tracking-wider mb-1">Cliente</p>
+                    <p className="text-sm text-stone-700">{ventaDetalle.cliente_razon || ventaDetalle.cliente_nombre}</p>
+                    {ventaDetalle.cliente_telefono && <p className="text-xs text-stone-400">{ventaDetalle.cliente_telefono}</p>}
+                  </div>
+                )}
+
+                {/* Direccion */}
+                {ventaDetalle.direccion && (
+                  <div>
+                    <p className="text-xs text-stone-400 uppercase tracking-wider mb-1">Direccion de envio</p>
+                    <p className="text-sm text-stone-700">{ventaDetalle.direccion.direccion}, {ventaDetalle.direccion.distrito}</p>
+                  </div>
+                )}
+
+                {/* Products table */}
+                <div>
+                  <p className="text-xs text-stone-400 uppercase tracking-wider mb-2">Productos</p>
+                  <div className="space-y-2">
+                    {(ventaDetalle.items || []).map(item => (
+                      <div key={item.id} className="flex items-center justify-between text-sm py-1 border-b border-stone-100">
+                        <div className="flex-1">
+                          <p className="text-stone-700">{item.producto_nombre}{item.variante_nombre ? ` (${item.variante_nombre})` : ''}</p>
+                          {item.producto_sku && <p className="text-[10px] text-stone-400 font-mono">{item.producto_sku}</p>}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-stone-600">{item.cantidad} x S/ {parseFloat(item.precio_unitario).toFixed(2)}</p>
+                          <p className="text-stone-900 font-medium">S/ {parseFloat(item.subtotal).toFixed(2)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-stone-200 space-y-1 text-sm">
+                    {parseFloat(ventaDetalle.descuento || 0) > 0 && (
+                      <div className="flex justify-between"><span className="text-stone-400">Descuento</span><span className="text-rose-600">-S/ {parseFloat(ventaDetalle.descuento).toFixed(2)}</span></div>
+                    )}
+                    {parseFloat(ventaDetalle.costo_envio || 0) > 0 && (
+                      <div className="flex justify-between"><span className="text-stone-400">Envio</span><span>S/ {parseFloat(ventaDetalle.costo_envio).toFixed(2)}</span></div>
+                    )}
+                    <div className="flex justify-between font-bold text-stone-900">
+                      <span>Total</span><span>S/ {parseFloat(ventaDetalle.total).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Estados editables */}
+                <div>
+                  <p className="text-xs text-stone-400 uppercase tracking-wider mb-2">Estados</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={cx.label}>Pago</label>
+                      <CustomSelect value={ventaDetalle.estado_pago || 'pendiente'}
+                        onChange={v => { updateVentaEstado(ventaDetalle.id, { estado_pago: v }); setVentaDetalle(d => ({...d, estado_pago: v})); }}
+                        options={[
+                          { value: 'pendiente', label: 'Pendiente' },
+                          { value: 'pagado', label: 'Pagado' },
+                          { value: 'contra_entrega', label: 'Contra entrega' },
+                          { value: 'reembolsado', label: 'Reembolsado' },
+                        ]} />
+                    </div>
+                    <div>
+                      <label className={cx.label}>Entrega</label>
+                      <CustomSelect value={ventaDetalle.estado_entrega || 'pendiente'}
+                        onChange={v => { updateVentaEstado(ventaDetalle.id, { estado_entrega: v }); setVentaDetalle(d => ({...d, estado_entrega: v})); }}
+                        options={[
+                          { value: 'pendiente', label: 'Pendiente' },
+                          { value: 'preparando', label: 'Preparando' },
+                          { value: 'listo_envio', label: 'Listo p/envio' },
+                          { value: 'enviado', label: 'Enviado' },
+                          { value: 'entregado', label: 'Entregado' },
+                        ]} />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

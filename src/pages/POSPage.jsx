@@ -94,6 +94,7 @@ export default function POSPage() {
       variante_id: null,
       nombre: product.nombre || product.label,
       variante_nombre: null,
+      tipo_producto: product.tipo_producto || null,
       precio: parseFloat(product.precio_final) || 0,
       cantidad: 1,
       descuento: 0,
@@ -114,6 +115,7 @@ export default function POSPage() {
       variante_id: variant.id,
       nombre: product.nombre || product.label,
       variante_nombre: variant.nombre,
+      tipo_producto: product.tipo_producto || null,
       precio: parseFloat(variant.precio_final) || parseFloat(product.precio_final) || 0,
       cantidad: 1,
       descuento: 0,
@@ -209,6 +211,12 @@ export default function POSPage() {
   const CartPanel = ({ isMobile = false }) => (
     <div className={cx.card + ' p-4' + (!isMobile ? ' lg:sticky lg:top-4' : '')}>
       <h3 className="font-bold text-stone-900 mb-3">Carrito ({cartItems.length})</h3>
+
+      {cartItems.some(ci => ci.tipo_producto === 'pack') && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700 mb-2">
+          Los packs descuentan stock de sus componentes al vender.
+        </div>
+      )}
 
       {cartItems.length === 0 ? (
         <p className="text-stone-400 text-sm text-center py-8">Selecciona productos</p>

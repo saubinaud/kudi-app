@@ -196,12 +196,27 @@ export default function PLComprasPage() {
   };
 
   const selectInsumo = (idx, ins) => {
-    const precioSugerido = Number(ins.cantidad_presentacion) > 0
-      ? Number(ins.precio_presentacion) / Number(ins.cantidad_presentacion)
-      : Number(ins.precio_presentacion) || 0;
+    // Find principal presentacion if available
+    const principal = (ins.presentaciones || []).find(p => p.es_principal) || ins.presentaciones?.[0];
+
+    const cantidad = principal?.cantidad || ins.cantidad_presentacion || 1;
+    const unidad = principal?.unidad || ins.unidad_medida || ins.unidad || '';
+    const precioSugerido = principal?.precio
+      ? parseFloat(principal.precio) / parseFloat(principal.cantidad || 1)
+      : Number(ins.cantidad_presentacion) > 0
+        ? Number(ins.precio_presentacion) / Number(ins.cantidad_presentacion)
+        : Number(ins.precio_presentacion) || 0;
+
     setItems((prev) => prev.map((item, i) => {
       if (i !== idx) return item;
-      return { ...item, insumo_id: ins.id, unidad: ins.unidad_medida || ins.unidad || '', precio_unitario: parseFloat(precioSugerido.toFixed(3)), _precio_catalogo: precioSugerido };
+      return {
+        ...item,
+        insumo_id: ins.id,
+        cantidad: String(cantidad),
+        unidad,
+        precio_unitario: parseFloat(precioSugerido.toFixed(3)),
+        _precio_catalogo: precioSugerido,
+      };
     }));
   };
 
