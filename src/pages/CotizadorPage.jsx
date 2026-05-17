@@ -783,10 +783,6 @@ export default function CotizadorPage() {
         tipo_presentacion: tipoPresentacion,
         unidades_por_producto: tipoPresentacion === 'entero' ? unidadesPorProducto : 1,
         tipo_producto: tipoProducto,
-        control_stock: controlStock,
-        sku: controlStock ? sku.trim() || null : null,
-        stock_actual: controlStock ? (Number(stockActual) || 0) : null,
-        stock_minimo: controlStock ? (Number(stockMinimo) || 0) : null,
         preparaciones: preparaciones.map((p) => ({
           id: p.id,
           nombre: p.nombre,
@@ -1031,7 +1027,6 @@ export default function CotizadorPage() {
                   onChange={v => setTipoProducto(v)}
                   options={[
                     { value: 'transformable', label: 'Transformable (tiene receta)' },
-                    { value: 'no_transformable', label: 'No transformable (compra y reventa)' },
                     { value: 'pack', label: 'Pack (combinación de productos)' },
                   ]}
                 />
@@ -1108,33 +1103,6 @@ export default function CotizadorPage() {
                   rows={2}
                 />
               </div>
-              {/* Stock control */}
-              <div className="mt-4 border-t border-stone-100 pt-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={controlStock} onChange={e => setControlStock(e.target.checked)}
-                    className="accent-[var(--accent)] w-4 h-4" />
-                  <span className="text-sm text-stone-700">Control de stock</span>
-                </label>
-                {controlStock && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
-                    <div>
-                      <label className={cx.label}>SKU</label>
-                      <input type="text" value={sku} onChange={e => setSku(e.target.value)}
-                        className={cx.input} placeholder="ABC-001" />
-                    </div>
-                    <div>
-                      <label className={cx.label}>Stock actual</label>
-                      <input type="number" min="0" step={user?.stock_entero ? "1" : "0.01"} value={stockActual} onChange={e => setStockActual(e.target.value)}
-                        className={cx.input} placeholder="0" />
-                    </div>
-                    <div>
-                      <label className={cx.label}>Stock minimo</label>
-                      <input type="number" min="0" step={user?.stock_entero ? "1" : "0.01"} value={stockMinimo} onChange={e => setStockMinimo(e.target.value)}
-                        className={cx.input} placeholder="5" />
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
 
@@ -1190,29 +1158,6 @@ export default function CotizadorPage() {
               <h3 className="text-lg font-semibold text-stone-900 mb-3">Productos del pack<InfoTip text="Un pack agrupa varios productos. El costo se calcula como la suma de los costos de cada item según la cantidad indicada." /></h3>
               <div className={`${cx.card} p-4`}>
                 <PackItemsEditor productoId={id ? Number(id) : null} onItemsChange={setPendingPackItems} />
-              </div>
-            </div>
-          )}
-
-          {/* ── No transformable message ── */}
-          {tipoProducto === 'no_transformable' && (
-            <div className={cx.card + ' p-6 mt-4'}>
-              <h3 className="text-sm font-semibold text-stone-700 mb-3">Producto de compra y reventa</h3>
-              <p className="text-xs text-stone-400 mb-4">El costo se actualiza con cada compra registrada. Puedes ajustar el costo manualmente aqui.</p>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className={cx.label}>Costo neto (S/)</label>
-                  <input type="number" step="0.01" min="0" value={costoGuardado || ''}
-                    onChange={e => setCostoGuardado(parseFloat(e.target.value) || 0)}
-                    className={cx.input} placeholder="0.00" />
-                </div>
-                <div>
-                  <label className={cx.label}>Stock actual</label>
-                  <input type="number" step="1" min="0" value={stockActual || ''}
-                    onChange={e => setStockActual(e.target.value)}
-                    className={cx.input} placeholder="0" readOnly />
-                  <p className="text-[10px] text-stone-400 mt-1">Se actualiza al registrar compras</p>
-                </div>
               </div>
             </div>
           )}
