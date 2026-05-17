@@ -16,6 +16,20 @@ import {
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
+const TIPOS_COMPROBANTE = [
+  { value: '', label: 'Sin comprobante' },
+  { value: 'boleta', label: 'Boleta' },
+  { value: 'factura', label: 'Factura' },
+  { value: 'ticket', label: 'Ticket' },
+  { value: 'liquidacion', label: 'Liquidacion de compra' },
+];
+
+const TIPOS_ITEM = [
+  { value: 'insumo', label: 'Insumo' },
+  { value: 'material', label: 'Material' },
+  { value: 'producto', label: 'Producto (no transformable)' },
+];
+
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -31,6 +45,12 @@ function currentMonthPeriod() {
 }
 
 const EMPTY_ITEM = { tipo: 'insumo', insumo_id: null, material_id: null, producto_id: null, nombre_item: '', cantidad: '', unidad: '', precio_unitario: '', _precio_catalogo: 0 };
+
+const EMPTY_PROVEEDOR = { nombre: '', ruc: '', telefono: '', email: '' };
+const EMPTY_INSUMO = { nombre: '', cantidad_presentacion: '', unidad_medida: 'g', precio_presentacion: '' };
+const EMPTY_MATERIAL = { nombre: '', cantidad_presentacion: '', unidad_medida: 'uni', precio_presentacion: '' };
+
+const UNIDADES_BASE = ['g', 'kg', 'ml', 'L', 'uni', 'oz', 'cm', 'mt'];
 
 export default function PLComprasPage() {
   const api = useApi();
@@ -59,6 +79,23 @@ export default function PLComprasPage() {
   const [expanded, setExpanded] = useState({});
   const [creatingPeriodo, setCreatingPeriodo] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Side panel: nuevo proveedor
+  const [showNewProveedor, setShowNewProveedor] = useState(false);
+  const [newProveedorData, setNewProveedorData] = useState({ ...EMPTY_PROVEEDOR });
+  const [savingProveedor, setSavingProveedor] = useState(false);
+
+  // Side panel: nuevo insumo
+  const [showNewInsumo, setShowNewInsumo] = useState(false);
+  const [newInsumoTarget, setNewInsumoTarget] = useState(null); // item idx to auto-select after creation
+  const [newInsumoData, setNewInsumoData] = useState({ ...EMPTY_INSUMO });
+  const [savingInsumo, setSavingInsumo] = useState(false);
+
+  // Side panel: nuevo material
+  const [showNewMaterial, setShowNewMaterial] = useState(false);
+  const [newMaterialTarget, setNewMaterialTarget] = useState(null);
+  const [newMaterialData, setNewMaterialData] = useState({ ...EMPTY_MATERIAL });
+  const [savingMaterial, setSavingMaterial] = useState(false);
 
   // Modal form
   const [form, setForm] = useState({ fecha: todayStr(), proveedor: '', proveedor_id: '', nota: '', cuenta_id: '', tipo_comprobante: '', linea_negocio_id: null, descripcion: '' });
@@ -164,7 +201,7 @@ export default function PLComprasPage() {
       : Number(ins.precio_presentacion) || 0;
     setItems((prev) => prev.map((item, i) => {
       if (i !== idx) return item;
-      return { ...item, insumo_id: ins.id, unidad: ins.unidad_medida || ins.unidad || '', precio_unitario: parseFloat(precioSugerido.toFixed(2)), _precio_catalogo: precioSugerido };
+      return { ...item, insumo_id: ins.id, unidad: ins.unidad_medida || ins.unidad || '', precio_unitario: parseFloat(precioSugerido.toFixed(3)), _precio_catalogo: precioSugerido };
     }));
   };
 
@@ -174,7 +211,7 @@ export default function PLComprasPage() {
       : Number(mat.precio_presentacion) || 0;
     setItems((prev) => prev.map((item, i) => {
       if (i !== idx) return item;
-      return { ...item, material_id: mat.id, unidad: mat.unidad_medida || mat.unidad || '', precio_unitario: parseFloat(precioSugerido.toFixed(2)), _precio_catalogo: precioSugerido };
+      return { ...item, material_id: mat.id, unidad: mat.unidad_medida || mat.unidad || '', precio_unitario: parseFloat(precioSugerido.toFixed(3)), _precio_catalogo: precioSugerido };
     }));
   };
 
@@ -182,7 +219,7 @@ export default function PLComprasPage() {
     const precioSugerido = Number(prod.costo_neto) || 0;
     setItems((prev) => prev.map((item, i) => {
       if (i !== idx) return item;
-      return { ...item, producto_id: prod.id, unidad: 'uni', precio_unitario: parseFloat(precioSugerido.toFixed(2)), _precio_catalogo: precioSugerido };
+      return { ...item, producto_id: prod.id, unidad: 'uni', precio_unitario: parseFloat(precioSugerido.toFixed(3)), _precio_catalogo: precioSugerido };
     }));
   };
 
@@ -238,7 +275,6 @@ export default function PLComprasPage() {
   // Export CSV
   const exportCSV = async () => {
     try {
-      // API_BASE imported at top
       const res = await fetch(`${API_BASE}/pl/compras/export?year=${periodo.year}&month=${periodo.month}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -272,6 +308,96 @@ export default function PLComprasPage() {
 
   // Toggle accordion
   const toggleCompra = (id) => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  // Save nuevo proveedor
+  const saveNuevoProveedor = async () => {
+    if (!newProveedorData.nombre.trim()) { toast.error('El nombre es requerido'); return; }
+    setSavingProveedor(true);
+    try {
+      const res = await api.post('/proveedores', {
+        nombre: newProveedorData.nombre.trim(),
+        ruc: newProveedorData.ruc.trim() || null,
+        telefono: newProveedorData.telefono.trim() || null,
+        email: newProveedorData.email.trim() || null,
+      });
+      const nuevo = res.data;
+      setProveedores((prev) => [...prev, nuevo]);
+      setForm((f) => ({ ...f, proveedor_id: nuevo.id, proveedor: nuevo.nombre }));
+      toast.success('Proveedor creado');
+      setShowNewProveedor(false);
+      setNewProveedorData({ ...EMPTY_PROVEEDOR });
+    } catch (err) {
+      toast.error(err.message || 'Error creando proveedor');
+    } finally {
+      setSavingProveedor(false);
+    }
+  };
+
+  // Save nuevo insumo inline
+  const saveNuevoInsumo = async () => {
+    if (!newInsumoData.nombre.trim() || !newInsumoData.cantidad_presentacion || !newInsumoData.precio_presentacion) {
+      toast.error('Completa nombre, cantidad y precio');
+      return;
+    }
+    setSavingInsumo(true);
+    try {
+      const res = await api.post('/insumos', {
+        nombre: newInsumoData.nombre.trim(),
+        cantidad_presentacion: Number(newInsumoData.cantidad_presentacion),
+        unidad_medida: newInsumoData.unidad_medida,
+        precio_presentacion: Number(newInsumoData.precio_presentacion),
+      });
+      const nuevo = res.data;
+      setInsumos((prev) => [...prev, nuevo]);
+      if (newInsumoTarget !== null) {
+        selectInsumo(newInsumoTarget, nuevo);
+      }
+      toast.success('Insumo creado');
+      setShowNewInsumo(false);
+      setNewInsumoData({ ...EMPTY_INSUMO });
+      setNewInsumoTarget(null);
+    } catch (err) {
+      toast.error(err.message || 'Error creando insumo');
+    } finally {
+      setSavingInsumo(false);
+    }
+  };
+
+  // Save nuevo material inline
+  const saveNuevoMaterial = async () => {
+    if (!newMaterialData.nombre.trim() || !newMaterialData.cantidad_presentacion || !newMaterialData.precio_presentacion) {
+      toast.error('Completa nombre, cantidad y precio');
+      return;
+    }
+    setSavingMaterial(true);
+    try {
+      const res = await api.post('/materiales', {
+        nombre: newMaterialData.nombre.trim(),
+        cantidad_presentacion: Number(newMaterialData.cantidad_presentacion),
+        unidad_medida: newMaterialData.unidad_medida,
+        precio_presentacion: Number(newMaterialData.precio_presentacion),
+      });
+      const nuevo = res.data;
+      setMateriales((prev) => [...prev, nuevo]);
+      if (newMaterialTarget !== null) {
+        selectMaterial(newMaterialTarget, nuevo);
+      }
+      toast.success('Material creado');
+      setShowNewMaterial(false);
+      setNewMaterialData({ ...EMPTY_MATERIAL });
+      setNewMaterialTarget(null);
+    } catch (err) {
+      toast.error(err.message || 'Error creando material');
+    } finally {
+      setSavingMaterial(false);
+    }
+  };
+
+  // Products filtered for 'producto' type (no packs)
+  const productosNopack = useMemo(
+    () => productos.filter((p) => p.tipo_producto !== 'pack'),
+    [productos]
+  );
 
   // Loading skeleton
   if (loading) {
@@ -376,7 +502,7 @@ export default function PLComprasPage() {
               <div key={compra.id}>
                 {/* Compra header */}
                 <div
-                  className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-stone-50/50 transition-colors"
+                  className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-stone-50/50 transition-colors duration-100"
                   onClick={() => toggleCompra(compra.id)}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -444,9 +570,9 @@ export default function PLComprasPage() {
                               <td className={cx.td + ' font-medium text-stone-900'}>{it.item_nombre || it.nombre_item || '-'}</td>
                               <td className={cx.td + ' text-right text-stone-600'}>{parseFloat(it.cantidad)}</td>
                               <td className={cx.td + ' text-center text-stone-500'}>{it.unidad || '-'}</td>
-                              <td className={cx.td + ' text-right text-stone-600'}>{formatCurrency(parseFloat(it.precio_unitario).toFixed(2))}</td>
+                              <td className={cx.td + ' text-right text-stone-600 font-mono text-xs'}>{parseFloat(it.precio_unitario).toFixed(3)}</td>
                               <td className={cx.td + ' text-right'}>
-                                <span className="font-semibold text-stone-900">{formatCurrency(parseFloat(it.total).toFixed(2))}</span>
+                                <span className="font-semibold text-stone-900 font-mono text-xs">{parseFloat(it.total).toFixed(3)}</span>
                                 {variation !== null && (
                                   <span className={`ml-1.5 text-[10px] ${variation > 0 ? 'text-rose-500' : 'text-teal-600'}`}>
                                     {variation > 0 ? '+' : ''}{variation.toFixed(1)}%
@@ -478,12 +604,12 @@ export default function PLComprasPage() {
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-stone-800 truncate">{it.item_nombre || it.nombre_item || '-'}</p>
                             <p className="text-[11px] text-stone-400">
-                              {parseFloat(it.cantidad)} {it.unidad || ''} x {formatCurrency(parseFloat(it.precio_unitario).toFixed(2))}
+                              {parseFloat(it.cantidad)} {it.unidad || ''} x {parseFloat(it.precio_unitario).toFixed(3)}
                             </p>
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0 ml-3">
-                            <span className="text-sm font-semibold text-stone-900">
-                              {formatCurrency(parseFloat(it.total).toFixed(2))}
+                            <span className="text-sm font-semibold text-stone-900 font-mono text-xs">
+                              {parseFloat(it.total).toFixed(3)}
                             </span>
                             {variation !== null && (
                               <span className={`text-[10px] ${variation > 0 ? 'text-rose-500' : 'text-teal-600'}`}>
@@ -549,28 +675,23 @@ export default function PLComprasPage() {
                 </div>
                 <div>
                   <label className={cx.label}>Proveedor</label>
-                  {proveedores.length > 0 ? (
-                    <CustomSelect
-                      options={[
-                        { value: '', label: 'Sin especificar' },
-                        ...proveedores.map(p => ({ value: p.id, label: p.nombre })),
-                      ]}
-                      value={form.proveedor_id}
-                      onChange={(v) => {
-                        const prov = proveedores.find(p => p.id === v);
-                        setForm((f) => ({ ...f, proveedor_id: v, proveedor: prov?.nombre || '' }));
-                      }}
-                      placeholder="Seleccionar proveedor"
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      value={form.proveedor}
-                      onChange={(e) => setForm((f) => ({ ...f, proveedor: e.target.value }))}
-                      className={cx.input}
-                      placeholder="Ej: Mercado central"
-                    />
-                  )}
+                  <CustomSelect
+                    options={[
+                      { value: '', label: 'Sin especificar' },
+                      { value: '__nuevo__', label: '+ Crear proveedor' },
+                      ...proveedores.map(p => ({ value: p.id, label: p.nombre })),
+                    ]}
+                    value={form.proveedor_id}
+                    onChange={(v) => {
+                      if (v === '__nuevo__') {
+                        setShowNewProveedor(true);
+                        return;
+                      }
+                      const prov = proveedores.find(p => p.id === v);
+                      setForm((f) => ({ ...f, proveedor_id: v, proveedor: prov?.nombre || '' }));
+                    }}
+                    placeholder="Seleccionar proveedor"
+                  />
                 </div>
                 {cuentas.length > 0 && (
                 <div>
@@ -592,14 +713,7 @@ export default function PLComprasPage() {
                   <CustomSelect
                     value={form.tipo_comprobante}
                     onChange={(v) => setForm((f) => ({ ...f, tipo_comprobante: v }))}
-                    options={[
-                      { value: '', label: 'Sin comprobante' },
-                      { value: 'boleta', label: 'Boleta' },
-                      { value: 'factura', label: 'Factura' },
-                      { value: 'recibo', label: 'Recibo por honorarios' },
-                      { value: 'ticket', label: 'Ticket' },
-                      { value: 'guia', label: 'Guía de remisión' },
-                    ]}
+                    options={TIPOS_COMPROBANTE}
                     placeholder="Tipo..."
                   />
                 </div>
@@ -636,14 +750,9 @@ export default function PLComprasPage() {
                         <CustomSelect
                           value={item.tipo}
                           onChange={(v) => updateItem(idx, 'tipo', v)}
-                          options={[
-                            { value: 'insumo', label: 'Insumo' },
-                            { value: 'material', label: 'Material' },
-                            { value: 'producto', label: 'Producto' },
-                            { value: 'otro', label: 'Otro' },
-                          ]}
+                          options={TIPOS_ITEM}
                           compact
-                          className="w-28"
+                          className="w-44"
                         />
                         {items.length > 1 && (
                           <button onClick={() => removeItem(idx)} className={cx.btnIcon + ' !p-1 hover:text-rose-600'}>
@@ -654,43 +763,44 @@ export default function PLComprasPage() {
 
                       {/* Item selector based on type */}
                       {item.tipo === 'insumo' && (
-                        <div className="mb-2">
+                        <div className="mb-2 space-y-1">
                           <SearchableSelect
                             options={insumos}
                             value={item.insumo_id}
                             onChange={(ins) => selectInsumo(idx, ins)}
                             placeholder="Buscar insumo..."
                           />
+                          <button
+                            onClick={() => { setNewInsumoTarget(idx); setShowNewInsumo(true); }}
+                            className="text-[11px] text-[var(--accent)] hover:underline transition-colors duration-100"
+                          >
+                            + Crear nuevo insumo
+                          </button>
                         </div>
                       )}
                       {item.tipo === 'material' && (
-                        <div className="mb-2">
+                        <div className="mb-2 space-y-1">
                           <SearchableSelect
                             options={materiales}
                             value={item.material_id}
                             onChange={(mat) => selectMaterial(idx, mat)}
                             placeholder="Buscar material..."
                           />
+                          <button
+                            onClick={() => { setNewMaterialTarget(idx); setShowNewMaterial(true); }}
+                            className="text-[11px] text-[var(--accent)] hover:underline transition-colors duration-100"
+                          >
+                            + Crear nuevo material
+                          </button>
                         </div>
                       )}
                       {item.tipo === 'producto' && (
                         <div className="mb-2">
                           <SearchableSelect
-                            options={productos}
+                            options={productosNopack}
                             value={item.producto_id}
                             onChange={(prod) => selectProducto(idx, prod)}
                             placeholder="Buscar producto..."
-                          />
-                        </div>
-                      )}
-                      {item.tipo === 'otro' && (
-                        <div className="mb-2">
-                          <input
-                            type="text"
-                            value={item.nombre_item}
-                            onChange={(e) => updateItem(idx, 'nombre_item', e.target.value)}
-                            className={cx.input}
-                            placeholder="Nombre del item"
                           />
                         </div>
                       )}
@@ -734,9 +844,9 @@ export default function PLComprasPage() {
                             value={item.precio_unitario}
                             onChange={(e) => updateItem(idx, 'precio_unitario', e.target.value)}
                             className={cx.input}
-                            placeholder="0.00"
+                            placeholder="0.000"
                             min="0"
-                            step="0.01"
+                            step="0.001"
                           />
                         </div>
                       </div>
@@ -755,8 +865,8 @@ export default function PLComprasPage() {
                               : 'Mismo precio'}
                           </span>
                         )}
-                        <span className="text-xs font-semibold text-stone-600">
-                          Subtotal: {formatCurrency(itemSubtotal(item))}
+                        <span className="text-xs font-semibold text-stone-600 font-mono ml-auto">
+                          Subtotal: {itemSubtotal(item).toFixed(3)}
                         </span>
                       </div>
                     </div>
@@ -797,6 +907,219 @@ export default function PLComprasPage() {
                   Cancelar
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Side panel: nuevo proveedor */}
+      {showNewProveedor && (
+        <div className="fixed inset-0 z-[60] flex">
+          <div className="flex-1 bg-black/20" onClick={() => setShowNewProveedor(false)} />
+          <div className="w-96 bg-white h-full shadow-xl p-6 overflow-y-auto flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-stone-900">Nuevo proveedor</h3>
+              <button onClick={() => setShowNewProveedor(false)} className={cx.btnIcon}><X size={18} /></button>
+            </div>
+            <div className="space-y-3 flex-1">
+              <div>
+                <label className={cx.label}>Nombre *</label>
+                <input
+                  type="text"
+                  value={newProveedorData.nombre}
+                  onChange={(e) => setNewProveedorData((d) => ({ ...d, nombre: e.target.value }))}
+                  className={cx.input}
+                  placeholder="Ej: Distribuidora Lima"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className={cx.label}>RUC</label>
+                <input
+                  type="text"
+                  value={newProveedorData.ruc}
+                  onChange={(e) => setNewProveedorData((d) => ({ ...d, ruc: e.target.value }))}
+                  className={cx.input}
+                  placeholder="20xxxxxxxxx"
+                  maxLength={11}
+                />
+              </div>
+              <div>
+                <label className={cx.label}>Teléfono</label>
+                <input
+                  type="tel"
+                  value={newProveedorData.telefono}
+                  onChange={(e) => setNewProveedorData((d) => ({ ...d, telefono: e.target.value }))}
+                  className={cx.input}
+                  placeholder="9xxxxxxxx"
+                />
+              </div>
+              <div>
+                <label className={cx.label}>Email</label>
+                <input
+                  type="email"
+                  value={newProveedorData.email}
+                  onChange={(e) => setNewProveedorData((d) => ({ ...d, email: e.target.value }))}
+                  className={cx.input}
+                  placeholder="proveedor@email.com"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={saveNuevoProveedor}
+                disabled={savingProveedor}
+                className={cx.btnPrimary + ' flex-1'}
+              >
+                {savingProveedor ? 'Guardando...' : 'Crear proveedor'}
+              </button>
+              <button onClick={() => setShowNewProveedor(false)} className={cx.btnSecondary}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Side panel: nuevo insumo */}
+      {showNewInsumo && (
+        <div className="fixed inset-0 z-[60] flex">
+          <div className="flex-1 bg-black/20" onClick={() => setShowNewInsumo(false)} />
+          <div className="w-96 bg-white h-full shadow-xl p-6 overflow-y-auto flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-stone-900">Nuevo insumo</h3>
+              <button onClick={() => setShowNewInsumo(false)} className={cx.btnIcon}><X size={18} /></button>
+            </div>
+            <div className="space-y-3 flex-1">
+              <div>
+                <label className={cx.label}>Nombre *</label>
+                <input
+                  type="text"
+                  value={newInsumoData.nombre}
+                  onChange={(e) => setNewInsumoData((d) => ({ ...d, nombre: e.target.value }))}
+                  className={cx.input}
+                  placeholder="Ej: Harina de trigo"
+                  autoFocus
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={cx.label}>Cantidad *</label>
+                  <input
+                    type="number"
+                    value={newInsumoData.cantidad_presentacion}
+                    onChange={(e) => setNewInsumoData((d) => ({ ...d, cantidad_presentacion: e.target.value }))}
+                    className={cx.input}
+                    placeholder="1000"
+                    min="0"
+                    step="any"
+                  />
+                </div>
+                <div>
+                  <label className={cx.label}>Unidad</label>
+                  <CustomSelect
+                    value={newInsumoData.unidad_medida}
+                    onChange={(v) => setNewInsumoData((d) => ({ ...d, unidad_medida: v }))}
+                    options={UNIDADES_BASE.map(u => ({ value: u, label: u }))}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className={cx.label}>Precio presentacion *</label>
+                <input
+                  type="number"
+                  value={newInsumoData.precio_presentacion}
+                  onChange={(e) => setNewInsumoData((d) => ({ ...d, precio_presentacion: e.target.value }))}
+                  className={cx.input}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={saveNuevoInsumo}
+                disabled={savingInsumo}
+                className={cx.btnPrimary + ' flex-1'}
+              >
+                {savingInsumo ? 'Guardando...' : 'Crear insumo'}
+              </button>
+              <button onClick={() => setShowNewInsumo(false)} className={cx.btnSecondary}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Side panel: nuevo material */}
+      {showNewMaterial && (
+        <div className="fixed inset-0 z-[60] flex">
+          <div className="flex-1 bg-black/20" onClick={() => setShowNewMaterial(false)} />
+          <div className="w-96 bg-white h-full shadow-xl p-6 overflow-y-auto flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-stone-900">Nuevo material</h3>
+              <button onClick={() => setShowNewMaterial(false)} className={cx.btnIcon}><X size={18} /></button>
+            </div>
+            <div className="space-y-3 flex-1">
+              <div>
+                <label className={cx.label}>Nombre *</label>
+                <input
+                  type="text"
+                  value={newMaterialData.nombre}
+                  onChange={(e) => setNewMaterialData((d) => ({ ...d, nombre: e.target.value }))}
+                  className={cx.input}
+                  placeholder="Ej: Caja de carton"
+                  autoFocus
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={cx.label}>Cantidad *</label>
+                  <input
+                    type="number"
+                    value={newMaterialData.cantidad_presentacion}
+                    onChange={(e) => setNewMaterialData((d) => ({ ...d, cantidad_presentacion: e.target.value }))}
+                    className={cx.input}
+                    placeholder="100"
+                    min="0"
+                    step="any"
+                  />
+                </div>
+                <div>
+                  <label className={cx.label}>Unidad</label>
+                  <CustomSelect
+                    value={newMaterialData.unidad_medida}
+                    onChange={(v) => setNewMaterialData((d) => ({ ...d, unidad_medida: v }))}
+                    options={UNIDADES_BASE.map(u => ({ value: u, label: u }))}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className={cx.label}>Precio presentacion *</label>
+                <input
+                  type="number"
+                  value={newMaterialData.precio_presentacion}
+                  onChange={(e) => setNewMaterialData((d) => ({ ...d, precio_presentacion: e.target.value }))}
+                  className={cx.input}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={saveNuevoMaterial}
+                disabled={savingMaterial}
+                className={cx.btnPrimary + ' flex-1'}
+              >
+                {savingMaterial ? 'Guardando...' : 'Crear material'}
+              </button>
+              <button onClick={() => setShowNewMaterial(false)} className={cx.btnSecondary}>
+                Cancelar
+              </button>
             </div>
           </div>
         </div>

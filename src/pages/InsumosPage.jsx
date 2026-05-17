@@ -5,7 +5,7 @@ import { cx } from '../styles/tokens';
 import { formatCurrency, formatDate } from '../utils/format';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CustomSelect from '../components/CustomSelect';
-import { Plus, Save, X, Trash2, Pencil, Search, TrendingUp } from 'lucide-react';
+import { Plus, Save, X, Trash2, Pencil, Search, TrendingUp, ChevronDown, ChevronRight } from 'lucide-react';
 import { useTerminos } from '../context/TerminosContext';
 
 const UNIDADES = ['g', 'kg', 'ml', 'L', 'uni', 'oz'];
@@ -20,6 +20,68 @@ const emptyRow = () => ({
   _new: true,
 });
 
+function AddPresentacionForm({ insumoId, onAdded }) {
+  const [nombre, setNombre] = useState('');
+  const [cantidad, setCantidad] = useState('');
+  const [unidad, setUnidad] = useState('');
+  const [precio, setPrecio] = useState('');
+  const api = useApi();
+  const toast = useToast();
+
+  const save = async () => {
+    if (!nombre || !cantidad) return;
+    try {
+      await api.post(`/insumos/${insumoId}/presentaciones`, {
+        nombre,
+        cantidad: parseFloat(cantidad),
+        unidad,
+        precio: parseFloat(precio) || null,
+      });
+      toast.success('Presentacion agregada');
+      setNombre('');
+      setCantidad('');
+      setUnidad('');
+      setPrecio('');
+      onAdded();
+    } catch (e) {
+      toast.error(e.message);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-stone-200">
+      <input
+        className={cx.input + ' !py-1 text-xs flex-1'}
+        placeholder="Nombre"
+        value={nombre}
+        onChange={(e) => setNombre(e.target.value)}
+      />
+      <input
+        className={cx.input + ' !py-1 text-xs w-20'}
+        placeholder="Cant."
+        type="number"
+        value={cantidad}
+        onChange={(e) => setCantidad(e.target.value)}
+      />
+      <input
+        className={cx.input + ' !py-1 text-xs w-16'}
+        placeholder="Unid."
+        value={unidad}
+        onChange={(e) => setUnidad(e.target.value)}
+      />
+      <input
+        className={cx.input + ' !py-1 text-xs w-24'}
+        placeholder="Precio"
+        type="number"
+        step="0.01"
+        value={precio}
+        onChange={(e) => setPrecio(e.target.value)}
+      />
+      <button onClick={save} className={cx.btnPrimary + ' !py-1 !px-3 text-xs'}>+</button>
+    </div>
+  );
+}
+
 export default function InsumosPage() {
   const api = useApi();
   const toast = useToast();
@@ -31,6 +93,7 @@ export default function InsumosPage() {
   const [editData, setEditData] = useState({});
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [priceHistory, setPriceHistory] = useState(null);
+  const [expanded, setExpanded] = useState({});
 
   useEffect(() => {
     loadInsumos();
@@ -150,6 +213,10 @@ export default function InsumosPage() {
     return precio / pres;
   };
 
+  const toggleExpanded = (id) => {
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   const filtered = insumos.filter(
     (i) =>
       i._new ||
@@ -224,7 +291,9 @@ export default function InsumosPage() {
                   <p className="text-stone-500 text-xs mt-1">{ins.cantidad_presentacion} {ins.unidad_medida} - {formatCurrency(ins.precio_presentacion)}</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-[var(--accent)] text-sm font-semibold">{formatCurrency(costoUnitario(ins))}/{ins.unidad_base || ins.unidad_medida}</span>
+                  <span className="text-[var(--accent)] text-sm font-semibold">
+                    S/ {costoUnitario(ins).toFixed(3)}/{ins.unidad_base || ins.unidad_medida}
+                  </span>
                   {tieneWAC(ins) && <p className="text-[10px] text-teal-600">WAC</p>}
                 </div>
               </div>
@@ -233,6 +302,32 @@ export default function InsumosPage() {
                 <button onClick={() => startEdit(ins)} className={cx.btnGhost + ' flex-1 flex items-center justify-center gap-1'}><Pencil size={13} /> Editar</button>
                 <button onClick={() => setDeleteTarget(ins)} className={cx.btnDanger + ' flex items-center justify-center gap-1'}><Trash2 size={13} /></button>
               </div>
+              {/* Mobile presentaciones */}
+              {ins.presentaciones?.length > 0 && (
+                <div className="mt-3 border-t border-stone-200 pt-3">
+                  <button
+                    onClick={() => toggleExpanded(ins.id)}
+                    className="flex items-center gap-1 text-xs text-stone-500 font-medium"
+                  >
+                    {expanded[ins.id]
+                      ? <ChevronDown size={13} />
+                      : <ChevronRight size={13} />
+                    }
+                    {ins.presentaciones.length} presentacion{ins.presentaciones.length !== 1 ? 'es' : ''}
+                  </button>
+                  {expanded[ins.id] && (
+                    <div className="mt-2 space-y-1">
+                      {ins.presentaciones.map((p) => (
+                        <div key={p.id} className="flex items-center justify-between text-xs text-stone-600 py-1">
+                          <span className="font-medium">{p.nombre}</span>
+                          <span className="text-stone-400">{p.cantidad} {p.unidad} — S/ {parseFloat(p.precio || 0).toFixed(2)}</span>
+                        </div>
+                      ))}
+                      <AddPresentacionForm insumoId={ins.id} onAdded={() => loadInsumos()} />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
@@ -243,11 +338,12 @@ export default function InsumosPage() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-stone-200">
+              <th className={cx.th + ' w-8'}></th>
               <th className={cx.th}>Nombre</th>
               <th className={cx.th}>Presentacion</th>
               <th className={cx.th}>Unidad</th>
               <th className={cx.th}>Precio</th>
-              <th className={cx.th}>Costo Unitario</th>
+              <th className={cx.th}>Costo Unitario (WAC)</th>
               <th className={cx.th + ' text-right'}>Acciones</th>
             </tr>
           </thead>
@@ -257,6 +353,7 @@ export default function InsumosPage() {
               if (isEditing) {
                 return (
                   <tr key={ins.id || `new-${idx}`} className="border-b border-[var(--accent)]/30">
+                    <td className={cx.td}></td>
                     <td className={cx.td}><input type="text" value={editData.nombre} onChange={(e) => setEditData({ ...editData, nombre: e.target.value })} onBlur={(e) => { const v = e.target.value.trim(); if (v) setEditData({ ...editData, nombre: v.charAt(0).toUpperCase() + v.slice(1) }); }} className={cx.input} autoFocus /></td>
                     <td className={cx.td}><input type="number" value={editData.cantidad_presentacion} onChange={(e) => setEditData({ ...editData, cantidad_presentacion: e.target.value })} className={cx.input} /></td>
                     <td className={cx.td}>
@@ -267,7 +364,9 @@ export default function InsumosPage() {
                       />
                     </td>
                     <td className={cx.td}><input type="number" step="0.01" value={editData.precio_presentacion} onChange={(e) => setEditData({ ...editData, precio_presentacion: e.target.value })} className={cx.input} /></td>
-                    <td className={cx.td + ' text-[var(--accent)] font-semibold'}>{formatCurrency(costoUnitario(editData))}</td>
+                    <td className={cx.td + ' text-[var(--accent)] font-semibold font-mono text-xs'}>
+                      S/ {costoUnitario(editData).toFixed(3)}
+                    </td>
                     <td className={cx.td + ' text-right'}>
                       <div className="flex justify-end gap-1">
                         <button onClick={saveEdit} className={cx.btnIcon + ' text-[var(--success)] hover:text-[var(--success)]'}><Save size={15} /></button>
@@ -278,23 +377,81 @@ export default function InsumosPage() {
                 );
               }
               return (
-                <tr key={ins.id} className={cx.tr}>
-                  <td className={cx.td + ' text-stone-800 font-medium'}>{ins.nombre}</td>
-                  <td className={cx.td + ' text-stone-600'}>{ins.cantidad_presentacion}</td>
-                  <td className={cx.td + ' text-stone-600'}>{ins.unidad_medida}</td>
-                  <td className={cx.td + ' text-stone-600'}>{formatCurrency(ins.precio_presentacion)}</td>
-                  <td className={cx.td + ' text-[var(--accent)] font-semibold'}>
-                    {formatCurrency(costoUnitario(ins))}/{ins.unidad_base || ins.unidad_medida}
-                    {tieneWAC(ins) && <span className="text-[10px] text-teal-600 ml-1">WAC</span>}
-                  </td>
-                  <td className={cx.td + ' text-right'}>
-                    <div className="flex justify-end gap-1">
-                      <button onClick={() => loadPriceHistory(ins.id)} className={cx.btnIcon} title="Historial de precios"><TrendingUp size={15} /></button>
-                      <button onClick={() => startEdit(ins)} className={cx.btnIcon}><Pencil size={15} /></button>
-                      <button onClick={() => setDeleteTarget(ins)} className={cx.btnIcon + ' hover:text-rose-600'}><Trash2 size={15} /></button>
-                    </div>
-                  </td>
-                </tr>
+                <>
+                  <tr key={ins.id} className={cx.tr}>
+                    <td className={cx.td}>
+                      {ins.presentaciones?.length > 0 && (
+                        <button
+                          onClick={() => toggleExpanded(ins.id)}
+                          className="p-0.5 rounded hover:bg-stone-100 transition-colors duration-100 text-stone-400 hover:text-stone-600"
+                          title={expanded[ins.id] ? 'Ocultar presentaciones' : 'Ver presentaciones'}
+                        >
+                          {expanded[ins.id]
+                            ? <ChevronDown size={14} />
+                            : <ChevronRight size={14} />
+                          }
+                        </button>
+                      )}
+                    </td>
+                    <td className={cx.td + ' text-stone-800 font-medium'}>{ins.nombre}</td>
+                    <td className={cx.td + ' text-stone-600'}>{ins.cantidad_presentacion}</td>
+                    <td className={cx.td + ' text-stone-600'}>{ins.unidad_medida}</td>
+                    <td className={cx.td + ' text-stone-600'}>{formatCurrency(ins.precio_presentacion)}</td>
+                    <td className={cx.td + ' text-[var(--accent)] font-semibold font-mono text-xs'}>
+                      S/ {costoUnitario(ins).toFixed(3)}/{ins.unidad_base || ins.unidad_medida}
+                      {tieneWAC(ins) && <span className="text-[10px] text-teal-600 ml-1">WAC</span>}
+                    </td>
+                    <td className={cx.td + ' text-right'}>
+                      <div className="flex justify-end gap-1">
+                        <button onClick={() => loadPriceHistory(ins.id)} className={cx.btnIcon} title="Historial de precios"><TrendingUp size={15} /></button>
+                        <button onClick={() => startEdit(ins)} className={cx.btnIcon}><Pencil size={15} /></button>
+                        <button onClick={() => setDeleteTarget(ins)} className={cx.btnIcon + ' hover:text-rose-600'}><Trash2 size={15} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                  {expanded[ins.id] && ins.presentaciones?.length > 0 && (
+                    <tr key={`${ins.id}-pres`}>
+                      <td colSpan={7} className="px-4 py-3 bg-stone-50">
+                        <div className="space-y-2">
+                          <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide">Presentaciones</p>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-stone-200">
+                                  <th className="text-left py-1 pr-4 text-[10px] font-semibold text-stone-400 uppercase">Nombre</th>
+                                  <th className="text-right py-1 pr-4 text-[10px] font-semibold text-stone-400 uppercase w-20">Cantidad</th>
+                                  <th className="text-left py-1 pr-4 text-[10px] font-semibold text-stone-400 uppercase w-16">Unidad</th>
+                                  <th className="text-right py-1 pr-4 text-[10px] font-semibold text-stone-400 uppercase w-24">Precio</th>
+                                  <th className="text-right py-1 pr-4 text-[10px] font-semibold text-stone-400 uppercase w-28">Costo/unidad</th>
+                                  <th className="text-left py-1 text-[10px] font-semibold text-stone-400 uppercase w-20">Principal</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {ins.presentaciones.map((p) => (
+                                  <tr key={p.id} className="border-b border-stone-100 last:border-0">
+                                    <td className="py-1.5 pr-4 text-stone-700 font-medium">{p.nombre}</td>
+                                    <td className="py-1.5 pr-4 text-right text-stone-600">{p.cantidad}</td>
+                                    <td className="py-1.5 pr-4 text-stone-500">{p.unidad}</td>
+                                    <td className="py-1.5 pr-4 text-right text-stone-600">S/ {parseFloat(p.precio || 0).toFixed(2)}</td>
+                                    <td className="py-1.5 pr-4 text-right font-mono text-xs text-stone-700">
+                                      {p.precio_por_unidad ? `S/ ${parseFloat(p.precio_por_unidad).toFixed(3)}` : '—'}
+                                    </td>
+                                    <td className="py-1.5">
+                                      {p.es_principal && (
+                                        <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">Principal</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          <AddPresentacionForm insumoId={ins.id} onAdded={() => loadInsumos()} />
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               );
             })}
           </tbody>

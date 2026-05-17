@@ -37,7 +37,7 @@ const features = [
 ];
 
 const steps = [
-  { title: 'Registra tus insumos y recetas', desc: 'Agrega tus ingredientes, materiales y el proceso de produccion de cada producto.' },
+  { title: 'Registra tus insumos y recetas', desc: 'Agrega tus insumos, materiales y el proceso de produccion de cada producto.' },
   { title: 'Costea con margen real', desc: 'El sistema calcula tu costo real y te sugiere un precio con el margen que necesitas.' },
   { title: 'Vende, factura y controla', desc: 'POS, boletas SUNAT, control de stock e inventario. Todo en un solo lugar.' },
 ];

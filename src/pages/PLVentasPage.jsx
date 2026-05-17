@@ -97,7 +97,7 @@ export default function PLVentasPage() {
   const [mostrarNuevaDireccion, setMostrarNuevaDireccion] = useState(false);
   const [guardarNuevaDireccion, setGuardarNuevaDireccion] = useState(false);
   const [nuevaDireccionData, setNuevaDireccionData] = useState({
-    etiqueta: '', direccion: '', referencia: '', distrito: '', telefono_contacto: ''
+    etiqueta: '', departamento: '', distrito: '', direccion: '', referencia: '', telefono_contacto: ''
   });
 
   // Cancel sale state
@@ -302,7 +302,7 @@ export default function PLVentasPage() {
     setDireccionSeleccionadaId('');
     setMostrarNuevaDireccion(false);
     setGuardarNuevaDireccion(false);
-    setNuevaDireccionData({ etiqueta: '', direccion: '', referencia: '', distrito: '', telefono_contacto: '' });
+    setNuevaDireccionData({ etiqueta: '', departamento: '', distrito: '', direccion: '', referencia: '', telefono_contacto: '' });
     setModalOpen(true);
   };
 
@@ -350,7 +350,7 @@ export default function PLVentasPage() {
     setDireccionSeleccionadaId(v.cliente_direccion_id || '');
     setMostrarNuevaDireccion(false);
     setGuardarNuevaDireccion(false);
-    setNuevaDireccionData({ etiqueta: '', direccion: '', referencia: '', distrito: '', telefono_contacto: '' });
+    setNuevaDireccionData({ etiqueta: '', departamento: '', distrito: '', direccion: '', referencia: '', telefono_contacto: '' });
     if (v.cliente_id) fetchClienteDirecciones(v.cliente_id);
     setModalOpen(true);
   };
@@ -396,9 +396,10 @@ export default function PLVentasPage() {
           const dirRes = await api.post('/direcciones', {
             cliente_id: form.cliente_id,
             etiqueta: nuevaDireccionData.etiqueta || 'Casa',
+            departamento: nuevaDireccionData.departamento || null,
+            distrito: nuevaDireccionData.distrito || null,
             direccion: nuevaDireccionData.direccion,
             referencia: nuevaDireccionData.referencia || null,
-            distrito: nuevaDireccionData.distrito || null,
             telefono_contacto: nuevaDireccionData.telefono_contacto || null,
           });
           const savedDir = dirRes?.data || dirRes;
@@ -484,7 +485,7 @@ export default function PLVentasPage() {
       setDireccionSeleccionadaId('');
       setMostrarNuevaDireccion(false);
       setGuardarNuevaDireccion(false);
-      setNuevaDireccionData({ etiqueta: '', direccion: '', referencia: '', distrito: '', telefono_contacto: '' });
+      setNuevaDireccionData({ etiqueta: '', departamento: '', distrito: '', direccion: '', referencia: '', telefono_contacto: '' });
       setVentaItems([{ _id: Date.now(), producto_id: null, variante_id: null, cantidad: 1, precio_unitario: '', descuento: 0, descuento_tipo: 'monto', descuento_pct: 0 }]);
       setDescuentoGlobal(0);
       loadVentas(periodo);
@@ -1241,6 +1242,14 @@ export default function PLVentasPage() {
                               className={cx.input + ' text-sm'} placeholder="Casa, Trabajo..." />
                           </div>
                           <div>
+                            <label className={cx.label}>Departamento</label>
+                            <input type="text" value={nuevaDireccionData.departamento || ''}
+                              onChange={e => setNuevaDireccionData(p => ({...p, departamento: e.target.value}))}
+                              className={cx.input + ' text-sm'} placeholder="Lima" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
                             <label className={cx.label}>Distrito</label>
                             <input type="text" value={nuevaDireccionData.distrito}
                               onChange={e => {
@@ -1377,6 +1386,14 @@ export default function PLVentasPage() {
                               onChange={e => setNuevaDireccionData(p => ({...p, etiqueta: e.target.value}))}
                               className={cx.input + ' text-sm'} placeholder="Casa, Trabajo..." />
                           </div>
+                          <div>
+                            <label className={cx.label}>Departamento</label>
+                            <input type="text" value={nuevaDireccionData.departamento || ''}
+                              onChange={e => setNuevaDireccionData(p => ({...p, departamento: e.target.value}))}
+                              className={cx.input + ' text-sm'} placeholder="Lima" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
                           <div>
                             <label className={cx.label}>Distrito</label>
                             <input type="text" value={nuevaDireccionData.distrito}

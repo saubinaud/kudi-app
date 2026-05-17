@@ -84,7 +84,7 @@ export default function App() {
               <Route path="/pl/cashflow" element={<PLCashflowPage />} />
               <Route path="/perdidas" element={<PerdidasPage />} />
               <Route path="/clientes" element={<ClientesPage />} />
-              <Route path="/pedidos" element={<PedidosPage />} />
+              <Route path="/pedidos" element={<Navigate to="/pl/ventas" replace />} />
               <Route path="/comprobantes" element={<ComprobantesPage />} />
               <Route path="/ficha-tecnica/:id" element={<FichaTecnicaPage />} />
               <Route path="/analisis" element={<AnalisisPage />} />

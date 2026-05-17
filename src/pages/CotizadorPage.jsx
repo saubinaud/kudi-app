@@ -122,6 +122,148 @@ function InfoTip({ text }) {
 let tempId = 0;
 const newTempId = () => `temp-${++tempId}`;
 
+function PackItemsEditor({ productoId }) {
+  const api = useApi();
+  const toast = useToast();
+  const [items, setItems] = useState([]);
+  const [loadingItems, setLoadingItems] = useState(false);
+  const [allProducts, setAllProducts] = useState([]);
+  const [savingItem, setSavingItem] = useState(false);
+
+  useEffect(() => {
+    if (!productoId) return;
+    setLoadingItems(true);
+    api.get(`/productos/${productoId}/pack-items`)
+      .then(r => setItems(r?.data || r || []))
+      .catch(() => {})
+      .finally(() => setLoadingItems(false));
+  }, [productoId]);
+
+  useEffect(() => {
+    api.get('/productos')
+      .then(r => setAllProducts((r?.data || r || []).filter(p => p.tipo_producto !== 'pack')))
+      .catch(() => {});
+  }, []);
+
+  const handleAdd = async (product) => {
+    if (!productoId || !product) return;
+    setSavingItem(true);
+    try {
+      const res = await api.post(`/productos/${productoId}/pack-items`, {
+        item_producto_id: product.id,
+        cantidad: 1,
+      });
+      const newItem = res?.data || res;
+      setItems(prev => [...prev, newItem]);
+      toast.success(`"${product.nombre}" agregado al pack`);
+    } catch (err) {
+      toast.error(err.message || 'Error agregando item');
+    } finally {
+      setSavingItem(false);
+    }
+  };
+
+  const handleUpdateCantidad = async (itemId, cantidad) => {
+    if (!productoId) return;
+    try {
+      await api.put(`/productos/${productoId}/pack-items/${itemId}`, { cantidad: Number(cantidad) || 1 });
+      setItems(prev => prev.map(i => i.id === itemId ? { ...i, cantidad } : i));
+    } catch (err) {
+      toast.error(err.message || 'Error actualizando cantidad');
+    }
+  };
+
+  const handleRemove = async (itemId) => {
+    if (!productoId) return;
+    try {
+      await api.del(`/productos/${productoId}/pack-items/${itemId}`);
+      setItems(prev => prev.filter(i => i.id !== itemId));
+    } catch (err) {
+      toast.error(err.message || 'Error eliminando item');
+    }
+  };
+
+  const totalCosto = items.reduce((s, i) => s + (Number(i.costo_neto) || 0) * (Number(i.cantidad) || 1), 0);
+
+  if (loadingItems) {
+    return <div className="space-y-2 py-4">{[1,2].map(i => <div key={i} className="bg-stone-100 rounded-xl h-10 animate-pulse" />)}</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Add item */}
+      <div>
+        <label className={cx.label}>Agregar producto al pack</label>
+        <SearchableSelect
+          options={allProducts.filter(p => !items.some(i => i.item_producto_id === p.id))}
+          value={null}
+          onChange={handleAdd}
+          placeholder="Buscar producto..."
+          disabled={savingItem || !productoId}
+        />
+        {!productoId && (
+          <p className="text-xs text-amber-600 mt-1">Guarda el producto primero para poder agregar items al pack.</p>
+        )}
+      </div>
+
+      {/* Items table */}
+      {items.length > 0 && (
+        <div className="border border-stone-200 rounded-xl overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-stone-50 border-b border-stone-200">
+                <th className="text-left px-3 py-2 text-[10px] font-semibold text-stone-400 uppercase">Producto</th>
+                <th className="text-center px-3 py-2 text-[10px] font-semibold text-stone-400 uppercase">SKU</th>
+                <th className="text-center px-3 py-2 text-[10px] font-semibold text-stone-400 uppercase">Cant.</th>
+                <th className="text-right px-3 py-2 text-[10px] font-semibold text-stone-400 uppercase">Costo unit.</th>
+                <th className="text-right px-3 py-2 text-[10px] font-semibold text-stone-400 uppercase">Subtotal</th>
+                <th className="w-8"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map(item => (
+                <tr key={item.id} className="border-b border-stone-100 last:border-0">
+                  <td className="px-3 py-2 text-stone-800 font-medium">{item.nombre || item.item_nombre || '--'}</td>
+                  <td className="px-3 py-2 text-center text-stone-400 font-mono text-xs">{item.sku || '--'}</td>
+                  <td className="px-3 py-2 text-center">
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={item.cantidad}
+                      onChange={e => handleUpdateCantidad(item.id, e.target.value)}
+                      onBlur={e => handleUpdateCantidad(item.id, e.target.value)}
+                      className="w-16 bg-stone-50 rounded-lg px-2 py-1 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400"
+                    />
+                  </td>
+                  <td className="px-3 py-2 text-right text-stone-500">{formatCurrency(Number(item.costo_neto) || 0)}</td>
+                  <td className="px-3 py-2 text-right text-stone-800 font-medium">{formatCurrency((Number(item.costo_neto) || 0) * (Number(item.cantidad) || 1))}</td>
+                  <td className="px-2 py-2">
+                    <button onClick={() => handleRemove(item.id)} className={cx.btnIcon + ' hover:text-rose-600'}>
+                      <Trash2 size={13} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-stone-50 border-t border-stone-200">
+                <td colSpan="4" className="px-3 py-2 text-xs font-semibold text-stone-600">Costo total del pack</td>
+                <td className="px-3 py-2 text-right font-bold text-[var(--accent)]">{formatCurrency(totalCosto)}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+
+      {items.length === 0 && productoId && (
+        <p className="text-sm text-stone-400 text-center py-4">Sin items. Agrega productos usando el selector de arriba.</p>
+      )}
+    </div>
+  );
+}
+
 const emptyInsumoRow = () => ({
   _id: newTempId(),
   insumo_id: null,
@@ -177,6 +319,7 @@ export default function CotizadorPage() {
   const [showPriceChoice, setShowPriceChoice] = useState(false);
   const [selectedPrice, setSelectedPrice] = useState(null);
 
+  const [tipoProducto, setTipoProducto] = useState('transformable');
   const [controlStock, setControlStock] = useState(false);
   const [sku, setSku] = useState('');
   const [stockActual, setStockActual] = useState('');
@@ -287,6 +430,7 @@ export default function CotizadorPage() {
         setMargen(p.margen ? parseFloat((p.margen * 100).toFixed(2)) : 50);
         setMargenPorcion(p.margen_porcion ? parseFloat((p.margen_porcion * 100).toFixed(2)) : (p.margen ? parseFloat((p.margen * 100).toFixed(2)) : 50));
         setIgvRate(p.igv_rate ? parseFloat((p.igv_rate * 100).toFixed(2)) : (user?.igv_rate ? parseFloat((user.igv_rate * 100).toFixed(2)) : 18));
+        setTipoProducto(p.tipo_producto || 'transformable');
         setControlStock(!!p.control_stock);
         setSku(p.sku || '');
         setStockActual(p.stock_actual != null ? String(parseFloat(p.stock_actual)) : '');
@@ -614,6 +758,7 @@ export default function CotizadorPage() {
         igv_rate: igvRate / 100,
         tipo_presentacion: tipoPresentacion,
         unidades_por_producto: tipoPresentacion === 'entero' ? unidadesPorProducto : 1,
+        tipo_producto: tipoProducto,
         control_stock: controlStock,
         sku: controlStock ? sku.trim() || null : null,
         stock_actual: controlStock ? (Number(stockActual) || 0) : null,
@@ -841,6 +986,20 @@ export default function CotizadorPage() {
                   </div>
                 )}
               </div>
+              {/* Tipo de producto */}
+              <div className="mt-3">
+                <label className={cx.label}>Tipo de producto</label>
+                <CustomSelect
+                  value={tipoProducto}
+                  onChange={v => setTipoProducto(v)}
+                  options={[
+                    { value: 'transformable', label: 'Transformable (tiene receta)' },
+                    { value: 'no_transformable', label: 'No transformable (compra y reventa)' },
+                    { value: 'pack', label: 'Pack (combinacion de productos)' },
+                  ]}
+                />
+              </div>
+
               {/* Product image — upload or URL */}
               <div className="mt-4">
                 {imagenUrl && imagenUrl.trim() ? (
@@ -988,7 +1147,31 @@ export default function CotizadorPage() {
             </div>
           )}
 
-          {/* ── Preparaciones — Airbnb accordion ── */}
+          {/* ── Pack items (solo para packs) ── */}
+          {tipoProducto === 'pack' && (
+            <div>
+              <h3 className="text-lg font-semibold text-stone-900 mb-3">Productos del pack<InfoTip text="Un pack agrupa varios productos. El costo se calcula como la suma de los costos de cada item segun la cantidad indicada." /></h3>
+              <div className={`${cx.card} p-4`}>
+                <PackItemsEditor productoId={id ? Number(id) : null} />
+              </div>
+            </div>
+          )}
+
+          {/* ── No transformable message ── */}
+          {tipoProducto === 'no_transformable' && (
+            <div>
+              <h3 className="text-lg font-semibold text-stone-900 mb-3">Receta</h3>
+              <div className={`${cx.card} p-4`}>
+                <p className="text-sm text-stone-400 py-8 text-center">
+                  Este producto se compra y revende. No requiere receta.<br />
+                  El costo se actualiza automaticamente con cada compra registrada.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Preparaciones + Composicion — solo para transformables ── */}
+          {tipoProducto === 'transformable' && <>
           <div>
             <h3 className="text-lg font-semibold text-stone-900 mb-3">{t.preparaciones || 'Preparaciones'}<InfoTip text={`Cada ${(t.preparaciones || 'preparacion').toLowerCase()} es un componente base de tu producto. Indica cuanto rinde en total. Puedes cargar plantillas guardadas previamente.`} /></h3>
 
@@ -1277,6 +1460,7 @@ export default function CotizadorPage() {
               )}
             </div>
           </div>
+          </>}
 
           {/* ── Empaque / Materiales — accordion like preparaciones ── */}
           <div>

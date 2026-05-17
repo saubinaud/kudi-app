@@ -61,6 +61,7 @@ export default function DashboardPage() {
   const [mobileColumns, setMobileColumns] = useState(() => localStorage.getItem('kudi_mobile_cols') === '1' ? 1 : 2);
   const [detailModal, setDetailModal] = useState(null);
   const [detailData, setDetailData] = useState(null);
+  const [tipoFilter, setTipoFilter] = useState('todos');
   const [categorias, setCategorias] = useState([]);
   const [selectedCat, setSelectedCat] = useState(null); // null = "Todos"
   const [catProductIds, setCatProductIds] = useState(new Set());
@@ -233,7 +234,11 @@ export default function DashboardPage() {
     } catch { toast.error('Error eliminando carta'); }
   };
 
-  const filtered = products
+  const filteredByTipo = tipoFilter === 'todos'
+    ? products
+    : products.filter(p => p.tipo_producto === tipoFilter);
+
+  const filtered = filteredByTipo
     .filter((p) => (p.nombre || '').toLowerCase().includes(search.toLowerCase()));
 
   // When a carta is active, only show products IN that carta
@@ -441,6 +446,25 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Tipo de producto filter pills */}
+      {products.length > 0 && (
+        <div className="flex gap-2 mb-3 flex-wrap">
+          {[
+            { value: 'todos', label: 'Todos' },
+            { value: 'transformable', label: 'Transformables' },
+            { value: 'no_transformable', label: 'No transformables' },
+            { value: 'pack', label: 'Packs' },
+          ].map(t => (
+            <button key={t.value} onClick={() => setTipoFilter(t.value)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors duration-100 ${
+                tipoFilter === t.value ? 'bg-[#16A34A] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              }`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Category tabs — cartas de precios */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
         <button onClick={() => setSelectedCat(null)}
@@ -502,7 +526,12 @@ export default function DashboardPage() {
                   </div>
                 )}
                 <div className="p-3">
-                  <h3 className="text-sm font-semibold text-stone-900 truncate">{p.nombre}</h3>
+                  <div className="flex items-start gap-1.5 flex-wrap mb-0.5">
+                    <h3 className="text-sm font-semibold text-stone-900 truncate flex-1 min-w-0">{p.nombre}</h3>
+                    {p.tipo_producto === 'pack' && <span className="text-[9px] px-1.5 py-0.5 bg-violet-100 text-violet-700 rounded-full shrink-0">Pack</span>}
+                    {p.tipo_producto === 'no_transformable' && <span className="text-[9px] px-1.5 py-0.5 bg-sky-100 text-sky-700 rounded-full shrink-0">Comercio</span>}
+                  </div>
+                  {p.sku && <span className="text-[10px] text-stone-400 font-mono">{p.sku}</span>}
                   <div className="flex justify-between items-center mt-2">
                     <span className="text-stone-400 text-xs">Margen: {formatPercent(p.margen)}</span>
                     <span className="text-[var(--accent)] font-bold text-sm">{formatCurrency(precioComercial(p.precio_final, precioMode))}</span>
@@ -605,9 +634,13 @@ export default function DashboardPage() {
                   <tr key={p.id} className={cx.tr}>
                     <td className={cx.td + ' text-stone-800 font-medium'}>{p.nombre}</td>
                     <td className={cx.td + ' text-stone-500 text-xs'}>
-                      {p.tipo_presentacion === 'entero'
-                        ? `Entero${p.unidades_por_producto > 1 ? ` (${p.unidades_por_producto})` : ''}`
-                        : 'Unidad'}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span>{p.tipo_presentacion === 'entero'
+                          ? `Entero${p.unidades_por_producto > 1 ? ` (${p.unidades_por_producto})` : ''}`
+                          : 'Unidad'}</span>
+                        {p.tipo_producto === 'pack' && <span className="text-[9px] px-1.5 py-0.5 bg-violet-100 text-violet-700 rounded-full">Pack</span>}
+                        {p.tipo_producto === 'no_transformable' && <span className="text-[9px] px-1.5 py-0.5 bg-sky-100 text-sky-700 rounded-full">Comercio</span>}
+                      </div>
                     </td>
                     <td className={cx.td + ' text-stone-600'}>{formatCurrency(p.costo_neto)}</td>
                     <td className={cx.td + ' text-stone-600'}>{formatPercent(p.margen)}</td>

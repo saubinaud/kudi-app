@@ -38,6 +38,9 @@ export default function CanalesPage() {
 
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [confirmDeselectAll, setConfirmDeselectAll] = useState(false);
+  const [editingRow, setEditingRow] = useState(null);
+  const [editPrice, setEditPrice] = useState('');
 
   // ─── Data Loading ───
 
@@ -496,7 +499,7 @@ export default function CanalesPage() {
               <button onClick={selectAll} disabled={saving} className={cx.btnGhost + ' text-xs flex items-center gap-1'}>
                 <CheckCheck size={12} /> Seleccionar todos
               </button>
-              <button onClick={deselectAll} disabled={saving} className={cx.btnGhost + ' text-xs'}>
+              <button onClick={() => setConfirmDeselectAll(true)} disabled={saving} className={cx.btnGhost + ' text-xs'}>
                 Deseleccionar
               </button>
               {!editingCanal && (
@@ -555,11 +558,26 @@ export default function CanalesPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             {subsidiando && <span className="text-[9px] text-amber-500">Subsidiado</span>}
-                            <input type="number" step="0.01" value={precio}
-                              onChange={e => setPreciosCanal(prev => ({ ...prev, [p.id]: e.target.value }))}
-                              onBlur={() => updatePrecioCanal(p.id, preciosCanal[p.id])}
-                              className={`w-24 px-2 py-1 text-sm text-right border rounded ${subsidiando ? 'border-amber-300 text-amber-700' : 'border-stone-200 text-stone-800'} focus:outline-none focus:border-stone-400`}
-                            />
+                            {editingRow === p.id ? (
+                              <div className="flex items-center gap-1">
+                                <input type="number" className={cx.input + ' !py-1 !px-2 w-24 text-sm'}
+                                  value={editPrice} onChange={e => setEditPrice(e.target.value)} />
+                                <button onClick={() => { updatePrecioCanal(p.id, editPrice); setEditingRow(null); }}
+                                  className="text-emerald-600 text-xs font-medium">OK</button>
+                                <button onClick={() => setEditingRow(null)}
+                                  className="text-stone-400 text-xs">X</button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-medium ${subsidiando ? 'text-amber-700' : 'text-stone-800'}`}>
+                                  S/ {parseFloat(precio).toFixed(2)}
+                                </span>
+                                <button onClick={() => { setEditingRow(p.id); setEditPrice(String(precio)); }}
+                                  className="text-stone-400 hover:text-stone-600 transition-colors duration-100">
+                                  <Pencil size={14} />
+                                </button>
+                              </div>
+                            )}
                             <button onClick={() => toggleProductoEnCanal(p.id, false)} className={cx.btnDanger + ' p-1'} title="Remover">
                               <X size={12} />
                             </button>
@@ -713,6 +731,17 @@ export default function CanalesPage() {
           )}
         </>
       )}
+
+      {/* Confirm deselect all */}
+      <ConfirmDialog
+        open={confirmDeselectAll}
+        title="Deseleccionar todos"
+        message="Se removeran todos los productos de este canal. Esta accion no se puede deshacer."
+        confirmText="Deseleccionar"
+        confirmStyle="danger"
+        onConfirm={() => { deselectAll(); setConfirmDeselectAll(false); }}
+        onCancel={() => setConfirmDeselectAll(false)}
+      />
 
       {/* Confirm delete */}
       <ConfirmDialog
