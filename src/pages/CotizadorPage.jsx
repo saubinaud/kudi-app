@@ -424,17 +424,20 @@ export default function CotizadorPage() {
   // Use DB price as fallback when calculator gives 0 (Shopify/imported products with no ingredients)
   // Fallback to DB values for Shopify/imported products with no ingredients
   const usarFallback = costosRaw.costoNeto === 0 && (costoGuardado > 0 || precioGuardado > 0);
-  const fbPrecioVenta = precioGuardado / (1 + (igvRate / 100));
-  const fbIgvMonto = precioGuardado - fbPrecioVenta;
-  const costos = usarFallback ? {
-    ...costosRaw,
-    costoInsumos: costoGuardado,
-    costoInsumosProducto: costoGuardado,
-    costoNeto: costoGuardado,
-    precioVenta: fbPrecioVenta,
-    igvMonto: fbIgvMonto,
-    precioFinal: precioGuardado,
-  } : costosRaw;
+  const costos = usarFallback ? (() => {
+    const costo = costoGuardado;
+    const margenDec = Number(margen) / 100;
+    const igvDec = Number(igvRate) / 100;
+    const empaqueTotal = costosRaw.costoEmpaqueEntero || 0;
+    const costoNeto = costo + empaqueTotal;
+    // If we have a saved final price, use it; otherwise calculate from margin
+    const precioVenta = precioGuardado > 0
+      ? precioGuardado / (1 + igvDec)
+      : (margenDec < 1 && costoNeto > 0 ? costoNeto / (1 - margenDec) : costoNeto);
+    const precioFinal = precioGuardado > 0 ? precioGuardado : precioVenta * (1 + igvDec);
+    const igvMonto = precioFinal - precioVenta;
+    return { ...costosRaw, costoInsumos: costo, costoInsumosProducto: costo, costoNeto, precioVenta, igvMonto, precioFinal };
+  })() : costosRaw;
 
   const enrichedInsumos = useMemo(() => {
     // Group by normalized name
@@ -1266,10 +1269,29 @@ export default function CotizadorPage() {
                   </div>
                 )}
                 {selectedInventarioId && (
-                  <div className="mt-4 pt-4 border-t border-stone-100">
+                  <div className="mt-4 pt-4 border-t border-stone-100 space-y-3">
                     <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
-                      <CheckCircle size={12} /> Producto seleccionado — define el margen y empaque abajo
+                      <CheckCircle size={12} /> Producto seleccionado
                     </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={cx.label}>Costo unitario (S/)</label>
+                        <input
+                          type="number" step="0.01" min="0"
+                          value={costoGuardado || ''}
+                          onChange={e => setCostoGuardado(parseFloat(e.target.value) || 0)}
+                          className={cx.input}
+                          placeholder="0.00"
+                        />
+                        <p className="text-[10px] text-stone-400 mt-1">Se actualiza con cada compra</p>
+                      </div>
+                      <div>
+                        <label className={cx.label}>Stock actual</label>
+                        <p className="px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-sm text-stone-600">
+                          {inventarioProductos.find(p => p.id === selectedInventarioId)?.stock_actual || 0} uds
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

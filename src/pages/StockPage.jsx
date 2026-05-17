@@ -80,6 +80,7 @@ export default function StockPage() {
 
   // Sidebar edición producto
   const [sidebarProduct, setSidebarProduct] = useState(null);
+  const [confirmDeleteProduct, setConfirmDeleteProduct] = useState(false);
   const [sidebarNombre, setSidebarNombre] = useState('');
   const [sidebarImagenUrl, setSidebarImagenUrl] = useState('');
   const [sidebarDisponibleVenta, setSidebarDisponibleVenta] = useState(false);
@@ -303,6 +304,21 @@ export default function StockPage() {
       toast.error('Error subiendo imagen');
     } finally {
       setUploadingImage(false);
+    }
+  };
+
+  const handleDeleteProduct = async () => {
+    if (!sidebarProduct) return;
+    try {
+      await api.del(`/productos/${sidebarProduct.id}`);
+      toast.success(`"${sidebarProduct.nombre}" eliminado`);
+      setSidebarProduct(null);
+      setConfirmDeleteProduct(false);
+      setMovimientos({});
+      loadStock();
+      loadAllProductos();
+    } catch (err) {
+      toast.error(err.message || 'Error eliminando producto');
     }
   };
 
@@ -955,7 +971,7 @@ export default function StockPage() {
             </div>
 
             {/* Footer */}
-            <div className="p-5 border-t border-stone-100">
+            <div className="p-5 border-t border-stone-100 space-y-2">
               <button
                 onClick={handleSaveSidebar}
                 disabled={savingSidebar}
@@ -965,6 +981,23 @@ export default function StockPage() {
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : 'Guardar cambios'}
               </button>
+              {confirmDeleteProduct ? (
+                <div className="flex gap-2">
+                  <button onClick={handleDeleteProduct} className="flex-1 px-3 py-2 bg-rose-600 text-white text-xs font-semibold rounded-lg hover:bg-rose-700 transition-colors duration-100">
+                    Confirmar eliminación
+                  </button>
+                  <button onClick={() => setConfirmDeleteProduct(false)} className={cx.btnGhost + ' text-xs'}>
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmDeleteProduct(true)}
+                  className="w-full text-xs text-stone-400 hover:text-rose-500 py-2 transition-colors duration-100"
+                >
+                  Eliminar producto
+                </button>
+              )}
             </div>
           </div>
         </div>
