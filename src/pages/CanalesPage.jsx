@@ -21,7 +21,7 @@ export default function CanalesPage() {
   const [preciosCanal, setPreciosCanal] = useState({});
   const [productosEnCanal, setProductosEnCanal] = useState(new Set());
 
-  // Zonas de envio
+  // Zonas de envío
   const [zonas, setZonas] = useState([]);
   const [showZonaForm, setShowZonaForm] = useState(false);
   const [zonaForm, setZonaForm] = useState({});
@@ -365,7 +365,7 @@ export default function CanalesPage() {
               : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
           }`}
         >
-          Zonas de envio
+          Zonas de envío
         </button>
 
         <button
@@ -397,7 +397,7 @@ export default function CanalesPage() {
                 />
               </div>
               <div>
-                <label className={cx.label}>Comision %</label>
+                <label className={cx.label}>Comisión %</label>
                 <input
                   type="number"
                   step="0.1"
@@ -487,7 +487,7 @@ export default function CanalesPage() {
             ) : (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className={cx.badge('bg-amber-50 text-amber-600')}>
-                  Comision: {activeCanal.comision_pct}%
+                  Comisión: {activeCanal.comision_pct}%
                 </span>
                 <span className="text-xs text-stone-400">
                   {productosEnCanal.size} producto{productosEnCanal.size !== 1 ? 's' : ''}
@@ -588,32 +588,51 @@ export default function CanalesPage() {
                   </div>
                 )}
 
-                {/* Add products modal */}
+                {/* Add products modal — card style */}
                 {showAddProducts && (
                   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowAddProducts(false)} />
-                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-w-[95vw] max-h-[85vh] overflow-y-auto p-5">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-semibold text-stone-900">Agregar productos a {activeCanal.nombre}</h3>
-                        <button onClick={() => setShowAddProducts(false)} className={cx.btnGhost + ' p-1'}><X size={16} /></button>
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-w-[95vw] max-h-[85vh] flex flex-col">
+                      <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+                        <div>
+                          <h3 className="text-sm font-bold text-stone-900">Agregar productos a {activeCanal.nombre}</h3>
+                          <p className="text-[11px] text-stone-400 mt-0.5">{prodsNoEnCanal.length} disponibles</p>
+                        </div>
+                        <button onClick={() => setShowAddProducts(false)} className={cx.btnIcon}><X size={16} /></button>
                       </div>
-                      <div className="space-y-1">
-                        {prodsNoEnCanal.map(p => {
-                          const calc = comision < 100 ? Math.round((parseFloat(p.precio_final) / (1 - comision / 100)) * 100) / 100 : parseFloat(p.precio_final);
-                          return (
-                            <div key={p.id} className="flex items-center justify-between py-2 px-3 hover:bg-stone-50 rounded-lg">
-                              <div>
-                                <p className="text-sm text-stone-800">{p.nombre}</p>
-                                <p className="text-[10px] text-stone-400">Tienda: {formatCurrency(p.precio_final)} → Canal: {formatCurrency(calc)}</p>
-                              </div>
-                              <button onClick={async () => { await toggleProductoEnCanal(p.id, true); }} className={cx.btnPrimary + ' text-[10px] !px-2 !py-1'}>
-                                Agregar
-                              </button>
-                            </div>
-                          );
-                        })}
-                        {prodsNoEnCanal.length === 0 && (
-                          <p className="text-center text-sm text-stone-400 py-4">Todos los productos ya están en este canal</p>
+                      <div className="overflow-y-auto flex-1 p-4">
+                        {prodsNoEnCanal.length === 0 ? (
+                          <div className="text-center py-8">
+                            <Check size={32} className="text-emerald-400 mx-auto mb-2" />
+                            <p className="text-sm text-stone-400">Todos los productos ya están en este canal</p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                            {prodsNoEnCanal.map(p => {
+                              const calc = comision < 100 ? Math.round((parseFloat(p.precio_final) / (1 - comision / 100)) * 100) / 100 : parseFloat(p.precio_final);
+                              return (
+                                <button
+                                  key={p.id}
+                                  onClick={async () => { await toggleProductoEnCanal(p.id, true); }}
+                                  className="bg-white rounded-xl border border-stone-200 p-2.5 text-center hover:border-[#16A34A] hover:shadow-md transition-colors duration-100 group"
+                                >
+                                  {p.imagen_url ? (
+                                    <img src={p.imagen_url} className="w-full aspect-square object-cover rounded-lg mb-2" alt={p.nombre} />
+                                  ) : (
+                                    <div className="w-full aspect-square bg-stone-100 rounded-lg mb-2 flex items-center justify-center">
+                                      <Package size={24} className="text-stone-300" />
+                                    </div>
+                                  )}
+                                  <p className="text-xs font-medium text-stone-800 truncate">{p.nombre}</p>
+                                  <p className="text-[10px] text-stone-400 mt-0.5">Tienda: {formatCurrency(p.precio_final)}</p>
+                                  <p className="text-xs font-bold text-[var(--accent)] mt-0.5">{formatCurrency(calc)}</p>
+                                  <div className="mt-1.5 text-[10px] text-stone-400 group-hover:text-[#16A34A] transition-colors duration-100">
+                                    + Agregar
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -625,7 +644,7 @@ export default function CanalesPage() {
         </div>
       )}
 
-      {/* ─── Tab: Zonas de envio ─── */}
+      {/* ─── Tab: Zonas de envío ─── */}
       {activeTab === 'zonas' && (
         <>
           <div className="flex justify-end mb-4">
@@ -736,7 +755,7 @@ export default function CanalesPage() {
       <ConfirmDialog
         open={confirmDeselectAll}
         title="Deseleccionar todos"
-        message="Se removeran todos los productos de este canal. Esta accion no se puede deshacer."
+        message="Se removerán todos los productos de este canal. Esta acción no se puede deshacer."
         confirmText="Deseleccionar"
         confirmStyle="danger"
         onConfirm={() => { deselectAll(); setConfirmDeselectAll(false); }}
@@ -747,7 +766,7 @@ export default function CanalesPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         title={deleteTarget?._type === 'zona' ? 'Eliminar zona' : 'Eliminar canal'}
-        message={`Estas seguro de eliminar "${deleteTarget?.nombre}"?`}
+        message={`¿Estás seguro de eliminar "${deleteTarget?.nombre}"?`}
         onConfirm={deleteTarget?._type === 'zona' ? deleteZona : deleteCanal}
         onCancel={() => setDeleteTarget(null)}
       />

@@ -84,7 +84,7 @@ export default function Layout() {
   const sidebarGroups = [
     {
       key: 'catalogo',
-      label: 'Catalogo',
+      label: 'Catálogo',
       icon: Package,
       links: [
         { to: '/dashboard', label: t.productos || 'Productos', icon: LayoutDashboard, perm: 'dashboard' },
@@ -94,7 +94,7 @@ export default function Layout() {
         { to: '/preparaciones-predeterminadas', label: t.prep_pred || 'Recetas base', icon: ChefHat, perm: 'preparaciones' },
         { to: '/empaques-predeterminados', label: 'Empaques predet.', icon: BoxSelect, perm: 'empaques' },
         { to: '/stock', label: 'Inventario', icon: Package, perm: 'dashboard' },
-        { to: '/canales', label: 'Canales y Envio', icon: Truck, perm: 'canales' },
+        { to: '/canales', label: 'Canales y Envío', icon: Truck, perm: 'canales' },
       ],
     },
     {
@@ -104,7 +104,7 @@ export default function Layout() {
       links: [
         { to: '/pos', label: 'POS', icon: ShoppingCart, perm: 'ventas' },
         { to: '/pl/ventas', label: 'Ventas', icon: DollarSign, perm: 'ventas' },
-        { to: '/comprobantes', label: 'Facturacion', icon: FileText, perm: 'facturacion' },
+        { to: '/comprobantes', label: 'Facturación', icon: FileText, perm: 'facturacion' },
         { to: '/clientes', label: 'Clientes', icon: Users, perm: 'facturacion' },
       ],
     },
@@ -115,7 +115,7 @@ export default function Layout() {
       links: [
         { to: '/pl/compras', label: 'Compras', icon: ShoppingBag, perm: 'finanzas' },
         { to: '/pl/gastos', label: 'Pagos', icon: Receipt, perm: 'finanzas' },
-        { to: '/perdidas', label: 'Perdidas', icon: TrendingDown, perm: 'finanzas' },
+        { to: '/perdidas', label: 'Pérdidas', icon: TrendingDown, perm: 'finanzas' },
       ],
     },
     {

@@ -122,13 +122,14 @@ function InfoTip({ text }) {
 let tempId = 0;
 const newTempId = () => `temp-${++tempId}`;
 
-function PackItemsEditor({ productoId }) {
+function PackItemsEditor({ productoId, onItemsChange }) {
   const api = useApi();
   const toast = useToast();
   const [items, setItems] = useState([]);
   const [loadingItems, setLoadingItems] = useState(false);
   const [allProducts, setAllProducts] = useState([]);
   const [savingItem, setSavingItem] = useState(false);
+  const isLocal = !productoId; // local mode: no API calls, just state
 
   useEffect(() => {
     if (!productoId) return;
@@ -145,8 +146,27 @@ function PackItemsEditor({ productoId }) {
       .catch(() => {});
   }, []);
 
+  // Notify parent of items changes (for saving with the product)
+  useEffect(() => {
+    if (onItemsChange) onItemsChange(items);
+  }, [items]);
+
   const handleAdd = async (product) => {
-    if (!productoId || !product) return;
+    if (!product) return;
+    if (isLocal) {
+      // Local mode: add to state without API call
+      const localItem = {
+        id: `local-${Date.now()}`,
+        item_producto_id: product.id,
+        nombre: product.nombre,
+        sku: product.sku,
+        costo_neto: product.costo_neto || 0,
+        cantidad: 1,
+      };
+      setItems(prev => [...prev, localItem]);
+      toast.success(`"${product.nombre}" agregado al pack`);
+      return;
+    }
     setSavingItem(true);
     try {
       const res = await api.post(`/productos/${productoId}/pack-items`, {
@@ -164,7 +184,10 @@ function PackItemsEditor({ productoId }) {
   };
 
   const handleUpdateCantidad = async (itemId, cantidad) => {
-    if (!productoId) return;
+    if (isLocal) {
+      setItems(prev => prev.map(i => i.id === itemId ? { ...i, cantidad } : i));
+      return;
+    }
     try {
       await api.put(`/productos/${productoId}/pack-items/${itemId}`, { cantidad: Number(cantidad) || 1 });
       setItems(prev => prev.map(i => i.id === itemId ? { ...i, cantidad } : i));
@@ -174,7 +197,10 @@ function PackItemsEditor({ productoId }) {
   };
 
   const handleRemove = async (itemId) => {
-    if (!productoId) return;
+    if (isLocal) {
+      setItems(prev => prev.filter(i => i.id !== itemId));
+      return;
+    }
     try {
       await api.del(`/productos/${productoId}/pack-items/${itemId}`);
       setItems(prev => prev.filter(i => i.id !== itemId));
@@ -199,11 +225,8 @@ function PackItemsEditor({ productoId }) {
           value={null}
           onChange={handleAdd}
           placeholder="Buscar producto..."
-          disabled={savingItem || !productoId}
+          disabled={savingItem}
         />
-        {!productoId && (
-          <p className="text-xs text-amber-600 mt-1">Guarda el producto primero para poder agregar items al pack.</p>
-        )}
       </div>
 
       {/* Items table */}
@@ -320,6 +343,7 @@ export default function CotizadorPage() {
   const [selectedPrice, setSelectedPrice] = useState(null);
 
   const [tipoProducto, setTipoProducto] = useState('transformable');
+  const [pendingPackItems, setPendingPackItems] = useState([]);
   const [controlStock, setControlStock] = useState(false);
   const [sku, setSku] = useState('');
   const [stockActual, setStockActual] = useState('');
@@ -797,8 +821,21 @@ export default function CotizadorPage() {
         toast.success('Producto actualizado');
       } else {
         const data = await api.post('/productos', payload);
-        toast.success('Producto creado');
         const newId = data?.data?.id;
+
+        // If pack with pending local items, create them now
+        if (newId && tipoProducto === 'pack' && pendingPackItems.length > 0) {
+          for (const item of pendingPackItems) {
+            try {
+              await api.post(`/productos/${newId}/pack-items`, {
+                item_producto_id: item.item_producto_id,
+                cantidad: Number(item.cantidad) || 1,
+              });
+            } catch {}
+          }
+        }
+
+        toast.success('Producto creado');
         if (newId) navigate(`/cotizador/${newId}`, { replace: true });
       }
     } catch (err) {
@@ -961,7 +998,7 @@ export default function CotizadorPage() {
 
           {/* ── Producto ── */}
           <div>
-            <h3 className="text-lg font-semibold text-stone-900 mb-3">Producto<InfoTip text="Define el nombre y tipo de presentacion. Si vendes un producto entero, indica cuantas porciones o unidades tiene." /></h3>
+            <h3 className="text-lg font-semibold text-stone-900 mb-3">Producto<InfoTip text="Define el nombre y tipo de presentación. Si vendes un producto entero, indica cuántas porciones o unidades tiene." /></h3>
             <div className={`${cx.card} p-4`}>
               <div className={`grid gap-3 grid-cols-1 ${tipoPresentacion === 'entero' ? 'sm:grid-cols-[9fr_7fr_4fr]' : 'sm:grid-cols-[3fr_2fr]'}`}>
                 <div>
@@ -969,13 +1006,13 @@ export default function CotizadorPage() {
                   <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} className={cx.input} placeholder={`Ej: Mi ${(t.productos || 'producto').toLowerCase().replace(/s$/, '')}`} autoFocus />
                 </div>
                 <div>
-                  <label className={cx.label}>Presentacion<InfoTip text="'Por unidad' si vendes items individuales. 'Presentacion entera' si vendes algo divisible en porciones." /></label>
+                  <label className={cx.label}>Presentación<InfoTip text="'Por unidad' si vendes items individuales. 'Presentación entera' si vendes algo divisible en porciones." /></label>
                   <CustomSelect
                     value={tipoPresentacion}
                     onChange={setTipoPresentacion}
                     options={[
                       { value: 'unidad', label: 'Por unidad' },
-                      { value: 'entero', label: 'Presentacion entera' },
+                      { value: 'entero', label: 'Presentación entera' },
                     ]}
                   />
                 </div>
@@ -995,7 +1032,7 @@ export default function CotizadorPage() {
                   options={[
                     { value: 'transformable', label: 'Transformable (tiene receta)' },
                     { value: 'no_transformable', label: 'No transformable (compra y reventa)' },
-                    { value: 'pack', label: 'Pack (combinacion de productos)' },
+                    { value: 'pack', label: 'Pack (combinación de productos)' },
                   ]}
                 />
               </div>
@@ -1062,12 +1099,12 @@ export default function CotizadorPage() {
               </div>
               {/* Product description */}
               <div className="mt-4">
-                <label className={cx.label}>Descripcion (opcional)</label>
+                <label className={cx.label}>Descripción (opcional)</label>
                 <textarea
                   value={descripcion}
                   onChange={e => setDescripcion(e.target.value)}
                   className={cx.input + ' min-h-[60px] resize-y'}
-                  placeholder="Descripcion del producto..."
+                  placeholder="Descripción del producto..."
                   rows={2}
                 />
               </div>
@@ -1150,9 +1187,9 @@ export default function CotizadorPage() {
           {/* ── Pack items (solo para packs) ── */}
           {tipoProducto === 'pack' && (
             <div>
-              <h3 className="text-lg font-semibold text-stone-900 mb-3">Productos del pack<InfoTip text="Un pack agrupa varios productos. El costo se calcula como la suma de los costos de cada item segun la cantidad indicada." /></h3>
+              <h3 className="text-lg font-semibold text-stone-900 mb-3">Productos del pack<InfoTip text="Un pack agrupa varios productos. El costo se calcula como la suma de los costos de cada item según la cantidad indicada." /></h3>
               <div className={`${cx.card} p-4`}>
-                <PackItemsEditor productoId={id ? Number(id) : null} />
+                <PackItemsEditor productoId={id ? Number(id) : null} onItemsChange={setPendingPackItems} />
               </div>
             </div>
           )}
@@ -1183,7 +1220,7 @@ export default function CotizadorPage() {
           {/* ── Preparaciones + Composicion — solo para transformables ── */}
           {tipoProducto === 'transformable' && <>
           <div>
-            <h3 className="text-lg font-semibold text-stone-900 mb-3">{t.preparaciones || 'Preparaciones'}<InfoTip text={`Cada ${(t.preparaciones || 'preparacion').toLowerCase()} es un componente base de tu producto. Indica cuanto rinde en total. Puedes cargar plantillas guardadas previamente.`} /></h3>
+            <h3 className="text-lg font-semibold text-stone-900 mb-3">{t.preparaciones || 'Preparaciones'}<InfoTip text={`Cada ${(t.preparacion || 'preparación').toLowerCase()} es un componente base de tu producto. Indica cuánto rinde en total. Puedes cargar plantillas guardadas previamente.`} /></h3>
 
             {/* Single card with divide-y for all preps */}
             <div className={`${cx.card} divide-y divide-stone-100`}>
@@ -1194,7 +1231,7 @@ export default function CotizadorPage() {
                     <div className="flex items-center gap-3">
                       {prep.collapsed ? <ChevronDown size={16} className="text-stone-400" /> : <ChevronUp size={16} className="text-stone-400" />}
                       <div>
-                        <span className="text-sm font-semibold text-stone-800">{prep.nombre || `${(t.preparaciones || 'Preparaciones').replace(/s$/i, '')} nueva`}</span>
+                        <span className="text-sm font-semibold text-stone-800">{prep.nombre || `${(t.preparacion || 'Preparaci\u00f3n')} nueva`}</span>
                         {prep.capacidad && <span className="text-xs text-stone-400 ml-2">Rinde {prep.capacidad} {prep.unidad}</span>}
                       </div>
                     </div>
@@ -1218,7 +1255,7 @@ export default function CotizadorPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                         <div className="sm:col-span-2">
                           <label className={cx.label}>Nombre</label>
-                          <input type="text" value={prep.nombre} onChange={(e) => updatePreparacion(prep._id, 'nombre', e.target.value)} placeholder={`Ej: ${(t.preparaciones || 'Preparacion').replace(/es$/i, '').replace(/s$/i, '')} 1`} className={cx.input} />
+                          <input type="text" value={prep.nombre} onChange={(e) => updatePreparacion(prep._id, 'nombre', e.target.value)} placeholder={`Ej: ${(t.preparacion || 'Preparación')} 1`} className={cx.input} />
                         </div>
                         <div>
                           <label className={cx.label}>Rendimiento</label>
@@ -1361,24 +1398,24 @@ export default function CotizadorPage() {
                 </div>
               )}
               <button onClick={addPreparacion} className={cx.btnGhost + ' flex items-center gap-1.5'}>
-                <Plus size={14} /> {`${(t.preparaciones || 'Preparaciones').replace(/s$/i, '')} nueva`}
+                <Plus size={14} /> {`${(t.preparacion || 'Preparaci\u00f3n')} nueva`}
               </button>
             </div>
           </div>
 
           {/* ── Composicion del producto — light bg section ── */}
           <div>
-            <h3 className="text-lg font-semibold text-stone-900 mb-3">Composicion del producto<InfoTip text={`Indica cuanto de cada ${(t.preparaciones || 'preparacion').toLowerCase()} necesitas para hacer UN producto completo. El sistema calculara automaticamente cuantos productos puedes hacer por tanda y el costo.`} /></h3>
+            <h3 className="text-lg font-semibold text-stone-900 mb-3">Composición del producto<InfoTip text={`Indica cuánto de cada ${(t.preparacion || 'preparación').toLowerCase()} necesitas para hacer UN producto completo. El sistema calculará automáticamente cuántos productos puedes hacer por tanda y el costo.`} /></h3>
             <div className="bg-stone-50 rounded-xl p-3 sm:p-5">
               {preparaciones.filter(p => p.nombre).length === 0 ? (
-                <p className="text-stone-400 text-sm text-center py-4">Agrega {(t.preparaciones || 'preparaciones').toLowerCase()} arriba para definir la composicion.</p>
+                <p className="text-stone-400 text-sm text-center py-4">Agrega {(t.preparaciones || 'preparaciones').toLowerCase()} arriba para definir la composición.</p>
               ) : (
                 <>
                   {/* Desktop table */}
                   <table className="w-full hidden lg:table">
                     <thead>
                       <tr>
-                        <th className={cx.th + ' w-[20%]'}>{(t.preparaciones || 'Preparaciones').replace(/s$/i, '')}</th>
+                        <th className={cx.th + ' w-[20%]'}>{t.preparacion || 'Preparaci\u00f3n'}</th>
                         <th className={cx.th + ' w-[15%]'}>Rendimiento</th>
                         <th className={cx.th + ' w-[30%]'}>Para el producto</th>
                         <th className={cx.th + ' w-[20%]'}>Por tanda</th>
@@ -1415,7 +1452,7 @@ export default function CotizadorPage() {
                                 />
                               </div>
                             </td>
-                            <td className={cx.td + ' text-stone-600'}>{alcanzaPara > 0 ? `${alcanzaPara} productos` : '--'}</td>
+                            <td className={cx.td + ' text-stone-600'}>{alcanzaPara > 0 ? `${alcanzaPara} ${alcanzaPara === 1 ? 'producto' : 'productos'}` : '--'}</td>
                             <td className={cx.td + ' text-right text-[var(--accent)] font-semibold'}>{formatCurrency(costoPorUni)}</td>
                           </tr>
                         );
@@ -1458,7 +1495,7 @@ export default function CotizadorPage() {
                               </div>
                             </div>
                             <div className="text-xs text-stone-500">
-                              {alcanzaPara > 0 && <p>{alcanzaPara} productos/tanda</p>}
+                              {alcanzaPara > 0 && <p>{alcanzaPara} {alcanzaPara === 1 ? 'producto' : 'productos'}/tanda</p>}
                               <p className="text-[var(--accent)] font-semibold">{formatCurrency(costoPorUni)}</p>
                             </div>
                           </div>
