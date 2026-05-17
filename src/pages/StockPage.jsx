@@ -70,6 +70,13 @@ export default function StockPage() {
   // All products (for the entrada selector — not filtered by control_stock)
   const [allProductos, setAllProductos] = useState([]);
 
+  // Nuevo producto modal
+  const [showNuevoProducto, setShowNuevoProducto] = useState(false);
+  const [npNombre, setNpNombre] = useState('');
+  const [npCantidad, setNpCantidad] = useState('');
+  const [npCostoTotal, setNpCostoTotal] = useState('');
+  const [savingNuevo, setSavingNuevo] = useState(false);
+
   const loadStock = () => {
     setLoading(true);
     api.get('/stock')
@@ -179,6 +186,51 @@ export default function StockPage() {
     }
   };
 
+  const handleNuevoProducto = async () => {
+    if (!npNombre.trim() || !npCantidad || !npCostoTotal) return;
+    const cantidad = Number(npCantidad);
+    const costoTotal = Number(npCostoTotal);
+    if (cantidad <= 0 || costoTotal <= 0) { toast.error('Cantidad y costo deben ser mayores a 0'); return; }
+    const costoUnitario = Math.round((costoTotal / cantidad) * 100) / 100;
+    setSavingNuevo(true);
+    try {
+      // 1. Create product
+      const prodRes = await api.post('/productos', {
+        nombre: npNombre.trim(),
+        tipo_producto: 'no_transformable',
+        costo_neto: costoUnitario,
+        margen: 50,
+      });
+      const newProd = prodRes?.data || prodRes;
+      const productoId = newProd?.id;
+      if (!productoId) throw new Error('Error creando producto');
+
+      // 2. Register stock entry
+      await api.post('/stock/entrada', {
+        producto_id: productoId,
+        cantidad,
+        nota: `Ingreso inicial — costo total S/ ${costoTotal.toFixed(2)}`,
+      });
+
+      toast.success(`"${npNombre.trim()}" creado con ${cantidad} unidades`);
+      setShowNuevoProducto(false);
+      setNpNombre('');
+      setNpCantidad('');
+      setNpCostoTotal('');
+      setMovimientos({});
+      loadStock();
+      loadAllProductos();
+    } catch (err) {
+      toast.error(err.message || 'Error creando producto');
+    } finally {
+      setSavingNuevo(false);
+    }
+  };
+
+  const npCostoUnitario = (Number(npCantidad) > 0 && Number(npCostoTotal) > 0)
+    ? Math.round((Number(npCostoTotal) / Number(npCantidad)) * 100) / 100
+    : null;
+
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto space-y-4">
@@ -198,12 +250,20 @@ export default function StockPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-xl font-bold text-stone-900">Inventario</h1>
-        <button
-          onClick={() => setShowEntrada(true)}
-          className={cx.btnPrimary + ' flex items-center gap-1.5'}
-        >
-          <Plus size={14} /> Entrada
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowNuevoProducto(true)}
+            className={cx.btnSecondary + ' flex items-center gap-1.5'}
+          >
+            <Plus size={14} /> Ingresar producto
+          </button>
+          <button
+            onClick={() => setShowEntrada(true)}
+            className={cx.btnPrimary + ' flex items-center gap-1.5'}
+          >
+            <Plus size={14} /> Entrada
+          </button>
+        </div>
       </div>
 
       {/* Summary cards */}
@@ -550,6 +610,80 @@ export default function StockPage() {
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   'Guardar ajuste'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Nuevo producto modal */}
+      {showNuevoProducto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowNuevoProducto(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-sm p-4 sm:p-6">
+            <h3 className="text-lg font-bold text-stone-900 mb-1">Ingresar producto al inventario</h3>
+            <p className="text-xs text-stone-400 mb-4">Para productos que ya tienes y compraste antes de usar Kudi.</p>
+            <div className="space-y-4">
+              <div>
+                <label className={cx.label}>Nombre del producto</label>
+                <input
+                  type="text"
+                  value={npNombre}
+                  onChange={(e) => setNpNombre(e.target.value)}
+                  className={cx.input}
+                  placeholder="Ej: Caja de chocolates"
+                  autoFocus
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={cx.label}>Cantidad</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step={user?.stock_entero ? "1" : "0.01"}
+                    value={npCantidad}
+                    onChange={(e) => setNpCantidad(e.target.value)}
+                    className={cx.input}
+                    placeholder="10"
+                  />
+                </div>
+                <div>
+                  <label className={cx.label}>Costo total (S/)</label>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={npCostoTotal}
+                    onChange={(e) => setNpCostoTotal(e.target.value)}
+                    className={cx.input}
+                    placeholder="100.00"
+                  />
+                </div>
+              </div>
+              {npCostoUnitario !== null && (
+                <div className="bg-stone-50 rounded-lg px-4 py-3 flex justify-between items-center">
+                  <span className="text-xs text-stone-500">Costo unitario</span>
+                  <span className="text-sm font-bold text-[#0A2F24]">{formatCurrency(npCostoUnitario)}</span>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3 justify-end mt-6">
+              <button onClick={() => setShowNuevoProducto(false)} className={cx.btnGhost}>
+                Cancelar
+              </button>
+              <button
+                onClick={handleNuevoProducto}
+                disabled={!npNombre.trim() || !npCantidad || !npCostoTotal || savingNuevo}
+                className={cx.btnPrimary + ' flex items-center gap-1.5'}
+              >
+                {savingNuevo ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Plus size={14} /> Crear e ingresar
+                  </>
                 )}
               </button>
             </div>
