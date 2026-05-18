@@ -538,7 +538,18 @@ export default function DashboardPage() {
                     <span className="text-[var(--accent)] font-bold text-sm">{formatCurrency(precioComercial(p.precio_final, precioMode))}</span>
                   </div>
                 </div>
-                {/* Action buttons — always visible on mobile, hover on desktop */}
+                {/* Action buttons — hover on desktop */}
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                  <Link to={`/ficha-tecnica/${p.id}`} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-[var(--accent)]" title="Ficha técnica">
+                    <Package size={13} />
+                  </Link>
+                  <button onClick={() => setDuplicateTarget(p)} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-blue-600" title="Duplicar">
+                    <Copy size={14} />
+                  </button>
+                  <button onClick={() => setDeleteTarget(p)} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-rose-600" title="Eliminar">
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
