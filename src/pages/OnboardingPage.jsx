@@ -41,31 +41,18 @@ export default function OnboardingPage() {
       .then((r) => r.json())
       .then((data) => { if (data.success) setPaises(data.data); })
       .catch(() => {});
-    // Rubros filtrados a dark kitchens y restaurantes (referencia interna)
-    const rubrosPermitidos = [
-      'Panadería y pastelería',
-      'Restaurante',
-      'Dark kitchen',
-      'Cafetería',
-      'Catering',
-      'Heladería',
-      'Comida rápida',
-      'Cocina saludable',
-      'Repostería',
-      'Bar / coctelería',
-      'Food truck',
-      'Otro',
-    ];
-    fetch(`${API_BASE}/auth/giros`)
-      .then((r) => r.json())
-      .then((d) => {
-        const all = (d.data?.giros || []).map(g => ({ value: g.id, label: g.nombre }));
-        const filtered = all.filter(g => rubrosPermitidos.some(r => g.label.toLowerCase().includes(r.toLowerCase())));
-        setGiros(filtered.length > 0 ? filtered : rubrosPermitidos.map((r, i) => ({ value: `rubro-${i}`, label: r })));
-      })
-      .catch(() => {
-        setGiros(rubrosPermitidos.map((r, i) => ({ value: `rubro-${i}`, label: r })));
-      });
+    setGiros([
+      { value: 'restaurante', label: 'Restaurante / Cocina' },
+      { value: 'dark_kitchen', label: 'Dark Kitchen' },
+      { value: 'panaderia', label: 'Panadería y Pastelería' },
+      { value: 'cafeteria', label: 'Cafetería' },
+      { value: 'catering', label: 'Catering y Eventos' },
+      { value: 'comida_rapida', label: 'Food Truck / Comida rápida' },
+      { value: 'heladeria', label: 'Heladería' },
+      { value: 'reposteria', label: 'Repostería' },
+      { value: 'bar', label: 'Bar / Coctelería' },
+      { value: 'otro', label: 'Otro' },
+    ]);
   }, []);
 
   useEffect(() => {
