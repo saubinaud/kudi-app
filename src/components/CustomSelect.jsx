@@ -5,12 +5,15 @@ export default function CustomSelect({ options = [], value, onChange, placeholde
   const [open, setOpen] = useState(false);
   const [dropStyle, setDropStyle] = useState({});
   const ref = useRef(null);
+  const dropRef = useRef(null);
 
   useEffect(() => {
     function handleClick(e) {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target) && dropRef.current && !dropRef.current.contains(e.target)) setOpen(false);
     }
-    function handleScroll() { if (open) setOpen(false); }
+    function handleScroll(e) {
+      if (open && dropRef.current && !dropRef.current.contains(e.target)) setOpen(false);
+    }
     document.addEventListener('mousedown', handleClick);
     window.addEventListener('scroll', handleScroll, true);
     return () => {
@@ -54,6 +57,7 @@ export default function CustomSelect({ options = [], value, onChange, placeholde
 
       {open && (
         <div
+          ref={dropRef}
           className="z-[9999] bg-white border border-stone-200 rounded-lg shadow-lg overflow-hidden"
           style={dropStyle}
         >
