@@ -175,8 +175,8 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A2F24] flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`, backgroundSize: '128px'}} />
+    <div className="min-h-screen bg-[#0A2F24] flex items-center justify-center p-4 relative">
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none overflow-hidden" style={{backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`, backgroundSize: '128px'}} />
       <div className="bg-white rounded-2xl w-full max-w-lg p-8 shadow-xl relative z-10">
         <div className="flex flex-col items-center mb-6">
           <img src="/logo-kudi.jpg" className="w-20 h-20 mx-auto mb-4 rounded-2xl" alt="Kudi" />
@@ -390,13 +390,13 @@ function SignupRequestForm({ giros }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A2F24] flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`, backgroundSize: '128px'}} />
+    <div className="min-h-screen bg-[#0A2F24] flex items-center justify-center p-4 relative">
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none overflow-hidden" style={{backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`, backgroundSize: '128px'}} />
       <div className="bg-white rounded-2xl w-full max-w-md p-8 shadow-xl relative z-10">
         <div className="flex flex-col items-center mb-6">
           <img src="/logo-kudi.jpg" className="w-16 h-16 mx-auto mb-3 rounded-xl" alt="Kudi" />
           <h1 className="text-xl font-bold text-stone-900">Prueba Kudi gratis</h1>
-          <p className="text-stone-500 text-sm mt-1 text-center">10 dias gratis. Sin tarjeta de credito.</p>
+          <p className="text-stone-500 text-sm mt-1 text-center">10 días gratis. Sin tarjeta de crédito.</p>
         </div>
 
         <form onSubmit={handleRequest} className="space-y-4">
