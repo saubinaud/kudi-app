@@ -42,16 +42,13 @@ export default function OnboardingPage() {
       .then((data) => { if (data.success) setPaises(data.data); })
       .catch(() => {});
     setGiros([
-      { value: 'restaurante', label: 'Restaurante / Cocina' },
-      { value: 'dark_kitchen', label: 'Dark Kitchen' },
-      { value: 'panaderia', label: 'Panadería y Pastelería' },
-      { value: 'cafeteria', label: 'Cafetería' },
-      { value: 'catering', label: 'Catering y Eventos' },
-      { value: 'comida_rapida', label: 'Food Truck / Comida rápida' },
-      { value: 'heladeria', label: 'Heladería' },
-      { value: 'reposteria', label: 'Repostería' },
-      { value: 'bar', label: 'Bar / Coctelería' },
-      { value: 'otro', label: 'Otro' },
+      { value: 2, label: 'Restaurante / Cocina' },
+      { value: 1, label: 'Panadería y Pastelería' },
+      { value: 8, label: 'Cafetería' },
+      { value: 3, label: 'Catering y Eventos' },
+      { value: 4, label: 'Food Truck / Comida rápida' },
+      { value: 5, label: 'Heladería' },
+      { value: 29, label: 'Otro' },
     ]);
   }, []);
 
