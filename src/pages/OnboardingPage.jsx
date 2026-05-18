@@ -41,12 +41,31 @@ export default function OnboardingPage() {
       .then((r) => r.json())
       .then((data) => { if (data.success) setPaises(data.data); })
       .catch(() => {});
+    // Rubros filtrados a dark kitchens y restaurantes (referencia interna)
+    const rubrosPermitidos = [
+      'Panadería y pastelería',
+      'Restaurante',
+      'Dark kitchen',
+      'Cafetería',
+      'Catering',
+      'Heladería',
+      'Comida rápida',
+      'Cocina saludable',
+      'Repostería',
+      'Bar / coctelería',
+      'Food truck',
+      'Otro',
+    ];
     fetch(`${API_BASE}/auth/giros`)
       .then((r) => r.json())
       .then((d) => {
-        setGiros((d.data?.giros || []).map(g => ({ value: g.id, label: g.nombre })));
+        const all = (d.data?.giros || []).map(g => ({ value: g.id, label: g.nombre }));
+        const filtered = all.filter(g => rubrosPermitidos.some(r => g.label.toLowerCase().includes(r.toLowerCase())));
+        setGiros(filtered.length > 0 ? filtered : rubrosPermitidos.map((r, i) => ({ value: `rubro-${i}`, label: r })));
       })
-      .catch(() => {});
+      .catch(() => {
+        setGiros(rubrosPermitidos.map((r, i) => ({ value: `rubro-${i}`, label: r })));
+      });
   }, []);
 
   useEffect(() => {

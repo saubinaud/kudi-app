@@ -165,6 +165,7 @@ export default function LandingPage() {
   };
 
   const goLogin = () => navigate('/login');
+  const goRegistro = () => navigate('/onboarding');
   const scrollTo = (id) => {
     setMobileMenu(false);
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -188,7 +189,7 @@ export default function LandingPage() {
           <button onClick={() => scrollTo('features')} className="text-white/60 hover:text-white text-sm transition-colors duration-150">Funcionalidades</button>
           <button onClick={() => scrollTo('pricing')} className="text-white/60 hover:text-white text-sm transition-colors duration-150">Precios</button>
           <button onClick={goLogin} className="text-white/60 hover:text-white text-sm transition-colors duration-150">Iniciar sesion</button>
-          <button onClick={goLogin} className="px-5 py-2 bg-[#16A34A] hover:bg-[#15803D] text-white text-sm font-semibold rounded-lg transition-colors duration-150 active:scale-[0.97]">
+          <button onClick={goRegistro} className="px-5 py-2 bg-[#16A34A] hover:bg-[#15803D] text-white text-sm font-semibold rounded-lg transition-colors duration-150 active:scale-[0.97]">
             Empieza gratis
           </button>
         </div>
@@ -203,7 +204,7 @@ export default function LandingPage() {
           <button onClick={() => scrollTo('features')} className="text-white text-lg">Funcionalidades</button>
           <button onClick={() => scrollTo('pricing')} className="text-white text-lg">Precios</button>
           <button onClick={goLogin} className="text-white text-lg">Iniciar sesion</button>
-          <button onClick={goLogin} className="px-8 py-3 bg-[#16A34A] text-white font-semibold rounded-xl text-lg mt-4">
+          <button onClick={goRegistro} className="px-8 py-3 bg-[#16A34A] text-white font-semibold rounded-xl text-lg mt-4">
             Empieza gratis
           </button>
         </div>
@@ -226,7 +227,7 @@ export default function LandingPage() {
               Costeo de produccion + Facturacion SUNAT + Inventario + POS en una sola herramienta. Hecho para productores peruanos.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-              <button onClick={goLogin} className="px-8 py-3.5 bg-[#16A34A] hover:bg-[#15803D] text-white font-semibold rounded-xl text-base transition-colors duration-150 active:scale-[0.97] shadow-lg shadow-green-900/20 flex items-center justify-center gap-2">
+              <button onClick={goRegistro} className="px-8 py-3.5 bg-[#16A34A] hover:bg-[#15803D] text-white font-semibold rounded-xl text-base transition-colors duration-150 active:scale-[0.97] shadow-lg shadow-green-900/20 flex items-center justify-center gap-2">
                 Empieza gratis <ArrowRight size={18} />
               </button>
               <button onClick={() => scrollTo('pricing')} className="px-8 py-3.5 border border-white/20 text-white hover:bg-white/10 font-semibold rounded-xl text-base transition-colors duration-150">
@@ -387,7 +388,7 @@ export default function LandingPage() {
                 </div>
 
                 <button
-                  onClick={goLogin}
+                  onClick={goRegistro}
                   className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-colors duration-150 active:scale-[0.97] ${
                     plan.highlighted
                       ? 'bg-[#16A34A] hover:bg-[#15803D] text-white shadow-sm'
@@ -428,7 +429,7 @@ export default function LandingPage() {
             Sin tarjeta de credito. Configura tu negocio en 5 minutos y descubre cuanto te cuesta producir cada producto.
           </p>
           <button
-            onClick={goLogin}
+            onClick={goRegistro}
             className="mt-8 px-10 py-4 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold rounded-xl text-lg transition-colors duration-150 active:scale-[0.97] shadow-lg shadow-green-900/30 inline-flex items-center gap-2"
           >
             Crear cuenta gratis <ArrowRight size={20} />
