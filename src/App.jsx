@@ -57,9 +57,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
-            <Route path="/planes" element={<LandingPage />} />
-            <Route path="/landing" element={<Navigate to="/planes" replace />} />
-            <Route path="/" element={<Navigate to="/planes" replace />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
             {/* Protected routes with layout */}
             <Route
