@@ -465,16 +465,24 @@ export default function Layout() {
       {showPayModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !paySaving && setShowPayModal(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
             {paySuccess ? (
               <div className="text-center py-4">
                 <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
                   <span className="text-emerald-600 text-2xl">✓</span>
                 </div>
-                <h3 className="text-lg font-bold text-stone-900 mb-1">Pago enviado</h3>
-                <p className="text-sm text-stone-500 mb-4">Tu comprobante está siendo verificado. Te activaremos el plan pronto.</p>
-                <button onClick={() => { setShowPayModal(false); setPaySuccess(false); setPayComprobante(''); }} className="px-6 py-2 bg-[#16A34A] text-white font-semibold rounded-lg text-sm">
-                  Entendido
+                <h3 className="text-lg font-bold text-stone-900 mb-1">¡Ahora eres parte de Kudi Pro!</h3>
+                <p className="text-sm text-[#16A34A] font-semibold mb-2">Tu plan {PAY_PLANS[payPlan]?.label} ha iniciado</p>
+                <p className="text-xs text-stone-500 mb-1">
+                  Se te enviará un recordatorio de pago todos los {new Date(Date.now() + 86400000).toLocaleDateString('es-PE', { day: 'numeric', month: 'long' })} de cada mes.
+                </p>
+                <div className="bg-stone-50 rounded-xl px-4 py-3 mt-3 mb-4">
+                  <p className="text-xs text-stone-500">
+                    Estaremos validando tu pago en el transcurso del día. Cualquier detalle nos pondremos en contacto con usted.
+                  </p>
+                </div>
+                <button onClick={() => { setShowPayModal(false); setPaySuccess(false); setPayComprobante(''); }} className="px-6 py-2.5 bg-[#16A34A] text-white font-semibold rounded-lg text-sm">
+                  Comenzar a usar Kudi Pro
                 </button>
               </div>
             ) : (
@@ -505,11 +513,11 @@ export default function Layout() {
                 </div>
 
                 {/* QR */}
-                <div className="flex justify-center mb-4">
-                  <img src="/yape-qr.jpg" alt="QR Yape" className="w-44 h-44 rounded-xl border border-stone-200 object-contain" />
+                <div className="flex justify-center mb-3">
+                  <img src="/yape-qr.jpg" alt="QR Yape" className="w-64 h-64 rounded-xl border border-stone-200 object-contain" />
                 </div>
-                <p className="text-center text-xs text-stone-500 mb-4">
-                  Escanea con Yape y paga <span className="font-bold text-[#16A34A]">S/ {PAY_PLANS[payPlan]?.precio}/mes</span>
+                <p className="text-center text-sm text-stone-600 mb-4">
+                  Escanea con Yape y paga <span className="font-bold text-[#16A34A] text-lg">S/ {PAY_PLANS[payPlan]?.precio}</span> <span className="text-stone-400">/ mes</span>
                 </p>
 
                 {/* Upload */}
