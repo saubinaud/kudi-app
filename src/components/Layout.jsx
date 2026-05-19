@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { TerminosProvider } from '../context/TerminosContext';
+import { API_BASE } from '../config/api';
 import {
   LayoutDashboard,
   Calculator,
@@ -197,6 +198,48 @@ export default function Layout() {
     }
   })();
 
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payPlan, setPayPlan] = useState('emprendedor');
+  const [payComprobante, setPayComprobante] = useState('');
+  const [payUploading, setPayUploading] = useState(false);
+  const [paySaving, setPaySaving] = useState(false);
+  const [paySuccess, setPaySuccess] = useState(false);
+
+  const PAY_PLANS = {
+    independiente: { label: 'Independiente', precio: 80 },
+    emprendedor: { label: 'Emprendedor', precio: 100 },
+    empresario: { label: 'Empresario', precio: 180 },
+  };
+
+  const handlePayUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) return;
+    setPayUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const r = await fetch(`${API_BASE}/onboarding/comprobante`, { method: 'POST', body: formData });
+      const d = await r.json();
+      if (d.url) setPayComprobante(d.url);
+    } catch {}
+    finally { setPayUploading(false); }
+  };
+
+  const handlePaySubmit = async () => {
+    if (!payComprobante) return;
+    setPaySaving(true);
+    try {
+      await fetch(`${API_BASE}/onboarding/completar-pago`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify({ plan: payPlan, comprobante_url: payComprobante }),
+      });
+      setPaySuccess(true);
+    } catch {}
+    finally { setPaySaving(false); }
+  };
+
   const dismissBanner = () => {
     setBannerDismissed(true);
     sessionStorage.setItem('kudi_banner_dismissed', '1');
@@ -383,12 +426,12 @@ export default function Layout() {
               <Clock size={14} />
               <span>{trialBanner.text}</span>
             </div>
-            <a
-              href="/#/onboarding?plan=emprendedor"
+            <button
+              onClick={() => setShowPayModal(true)}
               className="px-3 py-1 bg-[#16A34A] text-white text-xs font-semibold rounded-lg hover:bg-[#15803D] transition-colors duration-100 whitespace-nowrap"
             >
-              {trialBanner.type === 'expired' ? 'Activar plan' : 'Pagar plan'}
-            </a>
+              Pagar plan
+            </button>
             {trialBanner.dismissable && (
               <button onClick={dismissBanner} className="text-current opacity-50 hover:opacity-100 transition-opacity ml-1">
                 <X size={14} />
@@ -402,14 +445,12 @@ export default function Layout() {
           <div className="bg-rose-50 border-b border-rose-200 px-6 py-4 text-center">
             <p className="text-rose-800 font-semibold mb-2">Tu prueba gratis ha terminado</p>
             <p className="text-rose-600 text-sm mb-3">Activa un plan para seguir usando Kudi con todas las funcionalidades.</p>
-            <div className="flex justify-center gap-3">
-              <a href="/#/onboarding?plan=independiente" className="px-4 py-2 bg-white border border-rose-300 text-rose-700 text-sm font-medium rounded-lg hover:bg-rose-50 transition-colors">
-                Plan Independiente — S/80/mes
-              </a>
-              <a href="/#/onboarding?plan=emprendedor" className="px-4 py-2 bg-[#16A34A] text-white text-sm font-semibold rounded-lg hover:bg-[#15803D] transition-colors">
-                Plan Emprendedor — S/100/mes
-              </a>
-            </div>
+            <button
+              onClick={() => setShowPayModal(true)}
+              className="px-6 py-2.5 bg-[#16A34A] text-white text-sm font-semibold rounded-lg hover:bg-[#15803D] transition-colors"
+            >
+              Activar plan ahora
+            </button>
           </div>
         )}
 
@@ -419,6 +460,92 @@ export default function Layout() {
           </TerminosProvider>
         </main>
       </div>
+
+      {/* Payment modal */}
+      {showPayModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !paySaving && setShowPayModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            {paySuccess ? (
+              <div className="text-center py-4">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-emerald-600 text-2xl">✓</span>
+                </div>
+                <h3 className="text-lg font-bold text-stone-900 mb-1">Pago enviado</h3>
+                <p className="text-sm text-stone-500 mb-4">Tu comprobante está siendo verificado. Te activaremos el plan pronto.</p>
+                <button onClick={() => { setShowPayModal(false); setPaySuccess(false); setPayComprobante(''); }} className="px-6 py-2 bg-[#16A34A] text-white font-semibold rounded-lg text-sm">
+                  Entendido
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-stone-900">Pagar plan</h3>
+                  <button onClick={() => setShowPayModal(false)} className="text-stone-400 hover:text-stone-600">
+                    <X size={18} />
+                  </button>
+                </div>
+
+                {/* Plan selector */}
+                <div className="grid grid-cols-3 gap-1.5 mb-4">
+                  {Object.entries(PAY_PLANS).map(([key, p]) => (
+                    <button
+                      key={key}
+                      onClick={() => setPayPlan(key)}
+                      className={`py-2 px-1 rounded-lg border text-center transition-colors duration-100 ${
+                        payPlan === key
+                          ? 'border-[#16A34A] bg-emerald-50 text-[#16A34A]'
+                          : 'border-stone-200 text-stone-500 hover:border-stone-300'
+                      }`}
+                    >
+                      <p className="text-[10px] font-medium">{p.label}</p>
+                      <p className="text-sm font-bold">S/{p.precio}</p>
+                    </button>
+                  ))}
+                </div>
+
+                {/* QR */}
+                <div className="flex justify-center mb-4">
+                  <img src="/yape-qr.jpg" alt="QR Yape" className="w-44 h-44 rounded-xl border border-stone-200 object-contain" />
+                </div>
+                <p className="text-center text-xs text-stone-500 mb-4">
+                  Escanea con Yape y paga <span className="font-bold text-[#16A34A]">S/ {PAY_PLANS[payPlan]?.precio}/mes</span>
+                </p>
+
+                {/* Upload */}
+                <label className="block cursor-pointer mb-4">
+                  {payComprobante ? (
+                    <div className="relative">
+                      <img src={payComprobante} className="w-full max-h-32 object-contain rounded-xl border border-emerald-300" alt="" />
+                      <span className="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full">Subido</span>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-stone-300 rounded-xl p-4 text-center hover:border-stone-400 transition-colors">
+                      {payUploading ? (
+                        <div className="flex items-center justify-center gap-2 text-stone-500 text-sm">
+                          <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
+                          Subiendo...
+                        </div>
+                      ) : (
+                        <p className="text-sm text-stone-500">Subir comprobante de pago</p>
+                      )}
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" className="hidden" onChange={handlePayUpload} />
+                </label>
+
+                <button
+                  onClick={handlePaySubmit}
+                  disabled={paySaving || !payComprobante}
+                  className="w-full py-3 bg-[#16A34A] hover:bg-[#15803D] text-white font-semibold rounded-lg text-sm disabled:opacity-40 transition-colors duration-100 flex items-center justify-center gap-2"
+                >
+                  {paySaving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Confirmar pago'}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
