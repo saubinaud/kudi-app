@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { TerminosProvider } from '../context/TerminosContext';
 import { API_BASE } from '../config/api';
+import { useApi } from '../hooks/useApi';
 import {
   LayoutDashboard,
   Calculator,
@@ -76,6 +77,7 @@ function SidebarLink({ to, label, icon: Icon, onClick, collapsed, end, disabled 
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const api = useApi();
   const navigate = useNavigate();
 
   const t = {}; // Kudi universal — no per-giro terminology
@@ -233,13 +235,7 @@ export default function Layout() {
     setPaySaving(true);
     setPayError('');
     try {
-      const res = await fetch(`${API_BASE}/onboarding/completar-pago`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('nodum_token')}` },
-        body: JSON.stringify({ plan: payPlan, comprobante_url: payComprobante }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Error procesando pago');
+      await api.post('/onboarding/completar-pago', { plan: payPlan, comprobante_url: payComprobante });
       setPaySuccess(true);
     } catch (err) {
       setPayError(err.message || 'Error al procesar el pago. Intenta de nuevo.');
