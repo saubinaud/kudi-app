@@ -138,7 +138,7 @@ export default function Layout() {
   ];
 
   const adminLinks = [
-    { to: '/admin/usuarios', label: 'Usuarios', icon: Users },
+    { to: '/admin', label: 'Admin', icon: BarChart3 },
     { to: '/admin/actividad', label: 'Actividad', icon: Activity },
   ];
   const [open, setOpen] = useState(false);

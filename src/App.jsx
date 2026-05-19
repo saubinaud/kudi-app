@@ -14,7 +14,7 @@ import MaterialesPage from './pages/MaterialesPage';
 import PrepPredPage from './pages/PrepPredPage';
 import EmpaquePredPage from './pages/EmpaquePredPage';
 import PerfilPage from './pages/PerfilPage';
-import AdminUsuariosPage from './pages/AdminUsuariosPage';
+import AdminPage from './pages/AdminPage';
 import AdminActividadPage from './pages/AdminActividadPage';
 import ProyeccionPage from './pages/ProyeccionPage';
 import ActividadPage from './pages/ActividadPage';
@@ -107,7 +107,7 @@ export default function App() {
                 </AdminRoute>
               }
             >
-              <Route path="/admin/usuarios" element={<AdminUsuariosPage />} />
+              <Route path="/admin" element={<AdminPage />} />
               <Route path="/admin/actividad" element={<AdminActividadPage />} />
             </Route>
 
