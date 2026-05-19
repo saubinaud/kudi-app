@@ -232,7 +232,7 @@ export default function Layout() {
     try {
       await fetch(`${API_BASE}/onboarding/completar-pago`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('nodum_token')}` },
         body: JSON.stringify({ plan: payPlan, comprobante_url: payComprobante }),
       });
       setPaySuccess(true);
