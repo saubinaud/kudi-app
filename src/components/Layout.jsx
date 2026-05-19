@@ -226,18 +226,26 @@ export default function Layout() {
     finally { setPayUploading(false); }
   };
 
+  const [payError, setPayError] = useState('');
+
   const handlePaySubmit = async () => {
     if (!payComprobante) return;
     setPaySaving(true);
+    setPayError('');
     try {
-      await fetch(`${API_BASE}/onboarding/completar-pago`, {
+      const res = await fetch(`${API_BASE}/onboarding/completar-pago`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('nodum_token')}` },
         body: JSON.stringify({ plan: payPlan, comprobante_url: payComprobante }),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error procesando pago');
       setPaySuccess(true);
-    } catch {}
-    finally { setPaySaving(false); }
+    } catch (err) {
+      setPayError(err.message || 'Error al procesar el pago. Intenta de nuevo.');
+    } finally {
+      setPaySaving(false);
+    }
   };
 
   const dismissBanner = () => {
@@ -541,6 +549,12 @@ export default function Layout() {
                   )}
                   <input type="file" accept="image/*" className="hidden" onChange={handlePayUpload} />
                 </label>
+
+                {payError && (
+                  <div className="text-rose-600 text-xs bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+                    {payError}
+                  </div>
+                )}
 
                 <button
                   onClick={handlePaySubmit}
