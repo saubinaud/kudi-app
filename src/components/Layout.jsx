@@ -35,6 +35,7 @@ import {
   ClipboardList,
   Truck,
   Link2,
+  MessageSquare,
 } from 'lucide-react';
 
 
@@ -138,6 +139,7 @@ export default function Layout() {
     { to: '/actividad', label: 'Mi Actividad', icon: Activity },
     { to: '/equipo', label: 'Mi Equipo', icon: Users },
     { to: '/perfil', label: 'Perfil', icon: User },
+    { to: '/feedback', label: 'Feedback', icon: MessageSquare },
   ];
 
   const adminLinks = [

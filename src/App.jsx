@@ -37,6 +37,7 @@ import ComisionesPage from './pages/ComisionesPage';
 import ProveedoresPage from './pages/ProveedoresPage';
 import ShopifyPage from './pages/ShopifyPage';
 import POSPage from './pages/POSPage';
+import FeedbackPage from './pages/FeedbackPage';
 import LandingPage from './pages/LandingPage';
 
 
@@ -97,6 +98,7 @@ export default function App() {
               <Route path="/canales" element={<CanalesPage />} />
               <Route path="/equipo" element={<EquipoPage />} />
               <Route path="/perfil" element={<PerfilPage />} />
+              <Route path="/feedback" element={<FeedbackPage />} />
             </Route>
 
             {/* Admin routes with layout */}

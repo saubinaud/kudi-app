@@ -6,7 +6,7 @@ import { formatDate, formatCurrency } from '../utils/format';
 import {
   Users, UserPlus, Ban, CheckCircle, Copy, X, Settings, Trash2,
   BarChart3, CreditCard, Clock, TrendingUp, AlertCircle, Eye,
-  Check, XCircle, Filter,
+  Check, XCircle, Filter, MessageSquare, AlertTriangle,
 } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CustomSelect from '../components/CustomSelect';
@@ -31,6 +31,8 @@ const TABS = [
   { key: 'usuarios', label: 'Usuarios', icon: Users },
   { key: 'pagos', label: 'Pagos', icon: CreditCard },
   { key: 'registros', label: 'Registros', icon: Clock },
+  { key: 'feedback', label: 'Feedback', icon: MessageSquare },
+  { key: 'errores', label: 'Errores', icon: AlertTriangle },
 ];
 
 // ── Permission helpers ──
@@ -764,6 +766,120 @@ export default function AdminPage() {
       {tab === 'usuarios' && <UsuariosTab />}
       {tab === 'pagos' && <PagosTab />}
       {tab === 'registros' && <RegistrosTab />}
+      {tab === 'feedback' && <FeedbackTab />}
+      {tab === 'errores' && <ErroresTab />}
+    </div>
+  );
+}
+
+// Tab 5: Feedback
+function FeedbackTab() {
+  const api = useApi();
+  const toast = useToast();
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [respondingId, setRespondingId] = useState(null);
+  const [respuesta, setRespuesta] = useState('');
+
+  useEffect(() => {
+    api.get('/admin/feedback').then(r => setItems(r.data || [])).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  const handleRespond = async (id) => {
+    try {
+      await api.patch(`/admin/feedback/${id}`, { estado: 'resuelto', nota_admin: respuesta });
+      toast.success('Respuesta enviada');
+      setItems(prev => prev.map(f => f.id === id ? { ...f, estado: 'resuelto', nota_admin: respuesta } : f));
+      setRespondingId(null);
+      setRespuesta('');
+    } catch { toast.error('Error'); }
+  };
+
+  const markSeen = async (id) => {
+    try {
+      await api.patch(`/admin/feedback/${id}`, { estado: 'visto' });
+      setItems(prev => prev.map(f => f.id === id ? { ...f, estado: 'visto' } : f));
+    } catch {}
+  };
+
+  const ESTADO_COLORS = { nuevo: 'bg-blue-50 text-blue-600', visto: 'bg-amber-50 text-amber-600', resuelto: 'bg-emerald-50 text-emerald-600' };
+  const TIPO_COLORS = { sugerencia: 'bg-violet-50 text-violet-600', mejora: 'bg-sky-50 text-sky-600', bug: 'bg-rose-50 text-rose-600', otro: 'bg-stone-100 text-stone-500' };
+
+  if (loading) return <div className="space-y-3">{[1,2,3].map(i => <div key={i} className={cx.skeleton + ' h-20'} />)}</div>;
+
+  return (
+    <div className="space-y-3">
+      {items.length === 0 ? (
+        <div className={cx.card + ' p-8 text-center'}>
+          <MessageSquare size={32} className="text-stone-300 mx-auto mb-2" />
+          <p className="text-stone-400 text-sm">No hay feedback aún</p>
+        </div>
+      ) : items.map(f => (
+        <div key={f.id} className={cx.card + ' p-4'}>
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div>
+              <p className="text-sm font-medium text-stone-800">{f.usuario_nombre || 'Usuario'}</p>
+              <p className="text-[10px] text-stone-400">{f.usuario_email} · {f.empresa_nombre || ''}</p>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className={cx.badge(TIPO_COLORS[f.tipo] || 'bg-stone-100 text-stone-500')}>{f.tipo}</span>
+              <span className={cx.badge(ESTADO_COLORS[f.estado] || 'bg-stone-100 text-stone-500')}>{f.estado}</span>
+            </div>
+          </div>
+          <p className="text-sm text-stone-700 mb-2">{f.mensaje}</p>
+          <p className="text-[10px] text-stone-400 mb-2">{formatDate(f.created_at)}</p>
+          {f.nota_admin && (
+            <div className="bg-emerald-50 rounded-lg px-3 py-2 mb-2">
+              <p className="text-xs text-emerald-800">{f.nota_admin}</p>
+            </div>
+          )}
+          {respondingId === f.id ? (
+            <div className="flex gap-2 mt-2">
+              <input type="text" value={respuesta} onChange={e => setRespuesta(e.target.value)} className={cx.input + ' text-sm flex-1'} placeholder="Tu respuesta..." />
+              <button onClick={() => handleRespond(f.id)} className={cx.btnPrimary + ' text-xs !px-3'}>Enviar</button>
+              <button onClick={() => setRespondingId(null)} className={cx.btnGhost + ' text-xs'}>X</button>
+            </div>
+          ) : (
+            <div className="flex gap-1">
+              {f.estado === 'nuevo' && <button onClick={() => markSeen(f.id)} className={cx.btnGhost + ' text-xs'}>Marcar visto</button>}
+              {f.estado !== 'resuelto' && <button onClick={() => { setRespondingId(f.id); setRespuesta(''); }} className={cx.btnGhost + ' text-xs'}>Responder</button>}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Tab 6: Errores
+function ErroresTab() {
+  const api = useApi();
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get('/admin/errores').then(r => setItems(r.data || [])).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="space-y-3">{[1,2,3].map(i => <div key={i} className={cx.skeleton + ' h-16'} />)}</div>;
+
+  return (
+    <div className="space-y-2">
+      {items.length === 0 ? (
+        <div className={cx.card + ' p-8 text-center'}>
+          <CheckCircle size={32} className="text-emerald-300 mx-auto mb-2" />
+          <p className="text-stone-400 text-sm">Sin errores registrados</p>
+        </div>
+      ) : items.map(e => (
+        <div key={e.id} className={cx.card + ' p-3'}>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-mono text-rose-600">{e.metodo} {e.ruta}</span>
+            <span className="text-[10px] text-stone-400">{formatDate(e.created_at)}</span>
+          </div>
+          <p className="text-sm text-stone-800">{e.mensaje}</p>
+          {e.usuario_id && <p className="text-[10px] text-stone-400 mt-1">User #{e.usuario_id} · Empresa #{e.empresa_id}</p>}
+        </div>
+      ))}
     </div>
   );
 }
