@@ -190,6 +190,13 @@ export default function OnboardingPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {showPayment && isPaidPlan && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-center">
+              <p className="text-sm font-semibold text-emerald-800">{PLAN_LABELS[selectedPlan]?.label}</p>
+              <p className="text-xs text-emerald-600">Completa el pago para activar tu cuenta</p>
+            </div>
+          )}
+          <div className={showPayment ? 'hidden' : ''}>
           <div>
             <label className={cx.label}>Nombre completo</label>
             <input
@@ -313,6 +320,8 @@ export default function OnboardingPage() {
                 required
               />
             </div>
+          </div>
+
           </div>
 
           {error && (
