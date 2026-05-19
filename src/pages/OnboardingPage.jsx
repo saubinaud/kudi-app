@@ -5,11 +5,17 @@ import { cx } from '../styles/tokens';
 import CustomSelect from '../components/CustomSelect';
 import { Loader2 } from 'lucide-react';
 
+const PLAN_LABELS = {
+  independiente: { label: 'Plan Independiente', precio: 'S/ 80/mes' },
+  emprendedor: { label: 'Plan Emprendedor', precio: 'S/ 100/mes' },
+  empresario: { label: 'Plan Empresario', precio: 'S/ 180/mes' },
+};
 
 export default function OnboardingPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const inviteToken = params.get('token');
+  const selectedPlan = params.get('plan'); // independiente, emprendedor, empresario, or null (trial)
 
   const [validating, setValidating] = useState(true);
   const [valid, setValid] = useState(false);
@@ -20,6 +26,12 @@ export default function OnboardingPage() {
 
   const [paises, setPaises] = useState([]);
   const [giros, setGiros] = useState([]);
+
+  // Payment flow
+  const [showPayment, setShowPayment] = useState(false);
+  const [comprobanteUrl, setComprobanteUrl] = useState('');
+  const [uploadingComprobante, setUploadingComprobante] = useState(false);
+  const isPaidPlan = selectedPlan && ['independiente', 'emprendedor', 'empresario'].includes(selectedPlan);
 
   const [form, setForm] = useState({
     nombre: '',
@@ -109,16 +121,22 @@ export default function OnboardingPage() {
       return;
     }
 
+    // If paid plan and not yet shown payment, show payment step first
+    if (isPaidPlan && !showPayment) {
+      setShowPayment(true);
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/onboarding/completar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, token: inviteToken }),
+        body: JSON.stringify({ ...form, token: inviteToken, plan: selectedPlan || 'trial', comprobante_url: comprobanteUrl || null }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || 'Error al completar registro');
+        throw new Error(data.message || data.error || 'Error al completar registro');
       }
       setSuccess(true);
       setTimeout(() => navigate('/login'), 3000);
@@ -140,7 +158,7 @@ export default function OnboardingPage() {
 
   // Public signup: no token → show request form
   if (!inviteToken || !valid) {
-    return <SignupRequestForm giros={giros} />;
+    return <SignupRequestForm giros={giros} selectedPlan={selectedPlan} />;
   }
 
   if (success) {
@@ -303,17 +321,91 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className={cx.btnPrimary + ' w-full flex items-center justify-center gap-2'}
-          >
-            {loading ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              'Completar registro'
-            )}
-          </button>
+          {/* Payment step — shown after form validation for paid plans */}
+          {showPayment && isPaidPlan ? (
+            <div className="border-t border-stone-200 pt-5 space-y-4">
+              <div className="text-center">
+                <p className="text-sm font-semibold text-stone-800">Pago con Yape</p>
+                <p className="text-xs text-stone-500 mt-1">
+                  Escanea el QR y paga <span className="font-bold text-[#16A34A]">{PLAN_LABELS[selectedPlan]?.precio}</span>
+                </p>
+              </div>
+
+              {/* QR Image */}
+              <div className="flex justify-center">
+                <img src="/yape-qr.jpg" alt="QR Yape" className="w-48 h-48 rounded-xl border border-stone-200 object-contain" onError={e => { e.target.style.display = 'none'; }} />
+              </div>
+
+              {/* Upload comprobante */}
+              <div>
+                <label className={cx.label}>Sube tu comprobante de pago</label>
+                <label className="block cursor-pointer">
+                  {comprobanteUrl ? (
+                    <div className="relative">
+                      <img src={comprobanteUrl} className="w-full max-h-40 object-contain rounded-xl border border-emerald-300" alt="Comprobante" />
+                      <span className="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full">Subido</span>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-stone-300 rounded-xl p-6 text-center hover:border-stone-400 transition-colors">
+                      {uploadingComprobante ? (
+                        <div className="flex items-center justify-center gap-2 text-stone-500 text-sm">
+                          <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
+                          Subiendo...
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm text-stone-500">Click para subir foto del pago</p>
+                          <p className="text-[10px] text-stone-400 mt-1">JPG, PNG (max 5MB)</p>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 5 * 1024 * 1024) { setError('La imagen debe ser menor a 5MB'); return; }
+                    setUploadingComprobante(true);
+                    try {
+                      const formData = new FormData();
+                      formData.append('image', file);
+                      const r = await fetch(`${API_BASE}/onboarding/comprobante`, { method: 'POST', body: formData });
+                      const d = await r.json();
+                      if (d.url) { setComprobanteUrl(d.url); setError(''); }
+                      else throw new Error('Error subiendo imagen');
+                    } catch (err) { setError(err.message); }
+                    finally { setUploadingComprobante(false); }
+                  }} />
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || !comprobanteUrl}
+                className={cx.btnPrimary + ' w-full flex items-center justify-center gap-2'}
+              >
+                {loading ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  'Completar registro'
+                )}
+              </button>
+              <button type="button" onClick={() => setShowPayment(false)} className="w-full text-center text-xs text-stone-400 hover:text-stone-600">
+                Volver a editar datos
+              </button>
+            </div>
+          ) : (
+            <button
+              type="submit"
+              disabled={loading}
+              className={cx.btnPrimary + ' w-full flex items-center justify-center gap-2'}
+            >
+              {loading ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                isPaidPlan ? 'Siguiente — Pago' : 'Completar registro'
+              )}
+            </button>
+          )}
         </form>
       </div>
     </div>
@@ -321,7 +413,7 @@ export default function OnboardingPage() {
 }
 
 // ─── Public signup request form (no token needed) ───
-function SignupRequestForm({ giros }) {
+function SignupRequestForm({ giros, selectedPlan }) {
   const [email, setEmail] = useState('');
   const [nombre, setNombre] = useState('');
   const [giroId, setGiroId] = useState('');
@@ -347,7 +439,8 @@ function SignupRequestForm({ giros }) {
       if (tk) {
         setToken(tk);
         // Redirect to onboarding with token
-        window.location.href = `${window.location.origin}${window.location.pathname}#/onboarding?token=${tk}`;
+        const planParam = selectedPlan ? `&plan=${selectedPlan}` : '';
+        window.location.href = `${window.location.origin}${window.location.pathname}#/onboarding?token=${tk}${planParam}`;
       } else {
         setSent(true);
       }
@@ -379,9 +472,18 @@ function SignupRequestForm({ giros }) {
       <div className="bg-white rounded-2xl w-full max-w-md p-8 shadow-xl relative z-10">
         <div className="flex flex-col items-center mb-6">
           <img src="/logo-kudi.jpg" className="w-16 h-16 mx-auto mb-3 rounded-xl" alt="Kudi" />
-          <h1 className="text-xl font-bold text-stone-900">Prueba Kudi gratis</h1>
-          <p className="text-stone-500 text-sm mt-1 text-center">10 días gratis. Sin tarjeta de crédito.</p>
+          <h1 className="text-xl font-bold text-stone-900">{selectedPlan ? 'Regístrate en Kudi' : 'Prueba Kudi gratis'}</h1>
+          <p className="text-stone-500 text-sm mt-1 text-center">
+            {selectedPlan ? PLAN_LABELS[selectedPlan]?.label + ' — ' + PLAN_LABELS[selectedPlan]?.precio : '10 días gratis. Sin tarjeta de crédito.'}
+          </p>
         </div>
+
+        {selectedPlan && PLAN_LABELS[selectedPlan] && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-center">
+            <p className="text-sm font-semibold text-emerald-800">{PLAN_LABELS[selectedPlan].label}</p>
+            <p className="text-xs text-emerald-600">{PLAN_LABELS[selectedPlan].precio} — Pago con Yape después del registro</p>
+          </div>
+        )}
 
         <form onSubmit={handleRequest} className="space-y-4">
           <div>
