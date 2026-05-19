@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /planes
+Disallow: /#/
+Sitemap: https://kudi.nodumstudio.com/sitemap.xml
