@@ -173,8 +173,12 @@ export default function Layout() {
     return 'hidden';
   };
 
+  const [bannerDismissed, setBannerDismissed] = useState(() => sessionStorage.getItem('kudi_banner_dismissed') === '1');
+
   const trialBanner = (() => {
-    if (!user || user.rol === 'admin' || user.plan === 'pro') return null;
+    if (!user || user.rol === 'admin') return null;
+    // Paid plans that are not trial
+    if (user.plan && !['trial'].includes(user.plan) && !user.trial_ends_at) return null;
     if (!user.trial_ends_at) return null;
 
     const now = new Date();
@@ -183,15 +187,20 @@ export default function Layout() {
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
     if (diffDays > 7) {
-      return { type: 'info', text: `Prueba gratis — ${diffDays} dias restantes`, color: 'bg-blue-50 text-blue-700 border-blue-200' };
+      return { type: 'info', text: `Prueba gratis — ${diffDays} días restantes`, color: 'bg-blue-50 text-blue-700 border-blue-200', dismissable: true };
     } else if (diffDays > 0) {
-      return { type: 'warning', text: `Tu prueba gratis termina en ${diffDays} dia${diffDays > 1 ? 's' : ''}`, color: 'bg-amber-50 text-amber-700 border-amber-200' };
+      return { type: 'warning', text: `Tu prueba gratis termina en ${diffDays} día${diffDays > 1 ? 's' : ''}`, color: 'bg-amber-50 text-amber-700 border-amber-200', dismissable: true };
     } else if (diffDays === 0) {
-      return { type: 'danger', text: 'Tu prueba gratis termina hoy', color: 'bg-rose-50 text-rose-700 border-rose-200' };
+      return { type: 'danger', text: 'Tu prueba gratis termina hoy', color: 'bg-rose-50 text-rose-700 border-rose-200', dismissable: false };
     } else {
-      return { type: 'expired', text: 'Tu prueba gratis ha terminado', color: 'bg-rose-50 text-rose-700 border-rose-200' };
+      return { type: 'expired', text: 'Tu prueba gratis ha terminado', color: 'bg-rose-50 text-rose-700 border-rose-200', dismissable: false };
     }
   })();
+
+  const dismissBanner = () => {
+    setBannerDismissed(true);
+    sessionStorage.setItem('kudi_banner_dismissed', '1');
+  };
 
   const handleLogout = () => {
     logout();
@@ -368,13 +377,39 @@ export default function Layout() {
           <div className="w-9" />
         </header>
 
-        {trialBanner && (
-          <div className={`${trialBanner.color} border-b px-4 py-2.5 text-center text-sm font-medium flex items-center justify-center gap-2`}>
-            <Clock size={14} />
-            <span>{trialBanner.text}</span>
-            {trialBanner.type === 'expired' && (
-              <span className="font-bold ml-1">— Contacta al administrador para activar tu cuenta</span>
+        {trialBanner && !(bannerDismissed && trialBanner.dismissable) && (
+          <div className={`${trialBanner.color} border-b px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-3`}>
+            <div className="flex items-center gap-2">
+              <Clock size={14} />
+              <span>{trialBanner.text}</span>
+            </div>
+            <a
+              href="/#/onboarding?plan=emprendedor"
+              className="px-3 py-1 bg-[#16A34A] text-white text-xs font-semibold rounded-lg hover:bg-[#15803D] transition-colors duration-100 whitespace-nowrap"
+            >
+              {trialBanner.type === 'expired' ? 'Activar plan' : 'Pagar plan'}
+            </a>
+            {trialBanner.dismissable && (
+              <button onClick={dismissBanner} className="text-current opacity-50 hover:opacity-100 transition-opacity ml-1">
+                <X size={14} />
+              </button>
             )}
+          </div>
+        )}
+
+        {/* Expired trial overlay */}
+        {trialBanner?.type === 'expired' && (
+          <div className="bg-rose-50 border-b border-rose-200 px-6 py-4 text-center">
+            <p className="text-rose-800 font-semibold mb-2">Tu prueba gratis ha terminado</p>
+            <p className="text-rose-600 text-sm mb-3">Activa un plan para seguir usando Kudi con todas las funcionalidades.</p>
+            <div className="flex justify-center gap-3">
+              <a href="/#/onboarding?plan=independiente" className="px-4 py-2 bg-white border border-rose-300 text-rose-700 text-sm font-medium rounded-lg hover:bg-rose-50 transition-colors">
+                Plan Independiente — S/80/mes
+              </a>
+              <a href="/#/onboarding?plan=emprendedor" className="px-4 py-2 bg-[#16A34A] text-white text-sm font-semibold rounded-lg hover:bg-[#15803D] transition-colors">
+                Plan Emprendedor — S/100/mes
+              </a>
+            </div>
           </div>
         )}
 
