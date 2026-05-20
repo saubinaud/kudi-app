@@ -548,9 +548,10 @@ function PagosTab() {
               <div key={p.id} className={`${cx.card} p-5`}>
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-stone-800 font-medium text-sm">{p.usuario || p.nombre || '-'}</p>
-                    <p className="text-stone-400 text-xs">{p.email || '-'}</p>
-                    <p className="text-stone-400 text-xs mt-1">{formatDate(p.fecha || p.created_at)}</p>
+                    <p className="text-stone-800 font-medium text-sm">{p.usuario_nombre || '-'}</p>
+                    <p className="text-stone-400 text-xs">{p.usuario_email || '-'}</p>
+                    {p.empresa_nombre && <p className="text-stone-500 text-xs mt-0.5">Empresa: {p.empresa_nombre}</p>}
+                    <p className="text-stone-400 text-[10px] mt-1">{formatDate(p.created_at)}</p>
                   </div>
                   <div className="text-right">
                     <span className={estadoBadge(p.estado)}>{p.estado}</span>
@@ -562,6 +563,8 @@ function PagosTab() {
                     <Eye size={13} /> Ver comprobante
                   </button>
                 )}
+                {p.referencia_pago && <p className="text-[10px] text-emerald-600 mt-1">Ref: {p.referencia_pago}</p>}
+                {p.nota && <p className="text-[10px] text-rose-500 mt-1">Nota: {p.nota}</p>}
                 {p.estado === 'pendiente' && (
                   <div className="flex gap-2 mt-3 border-t border-stone-200 pt-3">
                     {actionRow?.id === p.id ? (
@@ -598,7 +601,7 @@ function PagosTab() {
                 <tr className="border-b border-stone-200">
                   <th className={cx.th}>Fecha</th>
                   <th className={cx.th}>Usuario</th>
-                  <th className={cx.th}>Email</th>
+                  <th className={cx.th}>Empresa</th>
                   <th className={cx.th}>Plan</th>
                   <th className={cx.th}>Monto</th>
                   <th className={cx.th}>Estado</th>
@@ -609,9 +612,12 @@ function PagosTab() {
               <tbody>
                 {filtered.map(p => (
                   <tr key={p.id} className={cx.tr}>
-                    <td className={cx.td + ' text-stone-400'}>{formatDate(p.fecha || p.created_at)}</td>
-                    <td className={cx.td + ' text-stone-800 font-medium'}>{p.usuario || p.nombre || '-'}</td>
-                    <td className={cx.td + ' text-stone-600'}>{p.email || '-'}</td>
+                    <td className={cx.td + ' text-stone-400 text-xs'}>{formatDate(p.created_at)}</td>
+                    <td className={cx.td}>
+                      <p className="text-stone-800 font-medium text-sm">{p.usuario_nombre || '-'}</p>
+                      <p className="text-stone-400 text-[10px]">{p.usuario_email || '-'}</p>
+                    </td>
+                    <td className={cx.td + ' text-stone-600 text-sm'}>{p.empresa_nombre || '-'}</td>
                     <td className={cx.td}>
                       <span className={cx.badge('bg-stone-100 text-stone-600')}>{p.plan || '-'}</span>
                     </td>
