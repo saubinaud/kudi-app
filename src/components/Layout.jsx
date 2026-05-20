@@ -499,11 +499,24 @@ export default function Layout() {
           </div>
         )}
 
-        <main className="p-4 pb-14 lg:px-10 lg:py-6 lg:pb-14">
+        <main className="p-4 pb-14 lg:px-10 lg:py-6 lg:pb-14 relative">
           <TerminosProvider terminos={null}>
             <Outlet />
           </TerminosProvider>
         </main>
+
+        {/* Fixed notification bell — always visible */}
+        {user?.rol !== 'admin' && (
+          <button
+            onClick={() => setShowNotifs(true)}
+            className="fixed bottom-6 right-6 z-30 w-12 h-12 bg-[#0A2F24] text-white rounded-full shadow-lg hover:bg-[#0A2F24]/90 transition-colors duration-100 flex items-center justify-center"
+          >
+            <Bell size={20} />
+            {notifCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">{notifCount}</span>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Notifications sidebar */}
