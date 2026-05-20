@@ -172,7 +172,6 @@ export default function Layout() {
     { to: '/equipo', label: 'Mi Equipo', icon: Users },
     { to: '/perfil', label: 'Perfil', icon: User },
     { to: '/feedback', label: 'Feedback', icon: MessageSquare },
-    { action: () => setShowNotifs(true), label: 'Mensajes', icon: Bell, badge: notifCount },
   ];
 
   const adminLinks = [
