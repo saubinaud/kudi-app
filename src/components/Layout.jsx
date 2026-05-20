@@ -41,7 +41,7 @@ import {
 import NotificacionesSidebar from './NotificacionesSidebar';
 
 
-function SidebarLink({ to, label, icon: Icon, onClick, collapsed, end, disabled }) {
+function SidebarLink({ to, action, label, icon: Icon, onClick, collapsed, end, disabled, badge }) {
   if (disabled) {
     return (
       <div
@@ -58,6 +58,22 @@ function SidebarLink({ to, label, icon: Icon, onClick, collapsed, end, disabled 
       </div>
     );
   }
+  if (action) {
+    return (
+      <button
+        onClick={() => { action(); onClick?.(); }}
+        title={collapsed ? label : undefined}
+        className={`w-full flex items-center ${collapsed ? 'justify-center' : 'gap-2.5'} ${collapsed ? 'px-0 py-2.5' : 'px-3 py-2'} rounded-lg text-[13px] font-medium transition-colors duration-100 text-white/55 hover:text-white hover:bg-white/5 relative`}
+      >
+        <Icon size={collapsed ? 20 : 16} strokeWidth={1.5} />
+        {!collapsed && <span className="flex-1 text-left">{label}</span>}
+        {badge > 0 && (
+          <span className={`${collapsed ? 'absolute -top-0.5 -right-0.5' : ''} w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center`}>{badge}</span>
+        )}
+      </button>
+    );
+  }
+
   return (
     <NavLink
       to={to}
@@ -156,6 +172,7 @@ export default function Layout() {
     { to: '/equipo', label: 'Mi Equipo', icon: Users },
     { to: '/perfil', label: 'Perfil', icon: User },
     { to: '/feedback', label: 'Feedback', icon: MessageSquare },
+    { action: () => setShowNotifs(true), label: 'Mensajes', icon: Bell, badge: notifCount },
   ];
 
   const adminLinks = [
@@ -353,7 +370,7 @@ export default function Layout() {
         <div className={`${isCollapsed ? 'mx-2' : 'mx-3'} border-t border-white/10 my-3`} />
 
         {standaloneLinks.map((l) => (
-          <SidebarLink key={l.to} {...l} onClick={closeSidebar} collapsed={isCollapsed} />
+          <SidebarLink key={l.to || l.label} {...l} onClick={closeSidebar} collapsed={isCollapsed} />
         ))}
         {isAdmin && (
           <>
