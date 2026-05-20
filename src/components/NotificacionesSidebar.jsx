@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { cx } from '../styles/tokens';
-import { X, Send, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Send, ChevronDown, ChevronUp, Headphones } from 'lucide-react';
 
 function timeAgo(date) {
   const now = new Date();
@@ -164,6 +164,19 @@ export default function NotificacionesSidebar({ open, onClose }) {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Footer — contact support */}
+        <div className="px-5 py-4 border-t border-stone-100 flex-shrink-0">
+          <a
+            href="https://wa.me/51987654321?text=Hola%2C%20necesito%20ayuda%20con%20Kudi"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#0A2F24] text-white text-sm font-semibold rounded-xl hover:bg-[#0A2F24]/90 transition-colors duration-100"
+          >
+            <Headphones size={16} />
+            Contactar con soporte
+          </a>
         </div>
       </div>
     </div>
