@@ -36,7 +36,9 @@ import {
   Truck,
   Link2,
   MessageSquare,
+  Bell,
 } from 'lucide-react';
+import NotificacionesSidebar from './NotificacionesSidebar';
 
 
 function SidebarLink({ to, label, icon: Icon, onClick, collapsed, end, disabled }) {
@@ -79,6 +81,20 @@ function SidebarLink({ to, label, icon: Icon, onClick, collapsed, end, disabled 
 export default function Layout() {
   const { user, logout, refreshUser } = useAuth();
   const api = useApi();
+
+  // Notifications
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [notifCount, setNotifCount] = useState(0);
+
+  useEffect(() => {
+    if (!user || user.rol === 'admin') return;
+    const fetchCount = () => {
+      api.get('/mensajes/count').then(r => setNotifCount(r.data?.count || 0)).catch(() => {});
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 60000);
+    return () => clearInterval(interval);
+  }, [user]);
   const navigate = useNavigate();
 
   const t = {}; // Kudi universal — no per-giro terminology
@@ -424,7 +440,12 @@ export default function Layout() {
             <img src="/logo-kudi.jpg" alt="Kudi" className="w-7 h-7 rounded-lg object-cover" />
             <span className="text-sm font-bold text-white">Kudi</span>
           </div>
-          <div className="w-9" />
+          <button onClick={() => setShowNotifs(true)} className="p-2 text-white/60 hover:text-white relative">
+            <Bell size={18} />
+            {notifCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">{notifCount}</span>
+            )}
+          </button>
         </header>
 
         {trialBanner && !(bannerDismissed && trialBanner.dismissable) && (
@@ -467,6 +488,9 @@ export default function Layout() {
           </TerminosProvider>
         </main>
       </div>
+
+      {/* Notifications sidebar */}
+      <NotificacionesSidebar open={showNotifs} onClose={() => { setShowNotifs(false); api.get('/mensajes/count').then(r => setNotifCount(r.data?.count || 0)).catch(() => {}); }} />
 
       {/* Payment modal */}
       {showPayModal && (

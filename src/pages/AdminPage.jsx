@@ -6,7 +6,7 @@ import { formatDate, formatCurrency } from '../utils/format';
 import {
   Users, UserPlus, Ban, CheckCircle, Copy, X, Settings, Trash2,
   BarChart3, CreditCard, Clock, TrendingUp, AlertCircle, Eye,
-  Check, XCircle, Filter, MessageSquare, AlertTriangle,
+  Check, XCircle, Filter, MessageSquare, AlertTriangle, Bell, Send,
 } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CustomSelect from '../components/CustomSelect';
@@ -31,6 +31,7 @@ const TABS = [
   { key: 'usuarios', label: 'Usuarios', icon: Users },
   { key: 'pagos', label: 'Pagos', icon: CreditCard },
   { key: 'registros', label: 'Registros', icon: Clock },
+  { key: 'mensajes', label: 'Mensajes', icon: Bell },
   { key: 'feedback', label: 'Feedback', icon: MessageSquare },
   { key: 'errores', label: 'Errores', icon: AlertTriangle },
 ];
@@ -772,13 +773,171 @@ export default function AdminPage() {
       {tab === 'usuarios' && <UsuariosTab />}
       {tab === 'pagos' && <PagosTab />}
       {tab === 'registros' && <RegistrosTab />}
+      {tab === 'mensajes' && <MensajesTab />}
       {tab === 'feedback' && <FeedbackTab />}
       {tab === 'errores' && <ErroresTab />}
     </div>
   );
 }
 
-// Tab 5: Feedback
+// Tab 5: Mensajes (admin → usuarios)
+function MensajesTab() {
+  const api = useApi();
+  const toast = useToast();
+  const [mensajes, setMensajes] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
+  const [respuestas, setRespuestas] = useState({});
+  const [replyText, setReplyText] = useState('');
+
+  // Form
+  const [destino, setDestino] = useState(''); // userId or '' for broadcast
+  const [asunto, setAsunto] = useState('');
+  const [mensaje, setMensaje] = useState('');
+
+  useEffect(() => {
+    Promise.all([
+      api.get('/admin/mensajes'),
+      api.get('/admin/usuarios'),
+    ]).then(([m, u]) => {
+      setMensajes(m.data || []);
+      setUsuarios((u.data || []).filter(x => x.rol !== 'admin'));
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+
+  const handleSend = async () => {
+    if (!mensaje.trim()) return;
+    setSending(true);
+    try {
+      await api.post('/admin/mensajes', {
+        para_usuario_id: destino ? parseInt(destino) : null,
+        asunto: asunto.trim() || null,
+        mensaje: mensaje.trim(),
+      });
+      toast.success(destino ? 'Mensaje enviado' : 'Mensaje enviado a todos');
+      setAsunto(''); setMensaje(''); setDestino('');
+      const r = await api.get('/admin/mensajes');
+      setMensajes(r.data || []);
+    } catch (err) { toast.error(err.message); }
+    finally { setSending(false); }
+  };
+
+  const handleExpand = async (id) => {
+    if (expandedId === id) { setExpandedId(null); return; }
+    setExpandedId(id);
+    if (!respuestas[id]) {
+      try {
+        const r = await api.get(`/admin/mensajes/${id}/respuestas`);
+        setRespuestas(prev => ({ ...prev, [id]: r.data || [] }));
+      } catch {}
+    }
+  };
+
+  const handleReply = async (parentId) => {
+    if (!replyText.trim()) return;
+    try {
+      await api.post(`/mensajes/${parentId}/responder`, { mensaje: replyText.trim() });
+      setReplyText('');
+      toast.success('Respuesta enviada');
+      const r = await api.get(`/admin/mensajes/${parentId}/respuestas`);
+      setRespuestas(prev => ({ ...prev, [parentId]: r.data || [] }));
+    } catch (err) { toast.error(err.message); }
+  };
+
+  if (loading) return <div className="space-y-3">{[1,2,3].map(i => <div key={i} className={cx.skeleton + ' h-16'} />)}</div>;
+
+  return (
+    <div className="space-y-6">
+      {/* Send form */}
+      <div className={cx.card + ' p-5'}>
+        <h3 className="text-sm font-semibold text-stone-800 mb-3 flex items-center gap-2"><Send size={14} /> Enviar mensaje</h3>
+        <div className="space-y-3">
+          <div>
+            <label className={cx.label}>Destinatario</label>
+            <select
+              value={destino}
+              onChange={e => setDestino(e.target.value)}
+              className={cx.input}
+            >
+              <option value="">Todos los usuarios</option>
+              {usuarios.map(u => (
+                <option key={u.id} value={u.id}>{u.nombre || u.email} ({u.email})</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={cx.label}>Asunto</label>
+            <input type="text" value={asunto} onChange={e => setAsunto(e.target.value)} className={cx.input} placeholder="Ej: Bienvenido a Kudi" />
+          </div>
+          <div>
+            <label className={cx.label}>Mensaje</label>
+            <textarea value={mensaje} onChange={e => setMensaje(e.target.value)} className={cx.input + ' min-h-[80px] resize-y'} placeholder="Escribe tu mensaje..." rows={3} />
+          </div>
+          <button onClick={handleSend} disabled={sending || !mensaje.trim()} className={cx.btnPrimary + ' flex items-center gap-2'}>
+            {sending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Send size={14} /> Enviar</>}
+          </button>
+        </div>
+      </div>
+
+      {/* Messages list */}
+      <div>
+        <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wider mb-3">Mensajes enviados</h3>
+        {mensajes.length === 0 ? (
+          <div className={cx.card + ' p-8 text-center'}>
+            <Bell size={32} className="text-stone-300 mx-auto mb-2" />
+            <p className="text-stone-400 text-sm">No hay mensajes aún</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {mensajes.map(m => (
+              <div key={m.id} className={cx.card + ' overflow-hidden'}>
+                <button onClick={() => handleExpand(m.id)} className="w-full text-left p-4 hover:bg-stone-50 transition-colors duration-100">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        {m.de_admin && <span className="text-[9px] px-1.5 py-0.5 bg-[#0A2F24] text-white rounded font-semibold">Admin</span>}
+                        {!m.de_admin && <span className="text-[9px] px-1.5 py-0.5 bg-stone-200 text-stone-600 rounded">{m.de_nombre || m.de_email}</span>}
+                        <span className="text-[10px] text-stone-400">{m.para_nombre ? `→ ${m.para_nombre}` : '→ Todos'}</span>
+                      </div>
+                      <p className="text-sm font-medium text-stone-800 truncate">{m.asunto || 'Sin asunto'}</p>
+                      <p className="text-xs text-stone-400 truncate">{m.mensaje.slice(0, 100)}</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {parseInt(m.respuestas) > 0 && (
+                        <span className="text-[9px] px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-full font-semibold">{m.respuestas}</span>
+                      )}
+                      <span className="text-[10px] text-stone-400">{formatDate(m.created_at)}</span>
+                    </div>
+                  </div>
+                </button>
+                {expandedId === m.id && (
+                  <div className="px-4 pb-4 border-t border-stone-100 bg-stone-50/50">
+                    <div className="py-3">
+                      <p className="text-sm text-stone-700 whitespace-pre-wrap">{m.mensaje}</p>
+                    </div>
+                    {(respuestas[m.id] || []).map(r => (
+                      <div key={r.id} className={`mb-2 p-3 rounded-lg ${r.de_admin ? 'bg-[#0A2F24]/5' : 'bg-white border border-stone-200'}`}>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-[10px] font-medium text-stone-500">{r.de_admin ? 'Admin' : (r.de_nombre || r.de_email)}</span>
+                          <span className="text-[10px] text-stone-400">{formatDate(r.created_at)}</span>
+                        </div>
+                        <p className="text-xs text-stone-700">{r.mensaje}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Tab 6: Feedback
 function FeedbackTab() {
   const api = useApi();
   const toast = useToast();
