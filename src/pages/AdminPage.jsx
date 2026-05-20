@@ -926,6 +926,24 @@ function MensajesTab() {
                         <p className="text-xs text-stone-700">{r.mensaje}</p>
                       </div>
                     ))}
+                    {/* Reply input */}
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-stone-200">
+                      <input
+                        type="text"
+                        value={expandedId === m.id ? replyText : ''}
+                        onChange={e => setReplyText(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleReply(m.id)}
+                        className={cx.input + ' text-sm flex-1'}
+                        placeholder="Responder..."
+                      />
+                      <button
+                        onClick={() => handleReply(m.id)}
+                        disabled={!replyText.trim()}
+                        className={cx.btnPrimary + ' !px-3 flex items-center gap-1'}
+                      >
+                        <Send size={14} />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
