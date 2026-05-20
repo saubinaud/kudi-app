@@ -43,7 +43,7 @@ export default function PerfilPage() {
       nombre_comercial: user?.empresa || user?.nombre_comercial || '',
       ruc: user?.ruc || '',
       razon_social: user?.razon_social || '',
-      igv_rate: user?.igv_rate ? (Number(user.igv_rate) < 1 ? parseFloat((Number(user.igv_rate) * 100).toFixed(2)) : Number(user.igv_rate)) : 18,
+      igv_rate: user?.igv_rate != null ? (Number(user.igv_rate) < 1 ? parseFloat((Number(user.igv_rate) * 100).toFixed(2)) : Number(user.igv_rate)) : 18,
       pais: user?.pais || 'PE',
       tipo_negocio: user?.tipo_negocio || 'formal',
       precio_decimales: user?.precio_decimales || 'variable',

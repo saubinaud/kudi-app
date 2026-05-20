@@ -393,7 +393,7 @@ export default function CotizadorPage() {
   const [margen, setMargen] = useState(50);
   const [margenPorcion, setMargenPorcion] = useState(50);
   // igv_rate in DB is decimal (0.18), hook expects integer (18)
-  const [igvRate, setIgvRate] = useState(user?.igv_rate ? parseFloat((user.igv_rate * 100).toFixed(2)) : 18);
+  const [igvRate, setIgvRate] = useState(user?.igv_rate != null ? parseFloat((user.igv_rate * 100).toFixed(2)) : 18);
   const [tipoPresentacion, setTipoPresentacion] = useState('unidad');
   const [unidadesPorProducto, setUnidadesPorProducto] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -521,7 +521,7 @@ export default function CotizadorPage() {
         // DB stores decimals (0.5, 0.18), UI uses percentage (50, 18) — preserve decimals
         setMargen(p.margen ? parseFloat((p.margen * 100).toFixed(2)) : 50);
         setMargenPorcion(p.margen_porcion ? parseFloat((p.margen_porcion * 100).toFixed(2)) : (p.margen ? parseFloat((p.margen * 100).toFixed(2)) : 50));
-        setIgvRate(p.igv_rate ? parseFloat((p.igv_rate * 100).toFixed(2)) : (user?.igv_rate ? parseFloat((user.igv_rate * 100).toFixed(2)) : 18));
+        setIgvRate(p.igv_rate != null ? parseFloat((p.igv_rate * 100).toFixed(2)) : (user?.igv_rate != null ? parseFloat((user.igv_rate * 100).toFixed(2)) : 18));
         setTipoProducto(p.tipo_producto || 'transformable');
         setControlStock(!!p.control_stock);
         setSku(p.sku || '');
