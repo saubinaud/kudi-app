@@ -57,6 +57,18 @@ export function AuthProvider({ children }) {
     return u;
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    if (!token) return;
+    try {
+      const r = await fetch(`${API_BASE}/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!r.ok) return;
+      const data = await r.json();
+      const u = data.data?.user || data.data || data;
+      setUser(u);
+      localStorage.setItem('nodum_user', JSON.stringify(u));
+    } catch {}
+  }, [token]);
+
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
@@ -66,7 +78,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ token, user, setUser, login, logout, loading }}>
+    <AuthContext.Provider value={{ token, user, setUser, login, logout, refreshUser, loading }}>
       {children}
     </AuthContext.Provider>
   );

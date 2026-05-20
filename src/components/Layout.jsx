@@ -77,7 +77,7 @@ function SidebarLink({ to, label, icon: Icon, onClick, collapsed, end, disabled 
 }
 
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const api = useApi();
   const navigate = useNavigate();
 
@@ -238,6 +238,7 @@ export default function Layout() {
     setPayError('');
     try {
       await api.post('/onboarding/completar-pago', { plan: payPlan, comprobante_url: payComprobante });
+      await refreshUser();
       setPaySuccess(true);
     } catch (err) {
       setPayError(err.message || 'Error al procesar el pago. Intenta de nuevo.');
