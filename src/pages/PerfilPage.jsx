@@ -209,6 +209,18 @@ export default function PerfilPage() {
             <div>
               <h3 className="text-stone-800 font-semibold text-lg">{user?.nombre || 'Usuario'}</h3>
               <p className="text-stone-500 text-sm">{user?.email}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                  user?.plan === 'trial' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
+                }`}>
+                  {user?.plan === 'trial' ? 'Prueba gratuita' : `Plan ${(user?.plan || '').charAt(0).toUpperCase() + (user?.plan || '').slice(1)}`}
+                </span>
+                {user?.plan === 'trial' && user?.trial_ends_at && (
+                  <span className="text-[10px] text-stone-400">
+                    Vence: {new Date(user.trial_ends_at).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           {!editing && (
