@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Política de Privacidad — Kudi</title>
+  <link rel="icon" href="/planes/favicon.svg" type="image/svg+xml" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f7f7f7; color: #1c1917; line-height: 1.7; }
+    .container { max-width: 720px; margin: 0 auto; padding: 40px 24px 80px; }
+    .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; }
+    .logo img { width: 40px; height: 40px; border-radius: 10px; }
+    .logo span { font-weight: 700; font-size: 20px; color: #0A2F24; }
+    h1 { font-size: 28px; font-weight: 800; color: #0A2F24; margin-bottom: 8px; }
+    .date { font-size: 13px; color: #a1a1aa; margin-bottom: 32px; }
+    h2 { font-size: 18px; font-weight: 700; color: #0A2F24; margin: 32px 0 12px; }
+    p, li { font-size: 15px; color: #44403c; margin-bottom: 12px; }
+    ul { padding-left: 20px; }
+    li { margin-bottom: 8px; }
+    .highlight { background: #f0fdf4; border-left: 3px solid #16A34A; padding: 16px 20px; border-radius: 8px; margin: 20px 0; }
+    .highlight p { margin: 0; color: #166534; font-size: 14px; }
+    a { color: #16A34A; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid #e7e5e4; font-size: 13px; color: #a1a1aa; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <img src="/planes/logo-kudi.jpg" alt="Kudi" />
+      <span>Kudi</span>
+    </div>
+
+    <h1>Política de Privacidad</h1>
+    <p class="date">Última actualización: 19 de mayo de 2026</p>
+
+    <p>En Kudi, desarrollado por <strong>Nodum Studio</strong>, la privacidad y seguridad de tus datos es nuestra prioridad. Esta política describe qué información recopilamos, cómo la usamos y cómo la protegemos.</p>
+
+    <h2>1. Información que recopilamos</h2>
+    <p>Al crear tu cuenta, recopilamos:</p>
+    <ul>
+      <li><strong>Datos de contacto:</strong> nombre, email, teléfono</li>
+      <li><strong>Datos fiscales:</strong> RUC, razón social (necesarios para facturación electrónica SUNAT)</li>
+      <li><strong>Datos del negocio:</strong> nombre comercial, rubro</li>
+    </ul>
+    <p>Durante el uso de la plataforma, tú ingresas:</p>
+    <ul>
+      <li>Productos, insumos, recetas, costos, precios</li>
+      <li>Registros de ventas, compras, inventario</li>
+      <li>Datos de clientes (DNI/RUC, direcciones)</li>
+    </ul>
+
+    <h2>2. Cómo protegemos tus datos</h2>
+    <div class="highlight">
+      <p><strong>Tus datos financieros y de negocio son privados.</strong> Solo tú y los usuarios que autorices en tu empresa pueden acceder a ellos. Ni siquiera el equipo de Kudi puede ver tus productos, costos o ventas.</p>
+    </div>
+    <ul>
+      <li><strong>Contraseñas encriptadas:</strong> usamos bcrypt para hashear contraseñas. Ni nosotros podemos verlas ni recuperarlas.</li>
+      <li><strong>Conexión segura (HTTPS):</strong> toda la comunicación entre tu navegador y nuestros servidores está encriptada con SSL/TLS.</li>
+      <li><strong>Aislamiento por empresa:</strong> cada consulta a la base de datos está filtrada por tu empresa. Un usuario no puede acceder a datos de otra empresa bajo ninguna circunstancia.</li>
+      <li><strong>Protección contra inyección SQL:</strong> todas las consultas usan parámetros preparados, previniendo ataques de inyección.</li>
+      <li><strong>Tokens de sesión seguros:</strong> usamos JWT con expiración de 12 horas. Tu sesión se cierra automáticamente.</li>
+    </ul>
+
+    <h2>3. Cómo usamos tu información</h2>
+    <p>Usamos tus datos exclusivamente para:</p>
+    <ul>
+      <li>Proveer el servicio de Kudi (costeo, facturación, inventario, POS)</li>
+      <li>Emitir comprobantes electrónicos a SUNAT (si usas facturación)</li>
+      <li>Comunicarnos contigo sobre tu cuenta (soporte, notificaciones)</li>
+      <li>Mejorar la plataforma (métricas anónimas de uso)</li>
+    </ul>
+
+    <h2>4. Lo que NO hacemos</h2>
+    <ul>
+      <li><strong>No vendemos</strong> tus datos a terceros</li>
+      <li><strong>No compartimos</strong> tu información con otras empresas</li>
+      <li><strong>No usamos</strong> tus datos para publicidad</li>
+      <li><strong>No accedemos</strong> a tus datos financieros sin tu autorización explícita</li>
+    </ul>
+
+    <h2>5. Almacenamiento y retención</h2>
+    <ul>
+      <li>Tus datos se almacenan en servidores seguros en Alemania (Contabo VPS)</li>
+      <li>Las imágenes (productos, comprobantes) se almacenan en Cloudflare R2 con acceso restringido</li>
+      <li>Mantenemos tus datos mientras tu cuenta esté activa</li>
+      <li>Si cancelas tu cuenta, puedes solicitar la eliminación completa de tus datos</li>
+    </ul>
+
+    <h2>6. Tus derechos</h2>
+    <p>Tienes derecho a:</p>
+    <ul>
+      <li>Acceder a toda tu información almacenada</li>
+      <li>Rectificar datos incorrectos desde tu perfil</li>
+      <li>Exportar tus datos (CSV disponible en varios módulos)</li>
+      <li>Solicitar la eliminación de tu cuenta y datos</li>
+    </ul>
+
+    <h2>7. Facturación electrónica</h2>
+    <p>Para emitir boletas y facturas, enviamos a SUNAT únicamente los datos requeridos por ley: RUC emisor, datos del comprobante, y datos del cliente receptor. Esta comunicación se realiza a través de un servicio seguro (Lycet/Greenter) conectado directamente a SUNAT.</p>
+
+    <h2>8. Cookies</h2>
+    <p>Kudi usa almacenamiento local del navegador (localStorage) únicamente para mantener tu sesión activa. No usamos cookies de terceros ni de rastreo.</p>
+
+    <h2>9. Contacto</h2>
+    <p>Si tienes preguntas sobre esta política o quieres ejercer alguno de tus derechos:</p>
+    <ul>
+      <li>Email: <a href="mailto:admin.kudi@gmail.com">admin.kudi@gmail.com</a></li>
+      <li>Empresa: Nodum Studio, Lima, Perú</li>
+    </ul>
+
+    <div class="footer">
+      <p>&copy; 2026 Kudi por Nodum Studio. Todos los derechos reservados.</p>
+      <p><a href="/planes">Volver a Kudi</a></p>
+    </div>
+  </div>
+</body>
+</html>
