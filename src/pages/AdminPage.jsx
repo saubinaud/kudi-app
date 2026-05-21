@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
@@ -141,6 +141,15 @@ function DashboardTab() {
 // ══════════════════════════════════════════════════════════════
 // Tab 2: Usuarios (ported from AdminUsuariosPage)
 // ══════════════════════════════════════════════════════════════
+const PLAN_OPTIONS = [
+  { value: 'trial', label: 'Trial', color: 'bg-amber-50 text-amber-600' },
+  { value: 'independiente', label: 'Independiente · S/80', color: 'bg-blue-50 text-blue-600' },
+  { value: 'emprendedor', label: 'Emprendedor · S/100', color: 'bg-indigo-50 text-indigo-600' },
+  { value: 'empresario', label: 'Empresario · S/180', color: 'bg-emerald-50 text-emerald-600' },
+];
+const PLAN_COLORS = { trial: 'bg-amber-50 text-amber-600', independiente: 'bg-blue-50 text-blue-600', emprendedor: 'bg-indigo-50 text-indigo-600', empresario: 'bg-emerald-50 text-emerald-600' };
+const PLAN_LABEL = { trial: 'Trial', independiente: 'Independiente', emprendedor: 'Emprendedor', empresario: 'Empresario', pro: 'Pro' };
+
 function UsuariosTab() {
   const api = useApi();
   const toast = useToast();
@@ -153,6 +162,8 @@ function UsuariosTab() {
   const [onboardingLink, setOnboardingLink] = useState('');
   const [editPermisos, setEditPermisos] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [expandedUser, setExpandedUser] = useState(null);
+  const [planEdit, setPlanEdit] = useState(null); // { userId, plan }
 
   useEffect(() => { loadUsers(); }, []);
 
@@ -216,14 +227,14 @@ function UsuariosTab() {
     finally { setDeleteTarget(null); }
   };
 
-  const handleTogglePlan = async (u) => {
-    const newPlan = u.plan === 'pro' ? 'trial' : 'pro';
+  const handleChangePlan = async (userId, newPlan) => {
     try {
-      await api.patch(`/admin/usuarios/${u.id}/plan`, {
+      await api.patch(`/admin/usuarios/${userId}/plan`, {
         plan: newPlan,
         trial_ends_at: newPlan === 'trial' ? new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString() : null,
       });
-      toast.success(`Plan cambiado a ${newPlan === 'pro' ? 'Pro' : 'Trial'}`);
+      toast.success(`Plan cambiado a ${PLAN_LABEL[newPlan] || newPlan}`);
+      setPlanEdit(null);
       loadUsers();
     } catch { toast.error('Error cambiando plan'); }
   };
@@ -340,7 +351,7 @@ function UsuariosTab() {
                 <div className="flex items-center gap-1">
                   {u.rol === 'admin' && <span className={cx.badge('bg-violet-50 text-violet-600')}>admin</span>}
                   <span className={cx.badge(u.estado === 'activo' ? 'bg-[var(--accent-light)] text-[var(--success)]' : u.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')}>{u.estado}</span>
-                  <span className={cx.badge(u.plan === 'pro' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600')}>{u.plan === 'pro' ? 'Pro' : 'Trial'}</span>
+                  <span className={cx.badge(PLAN_COLORS[u.plan] || 'bg-stone-100 text-stone-600')}>{PLAN_LABEL[u.plan] || u.plan}</span>
                 </div>
                 <span className="text-[10px] text-stone-400">{timeAgo(u.created_at)}</span>
               </div>
@@ -365,7 +376,6 @@ function UsuariosTab() {
               <button onClick={() => toggleStatus(u)} className={`${u.estado === 'activo' ? cx.btnDanger : cx.btnGhost + ' text-[var(--success)]'} flex-1 flex items-center justify-center gap-1`}>
                 {u.estado === 'activo' ? <><Ban size={13} /> Suspender</> : <><CheckCircle size={13} /> Reactivar</>}
               </button>
-              <button onClick={() => handleTogglePlan(u)} className={cx.btnGhost + ' text-xs'} title={u.plan === 'pro' ? 'Cambiar a Trial' : 'Activar Pro'}>{u.plan === 'pro' ? 'Trial' : 'Pro'}</button>
               <button onClick={() => setDeleteTarget(u)} className={cx.btnDanger + ' flex items-center justify-center gap-1'}><Trash2 size={13} /></button>
             </div>
           </div>
@@ -388,7 +398,8 @@ function UsuariosTab() {
           </thead>
           <tbody>
             {users.map(u => (
-              <tr key={u.id} className={cx.tr}>
+              <React.Fragment key={u.id}>
+              <tr className={cx.tr}>
                 {/* Usuario */}
                 <td className={cx.td}>
                   <div>
@@ -407,7 +418,21 @@ function UsuariosTab() {
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-1">
                       <span className={cx.badge(u.estado === 'activo' ? 'bg-[var(--accent-light)] text-[var(--success)]' : u.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')}>{u.estado}</span>
-                      <span className={cx.badge(u.plan === 'pro' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600')}>{u.plan === 'pro' ? 'Pro' : 'Trial'}</span>
+                      {planEdit?.userId === u.id ? (
+                        <div className="flex items-center gap-1">
+                          {PLAN_OPTIONS.map(p => (
+                            <button key={p.value} onClick={() => handleChangePlan(u.id, p.value)}
+                              className={`${cx.badge(p.color)} cursor-pointer hover:opacity-80 ${u.plan === p.value ? 'ring-1 ring-stone-400' : ''}`}>
+                              {p.label.split('·')[0].trim()}
+                            </button>
+                          ))}
+                          <button onClick={() => setPlanEdit(null)} className="text-stone-400 hover:text-stone-600"><X size={12} /></button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setPlanEdit({ userId: u.id })} className={cx.badge(PLAN_COLORS[u.plan] || 'bg-stone-100 text-stone-600') + ' cursor-pointer hover:opacity-80'} title="Click para cambiar plan">
+                          {PLAN_LABEL[u.plan] || u.plan}
+                        </button>
+                      )}
                       {u.rol === 'admin' && <span className={cx.badge('bg-violet-50 text-violet-600')}>admin</span>}
                     </div>
                     {u.plan === 'trial' && u.trial_ends_at && (
@@ -450,13 +475,58 @@ function UsuariosTab() {
                 {/* Acciones */}
                 <td className={cx.td + ' text-right'}>
                   <div className="flex justify-end gap-1">
+                    <button onClick={() => setExpandedUser(expandedUser === u.id ? null : u.id)} className={cx.btnIcon} title="Ver detalle">
+                      {expandedUser === u.id ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                    </button>
                     <button onClick={() => startEditPermisos(u)} className={cx.btnIcon} title="Permisos"><Settings size={15} /></button>
                     <button onClick={() => toggleStatus(u)} className={u.estado === 'activo' ? cx.btnDanger : cx.btnGhost + ' text-[var(--success)]'}>{u.estado === 'activo' ? 'Suspender' : 'Reactivar'}</button>
-                    <button onClick={() => handleTogglePlan(u)} className={cx.btnGhost + ' text-xs'} title={u.plan === 'pro' ? 'Cambiar a Trial' : 'Activar Pro'}>{u.plan === 'pro' ? 'Trial' : 'Pro'}</button>
                     <button onClick={() => setDeleteTarget(u)} className={cx.btnIcon + ' hover:text-rose-600'} title="Eliminar"><Trash2 size={15} /></button>
                   </div>
                 </td>
               </tr>
+              {/* Expanded row — empresa details */}
+              {expandedUser === u.id && (
+                <tr className="bg-stone-50/50">
+                  <td colSpan={7} className="px-6 py-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <p className="text-[10px] text-stone-400 uppercase tracking-wider font-semibold mb-1">Empresa</p>
+                        <p className="text-stone-800">{u.empresa_nombre || '—'}</p>
+                        {u.empresa_ruc && <p className="text-stone-500 text-xs">RUC: {u.empresa_ruc}</p>}
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-stone-400 uppercase tracking-wider font-semibold mb-1">Contacto</p>
+                        <p className="text-stone-700 text-xs">{u.email}</p>
+                        {u.empresa_telefono && <p className="text-stone-700 text-xs">{u.empresa_telefono}</p>}
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-stone-400 uppercase tracking-wider font-semibold mb-1">Giro</p>
+                        <p className="text-stone-700 text-xs">{u.giro_nombre || '—'}</p>
+                        {u.pais_code && <p className="text-stone-400 text-[10px]">País: {u.pais_code}</p>}
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-stone-400 uppercase tracking-wider font-semibold mb-1">Métricas</p>
+                        <p className="text-stone-700 text-xs">{u.total_productos || 0} productos · {u.total_ventas || 0} ventas</p>
+                        {u.total_comprobantes > 0 && <p className="text-stone-700 text-xs">{u.total_comprobantes} comprobantes emitidos</p>}
+                        {u.ultima_venta && <p className="text-stone-400 text-[10px]">Última venta: {timeAgo(u.ultima_venta)}</p>}
+                        <p className="text-stone-400 text-[10px]">Registrado: {formatDate(u.created_at)}</p>
+                      </div>
+                    </div>
+                    {/* Permisos inline */}
+                    <div className="mt-3 pt-3 border-t border-stone-200">
+                      <p className="text-[10px] text-stone-400 uppercase tracking-wider font-semibold mb-1">Permisos</p>
+                      <div className="flex flex-wrap gap-1">
+                        {(Array.isArray(u.permisos) ? u.permisos : DEFAULT_PERMISOS).map(p => {
+                          const isVitrina = p.startsWith('~');
+                          const label = isVitrina ? p.slice(1) : p;
+                          return <span key={p} className={`text-[10px] px-1.5 py-0.5 rounded ${isVitrina ? 'bg-amber-50 text-amber-600' : 'bg-stone-100 text-stone-600'}`}>{label}{isVitrina ? ' (vitrina)' : ''}</span>;
+                        })}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>
