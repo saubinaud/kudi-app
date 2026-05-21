@@ -390,18 +390,15 @@ export default function CotizadorPage() {
   const [materiales, setMateriales] = useState([]);
   const [selectedEmpaquePred, setSelectedEmpaquePred] = useState({});
   const [empaqueCollapsed, setEmpaqueCollapsed] = useState({});
-  const [margen, setMargen] = useState(50);
-  const [margenPorcion, setMargenPorcion] = useState(50);
-  const [precioOverride, setPrecioOverride] = useState(null); // precio exacto que el usuario escribió
-  const [precioOverridePorcion, setPrecioOverridePorcion] = useState(null);
+  // PRECIO ES LA VERDAD — margen se deriva
+  const [precioFinal, setPrecioFinal] = useState(0);
+  const [precioFinalPorcion, setPrecioFinalPorcion] = useState(null);
   // igv_rate in DB is decimal (0.18), hook expects integer (18)
-  const [igvRate, setIgvRate] = useState(user?.igv_rate != null ? parseFloat((user.igv_rate * 100).toFixed(2)) : 18);
+  const [igvRate, setIgvRate] = useState(user?.igv_rate != null ? parseFloat((user.igv_rate * 100).toFixed(2)) : 0);
   const [tipoPresentacion, setTipoPresentacion] = useState('unidad');
   const [unidadesPorProducto, setUnidadesPorProducto] = useState(1);
   const [saving, setSaving] = useState(false);
   const [loadingProduct, setLoadingProduct] = useState(!!id);
-  const [showPriceChoice, setShowPriceChoice] = useState(false);
-  const [selectedPrice, setSelectedPrice] = useState(null);
 
   const [tipoProducto, setTipoProducto] = useState('transformable');
   const [pendingPackItems, setPendingPackItems] = useState([]);
@@ -420,25 +417,18 @@ export default function CotizadorPage() {
   const [catalogPreps, setCatalogPreps] = useState([]);
   const [catalogEmpaques, setCatalogEmpaques] = useState([]);
 
-  const costosRaw = useCalculadorCostos(preparaciones, materiales, margen, igvRate, tipoPresentacion, unidadesPorProducto, margenPorcion);
-  const precioConfig = user?.precio_decimales || 'variable';
+  const costosRaw = useCalculadorCostos(preparaciones, materiales, precioFinal, igvRate, tipoPresentacion, unidadesPorProducto, precioFinalPorcion);
 
-  // Use DB price as fallback when calculator gives 0 (Shopify/imported products with no ingredients)
-  // Fallback to DB values for Shopify/imported products with no ingredients
+  // Fallback for Shopify/imported products with no ingredients
   const usarFallback = costosRaw.costoNeto === 0 && (costoGuardado > 0 || precioGuardado > 0);
   const costos = usarFallback ? (() => {
     const costo = costoGuardado;
-    const margenDec = Number(margen) / 100;
     const igvDec = Number(igvRate) / 100;
     const empaqueTotal = costosRaw.costoEmpaqueEntero || 0;
     const costoNeto = costo + empaqueTotal;
-    // If we have a saved final price, use it; otherwise calculate from margin
-    const precioVenta = precioGuardado > 0
-      ? precioGuardado / (1 + igvDec)
-      : (margenDec < 1 && costoNeto > 0 ? costoNeto / (1 - margenDec) : costoNeto);
-    const precioFinal = precioGuardado > 0 ? precioGuardado : precioVenta * (1 + igvDec);
-    const igvMonto = precioFinal - precioVenta;
-    return { ...costosRaw, costoInsumos: costo, costoInsumosProducto: costo, costoNeto, precioVenta, igvMonto, precioFinal };
+    const pv = igvDec > 0 && precioFinal > 0 ? precioFinal / (1 + igvDec) : precioFinal;
+    const m = pv > 0 && costoNeto > 0 ? (1 - costoNeto / pv) * 100 : 0;
+    return { ...costosRaw, costoInsumos: costo, costoInsumosProducto: costo, costoNeto, precioVenta: pv, igvMonto: precioFinal - pv, precioFinal, margen: m };
   })() : costosRaw;
 
   const enrichedInsumos = useMemo(() => {
@@ -520,17 +510,16 @@ export default function CotizadorPage() {
         setImagenUrl(p.imagen_url || '');
         setTipoPresentacion(p.tipo_presentacion || 'unidad');
         setUnidadesPorProducto(parseInt(p.unidades_por_producto) || 1);
-        // DB stores decimals (0.5, 0.18), UI uses percentage (50, 18) — preserve decimals
-        setMargen(p.margen ? parseFloat((p.margen * 100).toFixed(2)) : 50);
-        setMargenPorcion(p.margen_porcion ? parseFloat((p.margen_porcion * 100).toFixed(2)) : (p.margen ? parseFloat((p.margen * 100).toFixed(2)) : 50));
-        setIgvRate(p.igv_rate != null ? parseFloat((p.igv_rate * 100).toFixed(2)) : (user?.igv_rate != null ? parseFloat((user.igv_rate * 100).toFixed(2)) : 18));
+        // Precio es la verdad — se carga directo
+        setPrecioFinal(parseFloat(p.precio_final) || 0);
+        // TODO: cargar precio porción del hijo si existe
+        setIgvRate(p.igv_rate != null ? parseFloat((p.igv_rate * 100).toFixed(2)) : (user?.igv_rate != null ? parseFloat((user.igv_rate * 100).toFixed(2)) : 0));
         setTipoProducto(p.tipo_producto || 'transformable');
         setControlStock(!!p.control_stock);
         setSku(p.sku || '');
         setStockActual(p.stock_actual != null ? String(parseFloat(p.stock_actual)) : '');
         setStockMinimo(p.stock_minimo != null ? String(parseFloat(p.stock_minimo)) : '');
         setPrecioGuardado(parseFloat(p.precio_final) || 0);
-        setPrecioOverride(parseFloat(p.precio_final) || null);
         setCostoGuardado(parseFloat(p.costo_neto) || parseFloat(p.costo_compra) || 0);
         if (p.variantes) setVariantes(p.variantes);
 
@@ -801,8 +790,8 @@ export default function CotizadorPage() {
     setNombre('');
     setPreparaciones([emptyPreparacion()]);
     setMateriales([]);
-    setMargen(50);
-    setMargenPorcion(50);
+    setPrecioFinal(0);
+    setPrecioFinalPorcion(null);
     setTipoPresentacion('unidad');
     setUnidadesPorProducto(1);
     setImagenUrl('');
@@ -848,8 +837,8 @@ export default function CotizadorPage() {
         nombre: nombre.trim(),
         descripcion: descripcion.trim() || null,
         imagen_url: imagenUrl.trim() || null,
-        margen,          // backend normalizes integer% → decimal
-        margen_porcion: margenPorcion,
+        margen: costos.margen,    // derivado del precio
+        margen_porcion: costos.margenPorcion,
         igv_rate: igvRate / 100,
         tipo_presentacion: tipoPresentacion,
         unidades_por_producto: tipoPresentacion === 'entero' ? unidadesPorProducto : 1,
@@ -879,9 +868,7 @@ export default function CotizadorPage() {
             empaque_tipo: m.empaque_tipo || 'entero',
           })),
         ...costos,
-        // Use the exact price the user typed (not the margin-derived one)
-        ...(precioOverride != null ? { precioFinal: precioOverride } : {}),
-        ...(precioOverridePorcion != null ? { precioFinalPorcion: precioOverridePorcion } : {}),
+        precioFinal,  // siempre el precio exacto del usuario
       };
 
       if (tipoProducto === 'no_transformable' && selectedInventarioId) {
@@ -926,29 +913,22 @@ export default function CotizadorPage() {
     );
   }, []);
 
-  // Reverse calc: from price → margin
-  // Cuando el usuario cambia el margen manualmente (slider/input), limpiar el precio override
-  const handleMargenChange = (v) => { setPrecioOverride(null); setMargen(v); };
-  const handleMargenPorcionChange = (v) => { setPrecioOverridePorcion(null); setMargenPorcion(v); };
-
-  const setMargenFromPrecio = useCallback((precioFinal) => {
-    setPrecioOverride(Math.round(precioFinal * 100) / 100);
+  // Slider de margen → calcula precio desde margen
+  const handleMargenChange = useCallback((margenPct) => {
+    const margenDec = Number(margenPct) / 100;
     const igvDec = igvRate / 100;
-    const precioVenta = precioFinal / (1 + igvDec);
-    if (costos.costoNeto > 0 && precioVenta > costos.costoNeto) {
-      // Full precision — no rounding. Display rounds to 2 decimals.
-      const newMargen = (1 - costos.costoNeto / precioVenta) * 100;
-      setMargen(Math.min(90, Math.max(0, newMargen)));
+    if (costos.costoNeto > 0 && margenDec < 1) {
+      const pv = costos.costoNeto / (1 - margenDec);
+      setPrecioFinal(Math.round(pv * (1 + igvDec) * 100) / 100);
     }
   }, [igvRate, costos.costoNeto]);
 
-  const setMargenPorcionFromPrecio = useCallback((precioFinal) => {
-    setPrecioOverridePorcion(Math.round(precioFinal * 100) / 100);
+  const handleMargenPorcionChange = useCallback((margenPct) => {
+    const margenDec = Number(margenPct) / 100;
     const igvDec = igvRate / 100;
-    const precioVenta = precioFinal / (1 + igvDec);
-    if (costos.costoNetoPorcion > 0 && precioVenta > costos.costoNetoPorcion) {
-      const newMargen = (1 - costos.costoNetoPorcion / precioVenta) * 100;
-      setMargenPorcion(Math.min(90, Math.max(0, newMargen)));
+    if (costos.costoNetoPorcion > 0 && margenDec < 1) {
+      const pv = costos.costoNetoPorcion / (1 - margenDec);
+      setPrecioFinalPorcion(Math.round(pv * (1 + igvDec) * 100) / 100);
     }
   }, [igvRate, costos.costoNetoPorcion]);
 
@@ -1740,13 +1720,13 @@ export default function CotizadorPage() {
                       min="0"
                       max="90"
                       step="0.5"
-                      value={margen}
+                      value={Math.round(costos.margen * 10) / 10}
                       onChange={(e) => handleMargenChange(Number(e.target.value))}
                       className="flex-1 accent-[var(--accent)] h-1.5"
                     />
                     <input
                       type="number"
-                      value={parseFloat(margen.toFixed(2))}
+                      value={parseFloat(costos.margen.toFixed(2))}
                       onChange={(e) => handleMargenChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))}
                       className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400"
                     />
@@ -1769,7 +1749,7 @@ export default function CotizadorPage() {
                   </div>
                   <div className="flex justify-between items-baseline pt-1">
                     <span className="text-stone-600 text-sm">Precio final</span>
-                    <EditablePrice value={precioOverride ?? costos.precioFinal} onChange={setMargenFromPrecio} className="text-2xl font-bold text-stone-900" />
+                    <EditablePrice value={precioFinal} onChange={(v) => setPrecioFinal(Math.round(v * 100) / 100)} className="text-2xl font-bold text-stone-900" />
                   </div>
                   {costos.precioVenta > 0 && costos.costoNeto > 0 && (
                     <div className="flex justify-between items-center bg-emerald-50 rounded-lg px-3 py-2 mt-1">
@@ -1783,8 +1763,8 @@ export default function CotizadorPage() {
                 <div className="py-4 border-b border-stone-100">
                   <label className={cx.label}>Margen por porcion</label>
                   <div className="flex items-center gap-3 mt-1">
-                    <input type="range" min="0" max="90" step="0.5" value={margenPorcion} onChange={(e) => handleMargenPorcionChange(Number(e.target.value))} className="flex-1 accent-[var(--accent)] h-1.5" />
-                    <input type="number" value={parseFloat(margenPorcion.toFixed(2))} onChange={(e) => handleMargenPorcionChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))} className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400" />
+                    <input type="range" min="0" max="90" step="0.5" value={Math.round(costos.margenPorcion * 10) / 10} onChange={(e) => handleMargenPorcionChange(Number(e.target.value))} className="flex-1 accent-[var(--accent)] h-1.5" />
+                    <input type="number" value={parseFloat(costos.margenPorcion.toFixed(2))} onChange={(e) => handleMargenPorcionChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))} className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400" />
                     <span className="text-stone-400 text-sm">%</span>
                   </div>
                 </div>
@@ -1798,7 +1778,7 @@ export default function CotizadorPage() {
                   </div>
                   <div className="flex justify-between items-baseline pt-1">
                     <span className="text-stone-600 text-sm">Precio final</span>
-                    <EditablePrice value={precioOverridePorcion ?? costos.precioFinalPorcion} onChange={setMargenPorcionFromPrecio} className="text-2xl font-bold text-stone-900" />
+                    <EditablePrice value={precioFinalPorcion ?? costos.precioFinalPorcion} onChange={(v) => setPrecioFinalPorcion(Math.round(v * 100) / 100)} className="text-2xl font-bold text-stone-900" />
                   </div>
                 </div>
               </>
@@ -1828,13 +1808,13 @@ export default function CotizadorPage() {
                       min="0"
                       max="90"
                       step="0.5"
-                      value={margen}
+                      value={Math.round(costos.margen * 10) / 10}
                       onChange={(e) => handleMargenChange(Number(e.target.value))}
                       className="flex-1 accent-[var(--accent)] h-1.5"
                     />
                     <input
                       type="number"
-                      value={parseFloat(margen.toFixed(2))}
+                      value={parseFloat(costos.margen.toFixed(2))}
                       onChange={(e) => handleMargenChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))}
                       className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400"
                     />
@@ -1859,7 +1839,7 @@ export default function CotizadorPage() {
                 <div className="pt-4">
                   <div className="flex justify-between items-baseline mb-1">
                     <span className="text-stone-600 text-sm">Precio final</span>
-                    <EditablePrice value={precioOverride ?? costos.precioFinal} onChange={setMargenFromPrecio} className="text-2xl font-bold text-stone-900" />
+                    <EditablePrice value={precioFinal} onChange={(v) => setPrecioFinal(Math.round(v * 100) / 100)} className="text-2xl font-bold text-stone-900" />
                   </div>
                   {costos.precioVenta > 0 && costos.costoNeto > 0 && (
                     <div className="flex justify-between items-center bg-emerald-50 rounded-lg px-3 py-2 mb-2">

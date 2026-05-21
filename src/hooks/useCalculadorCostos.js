@@ -22,7 +22,18 @@ function convertirUnidad(valor, deUnidad, aUnidad) {
   return valor;
 }
 
-export function useCalculadorCostos(preparaciones = [], materiales = [], margen = 50, igvRate = 18, tipoPresentacion = 'unidad', unidadesPorProducto = 1, margenPorcion = null) {
+/**
+ * Calculador de costos — PRECIO ES LA VERDAD, MARGEN ES DERIVADO.
+ *
+ * @param {Array} preparaciones - recetas con insumos
+ * @param {Array} materiales - empaque
+ * @param {number} precioFinal - precio del producto (input del usuario)
+ * @param {number} igvRate - IGV en porcentaje (ej: 18)
+ * @param {string} tipoPresentacion - 'unidad' o 'entero'
+ * @param {number} unidadesPorProducto - porciones si es entero
+ * @param {number|null} precioFinalPorcion - precio por porción (input del usuario)
+ */
+export function useCalculadorCostos(preparaciones = [], materiales = [], precioFinal = 0, igvRate = 0, tipoPresentacion = 'unidad', unidadesPorProducto = 1, precioFinalPorcion = null) {
   return useMemo(() => {
     // Cost for THE WHOLE PRODUCT from preparations
     const costoInsumosProducto = preparaciones.reduce((sum, prep) => {
@@ -46,12 +57,10 @@ export function useCalculadorCostos(preparaciones = [], materiales = [], margen 
         const mermaPrepPct = Number(prep.merma_pct) || 0;
         return sum + (mermaPrepPct > 0 ? costoBase * (1 + mermaPrepPct / 100) : costoBase);
       }
-      return sum + prepCost; // no porciones = full prep cost is the product cost
+      return sum + prepCost;
     }, 0);
 
     const unidades = tipoPresentacion === 'entero' ? (unidadesPorProducto || 1) : 1;
-
-    // Cost per individual portion
     const costoInsumosPorPorcion = unidades > 1 ? costoInsumosProducto / unidades : costoInsumosProducto;
 
     // Empaque costs
@@ -62,20 +71,26 @@ export function useCalculadorCostos(preparaciones = [], materiales = [], margen 
       .filter((m) => m.empaque_tipo === 'unidad')
       .reduce((sum, mat) => sum + (Number(mat.precio) || 0) * (Number(mat.cantidad) || 0), 0);
 
-    // WHOLE PRODUCT pricing
     const costoNetoProducto = costoInsumosProducto + costoEmpaqueEntero + (costoEmpaqueUnidad * unidades);
-    const margenDecimal = Number(margen) / 100;
-    const igvDecimal = Number(igvRate) / 100;
-    const precioVentaProducto = costoNetoProducto > 0 && margenDecimal < 1 ? costoNetoProducto / (1 - margenDecimal) : costoNetoProducto;
-    const precioFinalProducto = Math.round(precioVentaProducto * (1 + igvDecimal) * 100) / 100;
-
-    // PER PORTION pricing (can have its own margin)
     const costoNetoPorcion = costoInsumosPorPorcion + costoEmpaqueUnidad;
-    const margenPorcionDecimal = margenPorcion !== null ? Number(margenPorcion) / 100 : margenDecimal;
-    const precioVentaPorcion = costoNetoPorcion > 0 && margenPorcionDecimal < 1 ? costoNetoPorcion / (1 - margenPorcionDecimal) : costoNetoPorcion;
-    const precioFinalPorcion = Math.round(precioVentaPorcion * (1 + igvDecimal) * 100) / 100;
+    const igvDecimal = Number(igvRate) / 100;
 
-    // Return values that the backend/save needs (use product-level values)
+    // PRECIO es el input del usuario — no se calcula
+    const pf = Number(precioFinal) || 0;
+    const precioVentaProducto = igvDecimal > 0 && pf > 0 ? pf / (1 + igvDecimal) : pf;
+
+    // MARGEN se DERIVA del precio (nunca es input)
+    const margen = precioVentaProducto > 0 && costoNetoProducto > 0
+      ? (1 - costoNetoProducto / precioVentaProducto) * 100
+      : 0;
+
+    // Por porción
+    const pfp = precioFinalPorcion != null ? Number(precioFinalPorcion) : (unidades > 1 && pf > 0 ? Math.round(pf / unidades * 100) / 100 : pf);
+    const precioVentaPorcion = igvDecimal > 0 && pfp > 0 ? pfp / (1 + igvDecimal) : pfp;
+    const margenPorcion = precioVentaPorcion > 0 && costoNetoPorcion > 0
+      ? (1 - costoNetoPorcion / precioVentaPorcion) * 100
+      : 0;
+
     return {
       costoInsumos: costoInsumosProducto,
       costoInsumosProducto,
@@ -85,15 +100,15 @@ export function useCalculadorCostos(preparaciones = [], materiales = [], margen 
       costoEmpaque: costoEmpaqueEntero + (costoEmpaqueUnidad * unidades),
       costoNeto: costoNetoProducto,
       costoNetoPorcion,
-      margen: Number(margen),
-      margenPorcion: margenPorcion !== null ? Number(margenPorcion) : Number(margen),
+      margen,
+      margenPorcion,
       unidades,
       precioVenta: precioVentaProducto,
       precioVentaPorcion,
       igvRate: Number(igvRate),
       igvMonto: precioVentaProducto * igvDecimal,
-      precioFinal: precioFinalProducto,
-      precioFinalPorcion,
+      precioFinal: pf,
+      precioFinalPorcion: pfp,
     };
-  }, [preparaciones, materiales, margen, igvRate, tipoPresentacion, unidadesPorProducto, margenPorcion]);
+  }, [preparaciones, materiales, precioFinal, igvRate, tipoPresentacion, unidadesPorProducto, precioFinalPorcion]);
 }
