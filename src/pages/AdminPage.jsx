@@ -81,7 +81,7 @@ function timeAgo(dateStr) {
 // ══════════════════════════════════════════════════════════════
 // Tab 1: Dashboard
 // ══════════════════════════════════════════════════════════════
-function DashboardTab() {
+function DashboardTab({ onNavigate }) {
   const api = useApi();
   const toast = useToast();
   const [stats, setStats] = useState(null);
@@ -104,24 +104,25 @@ function DashboardTab() {
   if (!stats) return null;
 
   const cards = [
-    { label: 'Total usuarios', value: stats.total_usuarios, icon: Users, color: 'text-stone-700' },
-    { label: 'Registros hoy', value: stats.registros_hoy, icon: UserPlus, color: 'text-blue-600' },
-    { label: 'Registros semana', value: stats.registros_semana, icon: TrendingUp, color: 'text-indigo-600' },
-    { label: 'Trials activos', value: stats.trials_activos, icon: Clock, color: 'text-amber-600' },
-    { label: 'Trials expirados', value: stats.trials_expirados, icon: AlertCircle, color: 'text-rose-500' },
-    { label: 'Planes Pro', value: stats.planes_pro, icon: CheckCircle, color: 'text-emerald-600' },
-    { label: 'Pagos pendientes', value: stats.pagos_pendientes, icon: CreditCard, color: 'text-amber-600', badge: stats.pagos_pendientes > 0 },
-    { label: 'Cert. .p12 subidos', value: stats.cert_subidos, icon: ShieldCheck, color: 'text-violet-600' },
-    { label: 'Facturación activa', value: stats.fact_habilitadas, icon: FileText, color: 'text-teal-600' },
+    { label: 'Total usuarios', value: stats.total_usuarios, icon: Users, color: 'text-stone-700', tab: 'usuarios' },
+    { label: 'Registros hoy', value: stats.registros_hoy, icon: UserPlus, color: 'text-blue-600', tab: 'registros' },
+    { label: 'Registros semana', value: stats.registros_semana, icon: TrendingUp, color: 'text-indigo-600', tab: 'registros' },
+    { label: 'Trials activos', value: stats.trials_activos, icon: Clock, color: 'text-amber-600', tab: 'usuarios' },
+    { label: 'Trials expirados', value: stats.trials_expirados, icon: AlertCircle, color: 'text-rose-500', tab: 'usuarios' },
+    { label: 'Planes Pro', value: stats.planes_pro, icon: CheckCircle, color: 'text-emerald-600', tab: 'usuarios' },
+    { label: 'Pagos pendientes', value: stats.pagos_pendientes, icon: CreditCard, color: 'text-amber-600', badge: stats.pagos_pendientes > 0, tab: 'pagos' },
+    { label: 'Cert. .p12 subidos', value: stats.cert_subidos, icon: ShieldCheck, color: 'text-violet-600', tab: 'usuarios' },
+    { label: 'Facturación activa', value: stats.fact_habilitadas, icon: FileText, color: 'text-teal-600', tab: 'usuarios' },
     { label: 'Total productos', value: stats.total_productos, icon: Package, color: 'text-stone-500' },
     { label: 'Total ventas', value: stats.total_ventas, icon: ShoppingCart, color: 'text-stone-500' },
-    { label: 'Errores hoy', value: stats.errores_hoy, icon: AlertTriangle, color: stats.errores_hoy > 0 ? 'text-rose-500' : 'text-stone-400', badge: stats.errores_hoy > 0 },
+    { label: 'Errores hoy', value: stats.errores_hoy, icon: AlertTriangle, color: stats.errores_hoy > 0 ? 'text-rose-500' : 'text-stone-400', badge: stats.errores_hoy > 0, tab: 'errores' },
   ];
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {cards.map((c) => (
-        <div key={c.label} className={`${cx.card} p-5 relative`}>
+        <div key={c.label} onClick={() => c.tab && onNavigate?.(c.tab)}
+          className={`${cx.card} p-5 relative ${c.tab ? 'cursor-pointer hover:shadow-md transition-shadow duration-150' : ''}`}>
           <div className="flex items-center justify-between mb-2">
             <c.icon size={18} className={c.color} />
             {c.badge && (
@@ -890,7 +891,7 @@ export default function AdminPage() {
       </div>
 
       {/* Tab content */}
-      {tab === 'dashboard' && <DashboardTab />}
+      {tab === 'dashboard' && <DashboardTab onNavigate={setTab} />}
       {tab === 'usuarios' && <UsuariosTab />}
       {tab === 'pagos' && <PagosTab />}
       {tab === 'registros' && <RegistrosTab />}
