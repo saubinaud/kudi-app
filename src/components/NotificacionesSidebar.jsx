@@ -22,6 +22,10 @@ export default function NotificacionesSidebar({ open, onClose }) {
   const [respuestas, setRespuestas] = useState({});
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
+  const [showNewMsg, setShowNewMsg] = useState(false);
+  const [newMsgAsunto, setNewMsgAsunto] = useState('');
+  const [newMsgTexto, setNewMsgTexto] = useState('');
+  const [sendingNew, setSendingNew] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -57,6 +61,21 @@ export default function NotificacionesSidebar({ open, onClose }) {
       setRespuestas(prev => ({ ...prev, [parentId]: r.data || [] }));
     } catch {}
     finally { setSending(false); }
+  };
+
+  const handleNewMsg = async () => {
+    if (!newMsgTexto.trim()) return;
+    setSendingNew(true);
+    try {
+      await api.post('/mensajes', { asunto: newMsgAsunto.trim() || null, mensaje: newMsgTexto.trim() });
+      setShowNewMsg(false);
+      setNewMsgAsunto('');
+      setNewMsgTexto('');
+      // Reload messages
+      const r = await api.get('/mensajes');
+      setMensajes(r.data || []);
+    } catch {}
+    finally { setSendingNew(false); }
   };
 
   if (!open) return null;
@@ -168,15 +187,44 @@ export default function NotificacionesSidebar({ open, onClose }) {
 
         {/* Footer — contact support */}
         <div className="px-5 py-4 border-t border-stone-100 flex-shrink-0">
-          <a
-            href="https://wa.me/51987654321?text=Hola%2C%20necesito%20ayuda%20con%20Kudi"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#0A2F24] text-white text-sm font-semibold rounded-xl hover:bg-[#0A2F24]/90 transition-colors duration-100"
-          >
-            <Headphones size={16} />
-            Contactar con soporte
-          </a>
+          {showNewMsg ? (
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={newMsgAsunto}
+                onChange={e => setNewMsgAsunto(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm placeholder:text-stone-400 focus:outline-none focus:border-stone-400 transition-colors duration-100"
+                placeholder="Asunto"
+              />
+              <textarea
+                value={newMsgTexto}
+                onChange={e => setNewMsgTexto(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm placeholder:text-stone-400 focus:outline-none focus:border-stone-400 transition-colors duration-100 resize-y min-h-[60px]"
+                placeholder="Escribe tu mensaje al equipo de Kudi..."
+                rows={2}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleNewMsg}
+                  disabled={sendingNew || !newMsgTexto.trim()}
+                  className="flex-1 py-2 bg-[#16A34A] text-white text-sm font-semibold rounded-lg hover:bg-[#15803D] disabled:opacity-40 transition-colors duration-100 flex items-center justify-center gap-1.5"
+                >
+                  {sendingNew ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Send size={14} /> Enviar</>}
+                </button>
+                <button onClick={() => { setShowNewMsg(false); setNewMsgAsunto(''); setNewMsgTexto(''); }} className="px-3 py-2 text-stone-400 text-sm hover:text-stone-600">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowNewMsg(true)}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#0A2F24] text-white text-sm font-semibold rounded-xl hover:bg-[#0A2F24]/90 transition-colors duration-100"
+            >
+              <Headphones size={16} />
+              Contactar con soporte
+            </button>
+          )}
         </div>
       </div>
     </div>
