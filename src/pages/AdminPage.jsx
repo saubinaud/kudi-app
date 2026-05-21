@@ -164,7 +164,9 @@ function UsuariosTab() {
   const [editPermisos, setEditPermisos] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [expandedUser, setExpandedUser] = useState(null);
-  const [planEdit, setPlanEdit] = useState(null); // { userId, plan }
+  const [planEdit, setPlanEdit] = useState(null);
+  const [sortKey, setSortKey] = useState('created_at');
+  const [sortDir, setSortDir] = useState('desc');
 
   useEffect(() => { loadUsers(); }, []);
 
@@ -239,6 +241,22 @@ function UsuariosTab() {
       loadUsers();
     } catch { toast.error('Error cambiando plan'); }
   };
+
+  const toggleSort = (key) => {
+    if (sortKey === key) { setSortDir(d => d === 'asc' ? 'desc' : 'asc'); }
+    else { setSortKey(key); setSortDir('desc'); }
+  };
+  const SortIcon = ({ k }) => sortKey === k ? <span className="ml-0.5 text-[9px]">{sortDir === 'asc' ? '▲' : '▼'}</span> : null;
+
+  const sorted = [...users].sort((a, b) => {
+    let va = a[sortKey], vb = b[sortKey];
+    if (sortKey === 'total_productos' || sortKey === 'total_ventas') { va = Number(va) || 0; vb = Number(vb) || 0; }
+    else if (sortKey === 'created_at' || sortKey === 'ultima_venta') { va = va ? new Date(va).getTime() : 0; vb = vb ? new Date(vb).getTime() : 0; }
+    else { va = (va || '').toString().toLowerCase(); vb = (vb || '').toString().toLowerCase(); }
+    if (va < vb) return sortDir === 'asc' ? -1 : 1;
+    if (va > vb) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
 
   if (loading) return <div className="space-y-4">{[1,2,3].map(i => <div key={i} className={cx.skeleton + ' h-16'} />)}</div>;
 
@@ -388,17 +406,17 @@ function UsuariosTab() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-stone-200">
-              <th className={cx.th}>Usuario</th>
-              <th className={cx.th}>Negocio</th>
-              <th className={cx.th}>Plan</th>
-              <th className={cx.th + ' text-center'}>Actividad</th>
+              <th className={cx.th + ' cursor-pointer select-none'} onClick={() => toggleSort('nombre')}>Usuario<SortIcon k="nombre" /></th>
+              <th className={cx.th + ' cursor-pointer select-none'} onClick={() => toggleSort('empresa_nombre')}>Negocio<SortIcon k="empresa_nombre" /></th>
+              <th className={cx.th + ' cursor-pointer select-none'} onClick={() => toggleSort('plan')}>Plan<SortIcon k="plan" /></th>
+              <th className={cx.th + ' text-center cursor-pointer select-none'} onClick={() => toggleSort('total_ventas')}>Actividad<SortIcon k="total_ventas" /></th>
               <th className={cx.th + ' text-center'}>Facturación</th>
-              <th className={cx.th}>Registro</th>
+              <th className={cx.th + ' cursor-pointer select-none'} onClick={() => toggleSort('created_at')}>Registro<SortIcon k="created_at" /></th>
               <th className={cx.th + ' text-right'}>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {users.map(u => (
+            {sorted.map(u => (
               <React.Fragment key={u.id}>
               <tr className={cx.tr}>
                 {/* Usuario */}
