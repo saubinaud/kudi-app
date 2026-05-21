@@ -14,7 +14,7 @@ function timeAgo(date) {
   return d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
 }
 
-export default function NotificacionesSidebar({ open, onClose }) {
+export default function NotificacionesSidebar({ open, onClose, onCountUpdate }) {
   const api = useApi();
   const [mensajes, setMensajes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,18 +29,26 @@ export default function NotificacionesSidebar({ open, onClose }) {
 
   useEffect(() => {
     if (!open) return;
+    const load = () => {
+      api.get('/mensajes')
+        .then(r => setMensajes(r.data || []))
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    };
     setLoading(true);
-    api.get('/mensajes')
-      .then(r => setMensajes(r.data || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    load();
+    // Poll every 10s while open
+    const interval = setInterval(load, 10000);
+    return () => clearInterval(interval);
   }, [open]);
 
   const handleExpand = async (id) => {
     if (expandedId === id) { setExpandedId(null); return; }
     setExpandedId(id);
-    // Mark as read
-    api.patch(`/mensajes/${id}/leer`).catch(() => {});
+    // Mark as read + update badge
+    api.patch(`/mensajes/${id}/leer`).then(() => {
+      if (onCountUpdate) api.get('/mensajes/count').then(r => onCountUpdate(r.data?.count || 0)).catch(() => {});
+    }).catch(() => {});
     setMensajes(prev => prev.map(m => m.id === id ? { ...m, leido: true } : m));
     // Load replies
     if (!respuestas[id]) {

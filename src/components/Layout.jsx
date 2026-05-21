@@ -519,7 +519,7 @@ export default function Layout() {
       </div>
 
       {/* Notifications sidebar */}
-      <NotificacionesSidebar open={showNotifs} onClose={() => { setShowNotifs(false); api.get('/mensajes/count').then(r => setNotifCount(r.data?.count || 0)).catch(() => {}); }} />
+      <NotificacionesSidebar open={showNotifs} onClose={() => { setShowNotifs(false); api.get('/mensajes/count').then(r => setNotifCount(r.data?.count || 0)).catch(() => {}); }} onCountUpdate={setNotifCount} />
 
       {/* Payment modal */}
       {showPayModal && (
