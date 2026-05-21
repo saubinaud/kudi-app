@@ -810,9 +810,7 @@ export default function CotizadorPage() {
     handleSave();
   };
 
-  const handleSave = async (overridePrice) => {
-    setShowPriceChoice(false);
-    setSelectedPrice(null);
+  const handleSave = async () => {
     if (!nombre.trim()) {
       toast.error('Ingresa un nombre para el producto');
       return;
