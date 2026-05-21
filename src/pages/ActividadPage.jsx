@@ -17,7 +17,7 @@ function timeAgo(date) {
   if (hours < 24) return `Hace ${hours}h`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `Hace ${days}d`;
-  return new Date(date).toLocaleDateString('es-PE');
+  return new Date(date).toLocaleDateString('es-PE', { timeZone: 'America/Lima' });
 }
 
 const badgeColors = {

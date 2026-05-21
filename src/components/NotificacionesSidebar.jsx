@@ -11,7 +11,7 @@ function timeAgo(date) {
   if (diff < 3600) return `hace ${Math.floor(diff / 60)}m`;
   if (diff < 86400) return `hace ${Math.floor(diff / 3600)}h`;
   if (diff < 604800) return `hace ${Math.floor(diff / 86400)}d`;
-  return d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short' });
+  return d.toLocaleDateString('es-PE', { day: 'numeric', month: 'short', timeZone: 'America/Lima' });
 }
 
 export default function NotificacionesSidebar({ open, onClose, onCountUpdate }) {
@@ -149,7 +149,7 @@ export default function NotificacionesSidebar({ open, onClose, onCountUpdate }) 
                       <div className="bg-white rounded-xl p-4 border border-stone-100 mb-3">
                         {m.asunto && <p className="text-sm font-semibold text-stone-800 mb-1">{m.asunto}</p>}
                         <p className="text-sm text-stone-700 whitespace-pre-wrap">{m.mensaje}</p>
-                        <p className="text-[10px] text-stone-400 mt-2">{new Date(m.created_at).toLocaleString('es-PE')}</p>
+                        <p className="text-[10px] text-stone-400 mt-2">{new Date(m.created_at).toLocaleString('es-PE', { timeZone: 'America/Lima' })}</p>
                       </div>
 
                       {/* Replies */}

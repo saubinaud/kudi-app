@@ -398,9 +398,10 @@ export default function ShopifyPage() {
                     <td className={cx.td}>
                       <span className="text-stone-500 text-xs">
                         {log.fecha
-                          ? new Date(log.fecha).toLocaleTimeString('es', {
+                          ? new Date(log.fecha).toLocaleTimeString('es-PE', {
                               hour: '2-digit',
                               minute: '2-digit',
+                              timeZone: 'America/Lima',
                             })
                           : '-'}
                       </span>

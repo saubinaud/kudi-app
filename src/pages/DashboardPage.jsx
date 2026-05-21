@@ -264,7 +264,7 @@ export default function DashboardPage() {
 
       // ===== RESUMEN =====
       lines.push([esc('RESUMEN DE PRODUCTOS Kudi'), '', '', '', '', '', '', ''].join(sep));
-      lines.push([esc(`Fecha: ${new Date().toLocaleDateString('es-PE')}`), '', '', '', '', '', '', ''].join(sep));
+      lines.push([esc(`Fecha: ${new Date().toLocaleDateString('es-PE', { timeZone: 'America/Lima' })}`), '', '', '', '', '', '', ''].join(sep));
       lines.push([].join(sep));
       lines.push(['Producto', 'Costo Insumos', 'Costo Empaque', 'Costo Neto', 'Margen %', 'Precio Venta', 'IGV', 'Precio Final'].map(esc).join(sep));
       products.forEach((p) => {

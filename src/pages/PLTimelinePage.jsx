@@ -15,7 +15,7 @@ import {
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
 }
 
 function currentMonthPeriod() {
@@ -38,7 +38,7 @@ function formatDateLabel(dateStr) {
   if (d.toDateString() === today.toDateString()) return 'Hoy';
   if (d.toDateString() === yesterday.toDateString()) return 'Ayer';
 
-  return d.toLocaleDateString('es-PE', { weekday: 'short', day: 'numeric', month: 'short' });
+  return d.toLocaleDateString('es-PE', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'America/Lima' });
 }
 
 // Timeline item component

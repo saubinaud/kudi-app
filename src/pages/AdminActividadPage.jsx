@@ -106,7 +106,7 @@ export default function AdminActividadPage() {
                         </span>
                       )}
                       <span className="text-stone-400 text-xs">
-                        {log.created_at ? new Date(log.created_at).toLocaleString('es-PE') : '-'}
+                        {log.created_at ? new Date(log.created_at).toLocaleString('es-PE', { timeZone: 'America/Lima' }) : '-'}
                       </span>
                     </div>
                   </div>

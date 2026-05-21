@@ -7,6 +7,7 @@ import {
   Users, UserPlus, Ban, CheckCircle, Copy, X, Settings, Trash2,
   BarChart3, CreditCard, Clock, TrendingUp, AlertCircle, Eye,
   Check, XCircle, Filter, MessageSquare, AlertTriangle, Bell, Send,
+  ShieldCheck, FileText, Package, ShoppingCart, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CustomSelect from '../components/CustomSelect';
@@ -99,7 +100,7 @@ function DashboardTab() {
     })();
   }, []);
 
-  if (loading) return <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">{[1,2,3,4,5,6].map(i => <div key={i} className={cx.skeleton + ' h-24'} />)}</div>;
+  if (loading) return <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{[1,2,3,4,5,6,7,8].map(i => <div key={i} className={cx.skeleton + ' h-24'} />)}</div>;
   if (!stats) return null;
 
   const cards = [
@@ -110,6 +111,11 @@ function DashboardTab() {
     { label: 'Trials expirados', value: stats.trials_expirados, icon: AlertCircle, color: 'text-rose-500' },
     { label: 'Planes Pro', value: stats.planes_pro, icon: CheckCircle, color: 'text-emerald-600' },
     { label: 'Pagos pendientes', value: stats.pagos_pendientes, icon: CreditCard, color: 'text-amber-600', badge: stats.pagos_pendientes > 0 },
+    { label: 'Cert. .p12 subidos', value: stats.cert_subidos, icon: ShieldCheck, color: 'text-violet-600' },
+    { label: 'Facturación activa', value: stats.fact_habilitadas, icon: FileText, color: 'text-teal-600' },
+    { label: 'Total productos', value: stats.total_productos, icon: Package, color: 'text-stone-500' },
+    { label: 'Total ventas', value: stats.total_ventas, icon: ShoppingCart, color: 'text-stone-500' },
+    { label: 'Errores hoy', value: stats.errores_hoy, icon: AlertTriangle, color: stats.errores_hoy > 0 ? 'text-rose-500' : 'text-stone-400', badge: stats.errores_hoy > 0 },
   ];
 
   return (

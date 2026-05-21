@@ -112,7 +112,7 @@ export default function FeedbackPage() {
                     <span className={cx.badge(ESTADO_COLORS[f.estado] || 'bg-stone-100 text-stone-500')}>{f.estado}</span>
                     <span className={cx.badge('bg-stone-100 text-stone-500')}>{f.tipo}</span>
                   </div>
-                  <span className="text-[10px] text-stone-400">{new Date(f.created_at).toLocaleDateString('es-PE')}</span>
+                  <span className="text-[10px] text-stone-400">{new Date(f.created_at).toLocaleDateString('es-PE', { timeZone: 'America/Lima' })}</span>
                 </div>
                 <p className="text-sm text-stone-700 mt-2">{f.mensaje}</p>
                 {f.nota_admin && (

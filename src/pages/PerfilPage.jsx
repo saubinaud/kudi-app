@@ -217,7 +217,7 @@ export default function PerfilPage() {
                 </span>
                 {user?.plan === 'trial' && user?.trial_ends_at && (
                   <span className="text-[10px] text-stone-400">
-                    Vence: {new Date(user.trial_ends_at).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    Vence: {new Date(user.trial_ends_at).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Lima' })}
                   </span>
                 )}
               </div>
