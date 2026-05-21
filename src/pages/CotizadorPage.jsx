@@ -815,10 +815,6 @@ export default function CotizadorPage() {
       toast.error('Ingresa un nombre para el producto');
       return;
     }
-    if (precioConfig === 'variable') {
-      setShowPriceChoice(true);
-      return;
-    }
     handleSave();
   };
 
@@ -1770,21 +1766,6 @@ export default function CotizadorPage() {
                       <span className="text-sm font-bold text-emerald-700">{formatCurrency(costos.precioVenta - costos.costoNeto)}</span>
                     </div>
                   )}
-                  {precioConfig === 'variable' ? (
-                    <div className="flex justify-between items-baseline gap-4">
-                      <span className="text-stone-400 text-xs">Sugeridos</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold text-[var(--success)]">{formatCurrency(preciosRecomendados(costos.precioFinal).conDecimales)}</span>
-                        <span className="text-stone-300">|</span>
-                        <span className="text-sm font-semibold text-stone-600">{formatCurrency(preciosRecomendados(costos.precioFinal).sinDecimales)}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-stone-400 text-xs">Sugerido</span>
-                      <span className="text-base font-semibold text-[var(--success)]">{formatCurrency(precioComercial(costos.precioFinal, precioConfig))}</span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Margen por porcion */}
@@ -1808,21 +1789,6 @@ export default function CotizadorPage() {
                     <span className="text-stone-600 text-sm">Precio final</span>
                     <EditablePrice value={costos.precioFinalPorcion} onChange={setMargenPorcionFromPrecio} className="text-2xl font-bold text-stone-900" />
                   </div>
-                  {precioConfig === 'variable' ? (
-                    <div className="flex justify-between items-baseline gap-4">
-                      <span className="text-stone-400 text-xs">Sugeridos</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold text-[var(--success)]">{formatCurrency(preciosRecomendados(costos.precioFinalPorcion).conDecimales)}</span>
-                        <span className="text-stone-300">|</span>
-                        <span className="text-sm font-semibold text-stone-600">{formatCurrency(preciosRecomendados(costos.precioFinalPorcion).sinDecimales)}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-stone-400 text-xs">Sugerido</span>
-                      <span className="text-base font-semibold text-[var(--success)]">{formatCurrency(precioComercial(costos.precioFinalPorcion, precioConfig))}</span>
-                    </div>
-                  )}
                 </div>
               </>
             ) : (
@@ -1888,21 +1854,6 @@ export default function CotizadorPage() {
                     <div className="flex justify-between items-center bg-emerald-50 rounded-lg px-3 py-2 mb-2">
                       <span className="text-xs text-emerald-700">Ganancia por unidad</span>
                       <span className="text-sm font-bold text-emerald-700">{formatCurrency(costos.precioVenta - costos.costoNeto)}</span>
-                    </div>
-                  )}
-                  {precioConfig === 'variable' ? (
-                    <div className="flex justify-between items-baseline gap-4">
-                      <span className="text-stone-400 text-xs">Sugeridos</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-semibold text-[var(--success)]">{formatCurrency(preciosRecomendados(costos.precioFinal).conDecimales)}</span>
-                        <span className="text-stone-300">|</span>
-                        <span className="text-sm font-semibold text-stone-600">{formatCurrency(preciosRecomendados(costos.precioFinal).sinDecimales)}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-stone-400 text-xs">Sugerido</span>
-                      <span className="text-base font-semibold text-[var(--success)]">{formatCurrency(precioComercial(costos.precioFinal, precioConfig))}</span>
                     </div>
                   )}
                 </div>
