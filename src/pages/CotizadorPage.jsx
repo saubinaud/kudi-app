@@ -1869,55 +1869,6 @@ export default function CotizadorPage() {
         </div>
       </div>
 
-      {/* Price choice modal — shown when saving with 'variable' config */}
-      {showPriceChoice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowPriceChoice(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-sm p-4 sm:p-6">
-            <h3 className="text-lg font-bold text-stone-900 mb-2">Precio de venta</h3>
-            <p className="text-sm text-stone-500 mb-5">Elige el precio con el que guardaras este producto</p>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => handleSave(preciosRecomendados(costos.precioFinal).conDecimales)}
-                className="w-full flex items-center justify-between p-4 border border-stone-200 rounded-xl hover:border-[var(--accent)] hover:bg-[var(--accent-light)] transition-colors group"
-              >
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-stone-800 group-hover:text-[var(--accent)]">Con decimales</p>
-                  <p className="text-xs text-stone-400">Precio redondeado a .90</p>
-                </div>
-                <span className="text-xl font-bold text-stone-900">{formatCurrency(preciosRecomendados(costos.precioFinal).conDecimales)}</span>
-              </button>
-
-              <button
-                onClick={() => handleSave(preciosRecomendados(costos.precioFinal).sinDecimales)}
-                className="w-full flex items-center justify-between p-4 border border-stone-200 rounded-xl hover:border-[var(--accent)] hover:bg-[var(--accent-light)] transition-colors group"
-              >
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-stone-800 group-hover:text-[var(--accent)]">Sin decimales</p>
-                  <p className="text-xs text-stone-400">Redondeado al entero superior</p>
-                </div>
-                <span className="text-xl font-bold text-stone-900">{formatCurrency(preciosRecomendados(costos.precioFinal).sinDecimales)}</span>
-              </button>
-
-              <button
-                onClick={() => handleSave(null)}
-                className="w-full flex items-center justify-between p-4 border border-stone-200 rounded-xl hover:border-[var(--accent)] hover:bg-[var(--accent-light)] transition-colors group"
-              >
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-stone-800 group-hover:text-[var(--accent)]">Precio exacto</p>
-                  <p className="text-xs text-stone-400">Sin redondeo</p>
-                </div>
-                <span className="text-xl font-bold text-stone-900">{formatCurrency(costos.precioFinal)}</span>
-              </button>
-            </div>
-
-            <button onClick={() => setShowPriceChoice(false)} className={cx.btnGhost + ' w-full mt-4 text-center'}>
-              Cancelar
-            </button>
-          </div>
-        </div>
-      )}
 
       <PromptDialog
         open={!!saveEmpaquePrompt}
