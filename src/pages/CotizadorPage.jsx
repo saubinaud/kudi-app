@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useCalculadorCostos } from '../hooks/useCalculadorCostos';
 import { cx } from '../styles/tokens';
-import { formatCurrency, precioComercial, preciosRecomendados } from '../utils/format';
+import { formatCurrency } from '../utils/format';
 import { API_BASE } from '../config/api';
 import SearchableSelect from '../components/SearchableSelect';
 import CustomSelect from '../components/CustomSelect';
