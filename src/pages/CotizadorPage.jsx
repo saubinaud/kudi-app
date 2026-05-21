@@ -392,6 +392,8 @@ export default function CotizadorPage() {
   const [empaqueCollapsed, setEmpaqueCollapsed] = useState({});
   const [margen, setMargen] = useState(50);
   const [margenPorcion, setMargenPorcion] = useState(50);
+  const [precioOverride, setPrecioOverride] = useState(null); // precio exacto que el usuario escribió
+  const [precioOverridePorcion, setPrecioOverridePorcion] = useState(null);
   // igv_rate in DB is decimal (0.18), hook expects integer (18)
   const [igvRate, setIgvRate] = useState(user?.igv_rate != null ? parseFloat((user.igv_rate * 100).toFixed(2)) : 18);
   const [tipoPresentacion, setTipoPresentacion] = useState('unidad');
@@ -528,6 +530,7 @@ export default function CotizadorPage() {
         setStockActual(p.stock_actual != null ? String(parseFloat(p.stock_actual)) : '');
         setStockMinimo(p.stock_minimo != null ? String(parseFloat(p.stock_minimo)) : '');
         setPrecioGuardado(parseFloat(p.precio_final) || 0);
+        setPrecioOverride(parseFloat(p.precio_final) || null);
         setCostoGuardado(parseFloat(p.costo_neto) || parseFloat(p.costo_compra) || 0);
         if (p.variantes) setVariantes(p.variantes);
 
@@ -876,8 +879,9 @@ export default function CotizadorPage() {
             empaque_tipo: m.empaque_tipo || 'entero',
           })),
         ...costos,
-        // If user chose a specific price from the modal, override precioFinal
-        ...(overridePrice != null ? { precioFinal: overridePrice } : {}),
+        // Use the exact price the user typed (not the margin-derived one)
+        ...(precioOverride != null ? { precioFinal: precioOverride } : {}),
+        ...(precioOverridePorcion != null ? { precioFinalPorcion: precioOverridePorcion } : {}),
       };
 
       if (tipoProducto === 'no_transformable' && selectedInventarioId) {
@@ -923,20 +927,26 @@ export default function CotizadorPage() {
   }, []);
 
   // Reverse calc: from price → margin
+  // Cuando el usuario cambia el margen manualmente (slider/input), limpiar el precio override
+  const handleMargenChange = (v) => { setPrecioOverride(null); setMargen(v); };
+  const handleMargenPorcionChange = (v) => { setPrecioOverridePorcion(null); setMargenPorcion(v); };
+
   const setMargenFromPrecio = useCallback((precioFinal) => {
+    setPrecioOverride(Math.round(precioFinal * 100) / 100);
     const igvDec = igvRate / 100;
     const precioVenta = precioFinal / (1 + igvDec);
     if (costos.costoNeto > 0 && precioVenta > costos.costoNeto) {
-      const newMargen = parseFloat(((1 - costos.costoNeto / precioVenta) * 100).toFixed(1));
+      const newMargen = parseFloat(((1 - costos.costoNeto / precioVenta) * 100).toFixed(2));
       setMargen(Math.min(90, Math.max(0, newMargen)));
     }
   }, [igvRate, costos.costoNeto]);
 
   const setMargenPorcionFromPrecio = useCallback((precioFinal) => {
+    setPrecioOverridePorcion(Math.round(precioFinal * 100) / 100);
     const igvDec = igvRate / 100;
     const precioVenta = precioFinal / (1 + igvDec);
     if (costos.costoNetoPorcion > 0 && precioVenta > costos.costoNetoPorcion) {
-      const newMargen = parseFloat(((1 - costos.costoNetoPorcion / precioVenta) * 100).toFixed(1));
+      const newMargen = parseFloat(((1 - costos.costoNetoPorcion / precioVenta) * 100).toFixed(2));
       setMargenPorcion(Math.min(90, Math.max(0, newMargen)));
     }
   }, [igvRate, costos.costoNetoPorcion]);
@@ -1730,13 +1740,13 @@ export default function CotizadorPage() {
                       max="90"
                       step="0.5"
                       value={margen}
-                      onChange={(e) => setMargen(Number(e.target.value))}
+                      onChange={(e) => handleMargenChange(Number(e.target.value))}
                       className="flex-1 accent-[var(--accent)] h-1.5"
                     />
                     <input
                       type="number"
                       value={margen}
-                      onChange={(e) => setMargen(Math.min(90, Math.max(0, Number(e.target.value) || 0)))}
+                      onChange={(e) => handleMargenChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))}
                       className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400"
                     />
                     <span className="text-stone-400 text-sm">%</span>
@@ -1758,7 +1768,7 @@ export default function CotizadorPage() {
                   </div>
                   <div className="flex justify-between items-baseline pt-1">
                     <span className="text-stone-600 text-sm">Precio final</span>
-                    <EditablePrice value={costos.precioFinal} onChange={setMargenFromPrecio} className="text-2xl font-bold text-stone-900" />
+                    <EditablePrice value={precioOverride ?? costos.precioFinal} onChange={setMargenFromPrecio} className="text-2xl font-bold text-stone-900" />
                   </div>
                   {costos.precioVenta > 0 && costos.costoNeto > 0 && (
                     <div className="flex justify-between items-center bg-emerald-50 rounded-lg px-3 py-2 mt-1">
@@ -1772,8 +1782,8 @@ export default function CotizadorPage() {
                 <div className="py-4 border-b border-stone-100">
                   <label className={cx.label}>Margen por porcion</label>
                   <div className="flex items-center gap-3 mt-1">
-                    <input type="range" min="0" max="90" step="0.5" value={margenPorcion} onChange={(e) => setMargenPorcion(Number(e.target.value))} className="flex-1 accent-[var(--accent)] h-1.5" />
-                    <input type="number" value={margenPorcion} onChange={(e) => setMargenPorcion(Math.min(90, Math.max(0, Number(e.target.value) || 0)))} className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400" />
+                    <input type="range" min="0" max="90" step="0.5" value={margenPorcion} onChange={(e) => handleMargenPorcionChange(Number(e.target.value))} className="flex-1 accent-[var(--accent)] h-1.5" />
+                    <input type="number" value={margenPorcion} onChange={(e) => handleMargenPorcionChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))} className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400" />
                     <span className="text-stone-400 text-sm">%</span>
                   </div>
                 </div>
@@ -1787,7 +1797,7 @@ export default function CotizadorPage() {
                   </div>
                   <div className="flex justify-between items-baseline pt-1">
                     <span className="text-stone-600 text-sm">Precio final</span>
-                    <EditablePrice value={costos.precioFinalPorcion} onChange={setMargenPorcionFromPrecio} className="text-2xl font-bold text-stone-900" />
+                    <EditablePrice value={precioOverridePorcion ?? costos.precioFinalPorcion} onChange={setMargenPorcionFromPrecio} className="text-2xl font-bold text-stone-900" />
                   </div>
                 </div>
               </>
@@ -1818,13 +1828,13 @@ export default function CotizadorPage() {
                       max="90"
                       step="0.5"
                       value={margen}
-                      onChange={(e) => setMargen(Number(e.target.value))}
+                      onChange={(e) => handleMargenChange(Number(e.target.value))}
                       className="flex-1 accent-[var(--accent)] h-1.5"
                     />
                     <input
                       type="number"
                       value={margen}
-                      onChange={(e) => setMargen(Math.min(90, Math.max(0, Number(e.target.value) || 0)))}
+                      onChange={(e) => handleMargenChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))}
                       className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400"
                     />
                     <span className="text-stone-400 text-sm">%</span>
@@ -1848,7 +1858,7 @@ export default function CotizadorPage() {
                 <div className="pt-4">
                   <div className="flex justify-between items-baseline mb-1">
                     <span className="text-stone-600 text-sm">Precio final</span>
-                    <EditablePrice value={costos.precioFinal} onChange={setMargenFromPrecio} className="text-2xl font-bold text-stone-900" />
+                    <EditablePrice value={precioOverride ?? costos.precioFinal} onChange={setMargenFromPrecio} className="text-2xl font-bold text-stone-900" />
                   </div>
                   {costos.precioVenta > 0 && costos.costoNeto > 0 && (
                     <div className="flex justify-between items-center bg-emerald-50 rounded-lg px-3 py-2 mb-2">
