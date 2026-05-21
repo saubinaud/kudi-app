@@ -936,7 +936,8 @@ export default function CotizadorPage() {
     const igvDec = igvRate / 100;
     const precioVenta = precioFinal / (1 + igvDec);
     if (costos.costoNeto > 0 && precioVenta > costos.costoNeto) {
-      const newMargen = parseFloat(((1 - costos.costoNeto / precioVenta) * 100).toFixed(2));
+      // Full precision — no rounding. Display rounds to 2 decimals.
+      const newMargen = (1 - costos.costoNeto / precioVenta) * 100;
       setMargen(Math.min(90, Math.max(0, newMargen)));
     }
   }, [igvRate, costos.costoNeto]);
@@ -946,7 +947,7 @@ export default function CotizadorPage() {
     const igvDec = igvRate / 100;
     const precioVenta = precioFinal / (1 + igvDec);
     if (costos.costoNetoPorcion > 0 && precioVenta > costos.costoNetoPorcion) {
-      const newMargen = parseFloat(((1 - costos.costoNetoPorcion / precioVenta) * 100).toFixed(2));
+      const newMargen = (1 - costos.costoNetoPorcion / precioVenta) * 100;
       setMargenPorcion(Math.min(90, Math.max(0, newMargen)));
     }
   }, [igvRate, costos.costoNetoPorcion]);
@@ -1745,7 +1746,7 @@ export default function CotizadorPage() {
                     />
                     <input
                       type="number"
-                      value={margen}
+                      value={parseFloat(margen.toFixed(2))}
                       onChange={(e) => handleMargenChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))}
                       className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400"
                     />
@@ -1783,7 +1784,7 @@ export default function CotizadorPage() {
                   <label className={cx.label}>Margen por porcion</label>
                   <div className="flex items-center gap-3 mt-1">
                     <input type="range" min="0" max="90" step="0.5" value={margenPorcion} onChange={(e) => handleMargenPorcionChange(Number(e.target.value))} className="flex-1 accent-[var(--accent)] h-1.5" />
-                    <input type="number" value={margenPorcion} onChange={(e) => handleMargenPorcionChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))} className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400" />
+                    <input type="number" value={parseFloat(margenPorcion.toFixed(2))} onChange={(e) => handleMargenPorcionChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))} className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400" />
                     <span className="text-stone-400 text-sm">%</span>
                   </div>
                 </div>
@@ -1833,7 +1834,7 @@ export default function CotizadorPage() {
                     />
                     <input
                       type="number"
-                      value={margen}
+                      value={parseFloat(margen.toFixed(2))}
                       onChange={(e) => handleMargenChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))}
                       className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400"
                     />
