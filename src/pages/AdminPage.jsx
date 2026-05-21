@@ -333,18 +333,26 @@ function UsuariosTab() {
               <div>
                 <h3 className="text-stone-800 font-medium text-sm">{u.nombre || u.email}</h3>
                 <p className="text-stone-500 text-xs mt-0.5">{u.email}</p>
-                <p className="text-stone-500 text-xs mt-1">{u.empresa || u.nombre_comercial || '-'}</p>
+                <p className="text-stone-500 text-xs mt-1">{u.empresa_nombre || '-'}{u.giro_nombre ? ` · ${u.giro_nombre}` : ''}</p>
+                {u.empresa_ruc && <p className="text-stone-400 text-[10px] mt-0.5">RUC: {u.empresa_ruc}</p>}
               </div>
-              <div className="flex items-center gap-2">
-                {u.rol === 'admin' && <span className={cx.badge('bg-violet-50 text-violet-600')}>admin</span>}
-                <span className={cx.badge(u.estado === 'activo' ? 'bg-[var(--accent-light)] text-[var(--success)]' : 'bg-rose-50 text-rose-600')}>{u.estado}</span>
-                <span className={cx.badge(u.plan === 'pro' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600')}>{u.plan === 'pro' ? 'Pro' : 'Trial'}</span>
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex items-center gap-1">
+                  {u.rol === 'admin' && <span className={cx.badge('bg-violet-50 text-violet-600')}>admin</span>}
+                  <span className={cx.badge(u.estado === 'activo' ? 'bg-[var(--accent-light)] text-[var(--success)]' : u.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')}>{u.estado}</span>
+                  <span className={cx.badge(u.plan === 'pro' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600')}>{u.plan === 'pro' ? 'Pro' : 'Trial'}</span>
+                </div>
+                <span className="text-[10px] text-stone-400">{timeAgo(u.created_at)}</span>
               </div>
             </div>
-            <div className="flex flex-wrap gap-1 mt-2">
-              {(Array.isArray(u.permisos) ? u.permisos : DEFAULT_PERMISOS).map(p => (
-                <span key={p} className="text-[10px] px-1.5 py-0.5 bg-stone-100 text-stone-600 rounded">{p}</span>
-              ))}
+            {/* Activity stats */}
+            <div className="flex flex-wrap gap-3 mt-3 text-[10px] text-stone-500">
+              <span><Package size={10} className="inline mr-0.5" />{u.total_productos || 0} prod</span>
+              <span><ShoppingCart size={10} className="inline mr-0.5" />{u.total_ventas || 0} ventas</span>
+              {u.total_comprobantes > 0 && <span><FileText size={10} className="inline mr-0.5" />{u.total_comprobantes} boletas</span>}
+              {u.certificado_subido && <span className="text-violet-600"><ShieldCheck size={10} className="inline mr-0.5" />Cert .p12</span>}
+              {u.facturacion_habilitada && <span className="text-teal-600"><FileText size={10} className="inline mr-0.5" />Fact. activa</span>}
+              {u.ultima_venta && <span>Última venta: {timeAgo(u.ultima_venta)}</span>}
             </div>
             {u.estado === 'pendiente' && u.onboarding_token && (
               <div className="mt-2 flex gap-2 items-center">
@@ -365,44 +373,81 @@ function UsuariosTab() {
       </div>
 
       {/* Desktop table */}
-      <div className={`${cx.card} hidden lg:block overflow-hidden`}>
+      <div className={`${cx.card} hidden lg:block overflow-x-auto`}>
         <table className="w-full">
           <thead>
             <tr className="border-b border-stone-200">
-              <th className={cx.th}>Nombre</th>
-              <th className={cx.th}>Email</th>
+              <th className={cx.th}>Usuario</th>
               <th className={cx.th}>Negocio</th>
-              <th className={cx.th}>Rol</th>
-              <th className={cx.th}>Registro</th>
-              <th className={cx.th}>Estado</th>
               <th className={cx.th}>Plan</th>
+              <th className={cx.th + ' text-center'}>Actividad</th>
+              <th className={cx.th + ' text-center'}>Facturación</th>
+              <th className={cx.th}>Registro</th>
               <th className={cx.th + ' text-right'}>Acciones</th>
             </tr>
           </thead>
           <tbody>
             {users.map(u => (
               <tr key={u.id} className={cx.tr}>
-                <td className={cx.td + ' text-stone-800 font-medium'}>{u.nombre || '-'}</td>
-                <td className={cx.td + ' text-stone-600'}>{u.email}</td>
-                <td className={cx.td + ' text-stone-500'}>{u.empresa || u.nombre_comercial || '-'}</td>
-                <td className={cx.td}><span className={cx.badge(u.rol === 'admin' ? 'bg-violet-50 text-violet-600' : 'bg-stone-100 text-stone-600')}>{u.rol}</span></td>
-                <td className={cx.td + ' text-stone-400'}>{formatDate(u.created_at)}</td>
+                {/* Usuario */}
                 <td className={cx.td}>
-                  <div className="flex items-center gap-2">
-                    <span className={cx.badge(u.estado === 'activo' ? 'bg-[var(--accent-light)] text-[var(--success)]' : u.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')}>{u.estado}</span>
+                  <div>
+                    <p className="text-stone-800 font-medium text-sm">{u.nombre || '-'}</p>
+                    <p className="text-stone-400 text-[10px]">{u.email}</p>
+                  </div>
+                </td>
+                {/* Negocio */}
+                <td className={cx.td}>
+                  <p className="text-stone-700 text-sm">{u.empresa_nombre || '-'}</p>
+                  {u.giro_nombre && <p className="text-stone-400 text-[10px]">{u.giro_nombre}</p>}
+                  {u.empresa_ruc && <p className="text-stone-400 text-[10px]">RUC: {u.empresa_ruc}</p>}
+                </td>
+                {/* Plan + Estado */}
+                <td className={cx.td}>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1">
+                      <span className={cx.badge(u.estado === 'activo' ? 'bg-[var(--accent-light)] text-[var(--success)]' : u.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')}>{u.estado}</span>
+                      <span className={cx.badge(u.plan === 'pro' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600')}>{u.plan === 'pro' ? 'Pro' : 'Trial'}</span>
+                      {u.rol === 'admin' && <span className={cx.badge('bg-violet-50 text-violet-600')}>admin</span>}
+                    </div>
+                    {u.plan === 'trial' && u.trial_ends_at && (
+                      <span className="text-[10px] text-stone-400">
+                        {new Date(u.trial_ends_at) > new Date() ? `Quedan ${Math.ceil((new Date(u.trial_ends_at) - new Date()) / 86400000)} días` : 'Trial vencido'}
+                      </span>
+                    )}
                     {u.estado === 'pendiente' && u.onboarding_token && (
-                      <button onClick={() => { navigator.clipboard.writeText(`${window.location.href.split('#')[0]}#/onboarding?token=${u.onboarding_token}`); toast.success('Link copiado'); }} className={cx.btnIcon + ' text-amber-600'} title="Copiar link onboarding"><Copy size={13} /></button>
+                      <button onClick={() => { navigator.clipboard.writeText(`${window.location.href.split('#')[0]}#/onboarding?token=${u.onboarding_token}`); toast.success('Link copiado'); }} className="text-[10px] text-amber-600 hover:underline flex items-center gap-0.5"><Copy size={10} /> Copiar link</button>
                     )}
                   </div>
                 </td>
-                <td className={cx.td}>
-                  <span className={cx.badge(u.plan === 'pro' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600')}>{u.plan === 'pro' ? 'Pro' : 'Trial'}</span>
-                  {u.plan === 'trial' && u.trial_ends_at && (
-                    <span className="text-[10px] text-stone-400 block mt-0.5">
-                      {new Date(u.trial_ends_at) > new Date() ? `${Math.ceil((new Date(u.trial_ends_at) - new Date()) / 86400000)}d` : 'Vencido'}
-                    </span>
-                  )}
+                {/* Actividad */}
+                <td className={cx.td + ' text-center'}>
+                  <div className="flex flex-col items-center gap-0.5">
+                    <div className="flex items-center gap-2 text-[11px]">
+                      <span className="text-stone-600" title="Productos"><Package size={11} className="inline mr-0.5 text-stone-400" />{u.total_productos || 0}</span>
+                      <span className="text-stone-600" title="Ventas"><ShoppingCart size={11} className="inline mr-0.5 text-stone-400" />{u.total_ventas || 0}</span>
+                    </div>
+                    {u.ultima_venta && <span className="text-[10px] text-stone-400">Última: {timeAgo(u.ultima_venta)}</span>}
+                  </div>
                 </td>
+                {/* Facturación */}
+                <td className={cx.td + ' text-center'}>
+                  <div className="flex flex-col items-center gap-0.5">
+                    {u.facturacion_habilitada ? (
+                      <span className={cx.badge('bg-teal-50 text-teal-600')}>Activa</span>
+                    ) : u.certificado_subido ? (
+                      <span className={cx.badge('bg-violet-50 text-violet-600')}>Cert .p12</span>
+                    ) : u.tiene_sol ? (
+                      <span className={cx.badge('bg-amber-50 text-amber-600')}>SOL</span>
+                    ) : (
+                      <span className="text-stone-300 text-[10px]">—</span>
+                    )}
+                    {u.total_comprobantes > 0 && <span className="text-[10px] text-stone-400">{u.total_comprobantes} comp.</span>}
+                  </div>
+                </td>
+                {/* Registro */}
+                <td className={cx.td + ' text-stone-400 text-xs'}>{timeAgo(u.created_at)}</td>
+                {/* Acciones */}
                 <td className={cx.td + ' text-right'}>
                   <div className="flex justify-end gap-1">
                     <button onClick={() => startEditPermisos(u)} className={cx.btnIcon} title="Permisos"><Settings size={15} /></button>
