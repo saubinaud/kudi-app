@@ -25,12 +25,8 @@ export function precioComercial(precio, modo = 'variable') {
     return Math.round(p);
   }
 
-  // 'decimales' and 'variable': round to .90 or nearest integer
-  const entero = Math.floor(p);
-  const centavos = Math.round((p - entero) * 100) / 100;
-  if (centavos <= 0.05) return entero || 1;
-  if (centavos <= 0.90) return entero + 0.90;
-  return entero + 1;
+  // 'decimales' and 'variable': round up to nearest .10
+  return Math.ceil(p * 10) / 10;
 }
 
 // Helper to get both versions
