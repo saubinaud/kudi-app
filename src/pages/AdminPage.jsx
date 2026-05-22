@@ -860,8 +860,8 @@ function RegistrosTab() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-sm font-medium text-stone-800 truncate">{r.nombre || '-'}</p>
-              <span className={cx.badge(r.plan === 'pro' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600')}>
-                {r.plan === 'pro' ? 'Pro' : 'Trial'}
+              <span className={cx.badge(PLAN_COLORS[r.plan] || (r.plan && r.plan !== 'trial' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'))}>
+                {PLAN_LABEL[r.plan] || r.plan || 'Trial'}
               </span>
               {r.estado && (
                 <span className={cx.badge(r.estado === 'activo' ? 'bg-[var(--accent-light)] text-[var(--success)]' : r.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')}>
