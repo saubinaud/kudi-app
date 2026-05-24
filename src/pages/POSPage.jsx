@@ -31,7 +31,7 @@ export default function POSPage() {
   const [conIgv, setConIgv] = useState(true); // toggle IGV para toda la orden
   const itemPrecio = (item) => conIgv
     ? (item.precio_con_igv || item.precio || 0)
-    : Math.round(item.precio_sin_igv || item.precio_con_igv || item.precio || 0);
+    : (item.precio_sin_igv || item.precio_con_igv || item.precio || 0);
 
   // Variant selector modal
   const [variantModal, setVariantModal] = useState(null);
