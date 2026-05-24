@@ -35,6 +35,7 @@ export default function OnboardingPage() {
 
   const [form, setForm] = useState({
     nombre: '',
+    telefono: '',
     dni: '',
     ruc: '',
     razon_social: '',
@@ -197,14 +198,37 @@ export default function OnboardingPage() {
             </div>
           )}
           <div className={showPayment ? 'hidden' : ''}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={cx.label}>Nombre completo</label>
+              <input
+                type="text"
+                value={form.nombre}
+                onChange={handleChange('nombre')}
+                className={cx.input}
+                required
+              />
+            </div>
+            <div>
+              <label className={cx.label}>Celular / WhatsApp</label>
+              <input
+                type="tel"
+                value={form.telefono}
+                onChange={handleChange('telefono')}
+                className={cx.input}
+                placeholder="999 999 999"
+              />
+            </div>
+          </div>
+
           <div>
-            <label className={cx.label}>Nombre completo</label>
+            <label className={cx.label}>Nombre de tu negocio</label>
             <input
               type="text"
-              value={form.nombre}
-              onChange={handleChange('nombre')}
+              value={form.nombre_comercial}
+              onChange={handleChange('nombre_comercial')}
               className={cx.input}
-              required
+              placeholder="Ej: Dulce Tentación, Flora Cafe..."
             />
           </div>
 
@@ -245,16 +269,6 @@ export default function OnboardingPage() {
               )}
             </div>
           )}
-
-          <div>
-            <label className={cx.label}>Nombre comercial</label>
-            <input
-              type="text"
-              value={form.nombre_comercial}
-              onChange={handleChange('nombre_comercial')}
-              className={cx.input}
-            />
-          </div>
 
           <div>
             <label className={cx.label}>Giro de negocio</label>
