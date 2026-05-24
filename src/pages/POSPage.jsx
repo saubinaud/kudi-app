@@ -28,6 +28,8 @@ export default function POSPage() {
 
   // Cart
   const [cartItems, setCartItems] = useState([]);
+  const [conIgv, setConIgv] = useState(true); // toggle IGV para toda la orden
+  const itemPrecio = (item) => conIgv ? (item.precio_con_igv || item.precio || 0) : (item.precio_sin_igv || item.precio_con_igv || item.precio || 0);
 
   // Variant selector modal
   const [variantModal, setVariantModal] = useState(null);
@@ -95,8 +97,8 @@ export default function POSPage() {
 
   // Cart total
   const cartSubtotal = useMemo(() =>
-    cartItems.reduce((s, i) => s + i.precio * i.cantidad - (parseFloat(i.descuento) || 0), 0),
-    [cartItems]
+    cartItems.reduce((s, i) => s + itemPrecio(i) * i.cantidad - (parseFloat(i.descuento) || 0), 0),
+    [cartItems, conIgv]
   );
   const costoEnvio = useMemo(() => {
     if (tipoEntrega !== 'delivery' || !zonaSeleccionada) return 0;
@@ -129,10 +131,15 @@ export default function POSPage() {
       return;
     }
     // Use carta price if a carta is selected
-    let precio = parseFloat(product.precio_final) || 0;
+    let precioConIgv = parseFloat(product.precio_final) || 0;
+    let precioSinIgv = parseFloat(product.precio_venta) || precioConIgv;
     if (selectedCarta) {
       const cartaPrecio = (product.precios_categoria || []).find(pc => pc.categoria_id === selectedCarta);
-      if (cartaPrecio) precio = parseFloat(cartaPrecio.precio) || precio;
+      if (cartaPrecio) {
+        precioConIgv = parseFloat(cartaPrecio.precio) || precioConIgv;
+        const igvRate = parseFloat(product.igv_rate) || 0;
+        precioSinIgv = igvRate > 0 ? Math.round(precioConIgv / (1 + igvRate) * 100) / 100 : precioConIgv;
+      }
     }
     setCartItems(prev => [...prev, {
       producto_id: product.id || product.value,
@@ -141,7 +148,8 @@ export default function POSPage() {
       variante_nombre: null,
       tipo_producto: product.tipo_producto || null,
       imagen_url: product.imagen_url || null,
-      precio,
+      precio_con_igv: precioConIgv,
+      precio_sin_igv: precioSinIgv,
       cantidad: 1,
       descuento: 0,
       descuento_tipo: 'monto',
@@ -163,7 +171,8 @@ export default function POSPage() {
       variante_nombre: variant.nombre,
       tipo_producto: product.tipo_producto || null,
       imagen_url: product.imagen_url || null,
-      precio: parseFloat(variant.precio_final) || parseFloat(product.precio_final) || 0,
+      precio_con_igv: parseFloat(variant.precio_final) || parseFloat(product.precio_final) || 0,
+      precio_sin_igv: parseFloat(variant.precio_venta) || parseFloat(product.precio_venta) || parseFloat(variant.precio_final) || 0,
       cantidad: 1,
       descuento: 0,
       descuento_tipo: 'monto',
@@ -233,7 +242,7 @@ export default function POSPage() {
           producto_id: i.producto_id,
           variante_id: i.variante_id || null,
           cantidad: i.cantidad,
-          precio_unitario: i.precio,
+          precio_unitario: itemPrecio(i),
           descuento: i.descuento || 0,
           descuento_tipo: i.descuento_tipo || 'monto',
           descuento_pct: i.descuento_pct || 0,
@@ -276,7 +285,7 @@ export default function POSPage() {
     const next = [...cartItems];
     const item = next[index];
     if (item.descuento_tipo === 'pct') {
-      const monto = item.precio * item.cantidad * val / 100;
+      const monto = itemPrecio(item) * item.cantidad * val / 100;
       next[index] = { ...item, descuento_pct: val, descuento: Math.round(monto * 100) / 100 };
     } else {
       next[index] = { ...item, descuento: val, descuento_pct: 0 };
@@ -314,6 +323,22 @@ export default function POSPage() {
         )}
       </div>
 
+      {/* Toggle IGV */}
+      <div className="flex items-center justify-center gap-1 mx-4 mt-3">
+        <button
+          onClick={() => setConIgv(true)}
+          className={`flex-1 py-1.5 text-xs font-semibold rounded-l-lg transition-colors duration-100 ${conIgv ? 'bg-[#16A34A] text-white' : 'bg-stone-100 text-stone-400 hover:bg-stone-200'}`}
+        >
+          Con IGV
+        </button>
+        <button
+          onClick={() => setConIgv(false)}
+          className={`flex-1 py-1.5 text-xs font-semibold rounded-r-lg transition-colors duration-100 ${!conIgv ? 'bg-[#0A2F24] text-white' : 'bg-stone-100 text-stone-400 hover:bg-stone-200'}`}
+        >
+          Sin IGV
+        </button>
+      </div>
+
       {cartItems.some(ci => ci.tipo_producto === 'pack') && (
         <div className="mx-4 mt-3 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">
           Los packs descuentan stock de sus componentes al vender.
@@ -330,7 +355,7 @@ export default function POSPage() {
         ) : (
           <div className="space-y-2.5">
             {cartItems.map((item, i) => {
-              const lineTotal = item.precio * item.cantidad - (parseFloat(item.descuento) || 0);
+              const lineTotal = itemPrecio(item) * item.cantidad - (parseFloat(item.descuento) || 0);
               return (
                 <div key={i} className="bg-stone-50/80 rounded-xl p-3 group">
                   <div className="flex gap-2.5">
@@ -352,7 +377,7 @@ export default function POSPage() {
                       </div>
                       {item.variante_nombre && <p className="text-[10px] text-stone-400 -mt-0.5">{item.variante_nombre}</p>}
                       <div className="flex items-center justify-between mt-1.5">
-                        <p className="text-xs text-stone-500">{formatCurrency(item.precio)} c/u</p>
+                        <p className="text-xs text-stone-500">{formatCurrency(itemPrecio(item))} c/u</p>
                         <p className="text-sm font-semibold text-stone-900">{formatCurrency(lineTotal)}</p>
                       </div>
                     </div>
@@ -527,7 +552,7 @@ export default function POSPage() {
               <div className="space-y-1.5 mb-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-stone-400">Subtotal</span>
-                  <span className="text-stone-600">{formatCurrency(cartItems.reduce((s, i) => s + i.precio * i.cantidad, 0))}</span>
+                  <span className="text-stone-600">{formatCurrency(cartItems.reduce((s, i) => s + itemPrecio(i) * i.cantidad, 0))}</span>
                 </div>
                 {cartItems.some(i => i.descuento > 0) && (
                   <div className="flex justify-between text-sm">
@@ -624,7 +649,7 @@ export default function POSPage() {
                     <p className="text-xs font-bold text-[var(--accent)]">{formatCurrency(
                       selectedCarta
                         ? ((p.precios_categoria || []).find(pc => pc.categoria_id === selectedCarta)?.precio || p.precio_final)
-                        : p.precio_final
+                        : (conIgv ? p.precio_final : (p.precio_venta || p.precio_final))
                     )}</p>
                   </button>
                 ))}
