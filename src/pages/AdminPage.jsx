@@ -365,6 +365,7 @@ function UsuariosTab() {
                 <p className="text-stone-500 text-xs mt-0.5">{u.email}</p>
                 <p className="text-stone-500 text-xs mt-1">{u.empresa_nombre || '-'}{u.giro_nombre ? ` · ${u.giro_nombre}` : ''}</p>
                 {u.empresa_ruc && <p className="text-stone-400 text-[10px] mt-0.5">RUC: {u.empresa_ruc}</p>}
+                {u.empresa_telefono && <p className="text-stone-400 text-[10px]">Tel: {u.empresa_telefono}</p>}
               </div>
               <div className="flex flex-col items-end gap-1">
                 <div className="flex items-center gap-1">
@@ -424,6 +425,7 @@ function UsuariosTab() {
                   <div>
                     <p className="text-stone-800 font-medium text-sm">{u.nombre || '-'}</p>
                     <p className="text-stone-400 text-[10px]">{u.email}</p>
+                    {u.empresa_telefono && <p className="text-stone-400 text-[10px]">{u.empresa_telefono}</p>}
                   </div>
                 </td>
                 {/* Negocio */}
