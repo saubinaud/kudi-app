@@ -4,10 +4,12 @@ import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
-import { User, Lock, Save, Pencil, X, Upload, Loader2, Settings, CreditCard, Building2 } from 'lucide-react';
+import { User, Lock, Save, Pencil, X, Upload, Loader2, Settings, CreditCard, Building2, Activity, Users } from 'lucide-react';
 import CustomSelect from '../components/CustomSelect';
 import { PAISES, getPaisByCode } from '../config/paises';
 import { API_BASE } from '../config/api';
+import ActividadPage from './ActividadPage';
+import EquipoPage from './EquipoPage';
 
 const PLAN_LABEL = { trial: 'Prueba gratuita', independiente: 'Independiente', emprendedor: 'Emprendedor', empresario: 'Empresario', pro: 'Pro' };
 const PLAN_COLORS = { trial: 'bg-amber-50 text-amber-600', independiente: 'bg-blue-50 text-blue-600', emprendedor: 'bg-indigo-50 text-indigo-600', empresario: 'bg-emerald-50 text-emerald-600', pro: 'bg-emerald-50 text-emerald-600' };
@@ -15,6 +17,8 @@ const PLAN_COLORS = { trial: 'bg-amber-50 text-amber-600', independiente: 'bg-bl
 const TABS = [
   { key: 'negocio', label: 'Mi negocio', icon: Building2 },
   { key: 'plan', label: 'Mi plan', icon: CreditCard },
+  { key: 'equipo', label: 'Equipo', icon: Users },
+  { key: 'actividad', label: 'Actividad', icon: Activity },
   { key: 'seguridad', label: 'Seguridad', icon: Lock },
   { key: 'ajustes', label: 'Ajustes', icon: Settings },
 ];
@@ -357,6 +361,12 @@ export default function PerfilPage() {
           )}
         </div>
       )}
+
+      {/* ══════ Tab: Equipo ══════ */}
+      {tab === 'equipo' && <EquipoPage />}
+
+      {/* ══════ Tab: Actividad ══════ */}
+      {tab === 'actividad' && <ActividadPage />}
     </div>
   );
 }

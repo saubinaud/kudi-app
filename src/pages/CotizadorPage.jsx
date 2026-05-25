@@ -419,10 +419,21 @@ export default function CotizadorPage() {
 
   const costosRaw = useCalculadorCostos(preparaciones, materiales, precioFinal, igvRate, tipoPresentacion, unidadesPorProducto, precioFinalPorcion);
 
-  // Fallback for Shopify/imported products with no ingredients
-  const usarFallback = costosRaw.costoNeto === 0 && (costoGuardado > 0 || precioGuardado > 0);
+  // Pack cost: sum of item costs * quantities
+  const packCosto = useMemo(() => {
+    if (tipoProducto !== 'pack') return 0;
+    const items = pendingPackItems.length > 0 ? pendingPackItems : [];
+    return items.reduce((sum, item) => {
+      const prod = allProducts.find(p => p.id === item.item_producto_id);
+      return sum + (parseFloat(prod?.costo_neto) || 0) * (Number(item.cantidad) || 1);
+    }, 0);
+  }, [tipoProducto, pendingPackItems, allProducts]);
+
+  // Fallback for Shopify/imported products with no ingredients OR packs
+  const fallbackCosto = packCosto > 0 ? packCosto : costoGuardado;
+  const usarFallback = costosRaw.costoNeto === 0 && (fallbackCosto > 0 || precioGuardado > 0);
   const costos = usarFallback ? (() => {
-    const costo = costoGuardado;
+    const costo = fallbackCosto;
     const igvDec = Number(igvRate) / 100;
     const empaqueTotal = costosRaw.costoEmpaqueEntero || 0;
     const costoNeto = costo + empaqueTotal;

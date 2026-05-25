@@ -170,8 +170,6 @@ export default function Layout() {
   ];
 
   const standaloneLinks = [
-    { to: '/actividad', label: 'Mi Actividad', icon: Activity },
-    { to: '/equipo', label: 'Mi Equipo', icon: Users },
     { to: '/perfil', label: 'Perfil', icon: User },
     { to: '/feedback', label: 'Feedback', icon: MessageSquare },
   ];
