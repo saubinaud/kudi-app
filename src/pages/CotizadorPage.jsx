@@ -425,12 +425,14 @@ export default function CotizadorPage() {
   // Pack cost: sum of item costs * quantities
   const packCosto = useMemo(() => {
     if (tipoProducto !== 'pack') return 0;
-    const items = pendingPackItems.length > 0 ? pendingPackItems : [];
-    return items.reduce((sum, item) => {
-      const prod = allProducts.find(p => p.id === item.item_producto_id);
+    const productos = allProducts || [];
+    if (!pendingPackItems?.length || !productos.length) return 0;
+    return pendingPackItems.reduce((sum, item) => {
+      const prod = productos.find(p => p.id === item.item_producto_id);
       return sum + (parseFloat(prod?.costo_neto) || 0) * (Number(item.cantidad) || 1);
     }, 0);
-  }, [tipoProducto, pendingPackItems, allProducts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tipoProducto, pendingPackItems, allProducts?.length]);
 
   // Fallback for Shopify/imported products with no ingredients OR packs
   const fallbackCosto = packCosto > 0 ? packCosto : costoGuardado;
