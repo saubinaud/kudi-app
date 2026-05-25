@@ -37,8 +37,10 @@ import {
   Link2,
   MessageSquare,
   Bell,
+  Sparkles,
 } from 'lucide-react';
 import NotificacionesSidebar from './NotificacionesSidebar';
+import UpdateBanner from './UpdateBanner';
 
 
 function SidebarLink({ to, action, label, icon: Icon, onClick, collapsed, end, disabled, badge }) {
@@ -172,6 +174,7 @@ export default function Layout() {
     { to: '/equipo', label: 'Mi Equipo', icon: Users },
     { to: '/perfil', label: 'Perfil', icon: User },
     { to: '/feedback', label: 'Feedback', icon: MessageSquare },
+    { to: '/novedades', label: 'Novedades', icon: Sparkles },
   ];
 
   const adminLinks = [
@@ -367,6 +370,8 @@ export default function Layout() {
 
         {/* Separator */}
         <div className={`${isCollapsed ? 'mx-2' : 'mx-3'} border-t border-white/10 my-3`} />
+
+        {!isCollapsed && <UpdateBanner />}
 
         {standaloneLinks.map((l) => (
           <SidebarLink key={l.to || l.label} {...l} onClick={closeSidebar} collapsed={isCollapsed} />

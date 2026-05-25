@@ -290,7 +290,7 @@ export default function OnboardingPage() {
           </div>
 
           <div>
-            <label className={cx.label}>Tipo de contribuyente</label>
+            <label className={cx.label}>IGV en tus precios</label>
             <CustomSelect
               value={form.tipo_negocio === 'informal' ? 'no_igv' : `formal_${form.igv_rate}`}
               onChange={(val) => {
@@ -303,11 +303,16 @@ export default function OnboardingPage() {
                 }
               }}
               options={[
-                { value: 'formal_18', label: 'Formal (IGV 18%)' },
-                { value: 'formal_10.5', label: 'Formal (IGV 10.5%)' },
-                { value: 'no_igv', label: 'No paga IGV' },
+                { value: 'formal_18', label: 'Mis precios incluyen IGV (18%)' },
+                { value: 'formal_10.5', label: 'Mis precios incluyen IGV (10.5%)' },
+                { value: 'no_igv', label: 'Mis precios NO incluyen IGV' },
               ]}
             />
+            <p className="text-[10px] text-stone-400 mt-1 leading-relaxed">
+              {form.tipo_negocio === 'informal'
+                ? 'Crea tus productos al precio que cobras. Si boleteas, el IGV se calcula aparte.'
+                : 'El IGV ya está dentro de tu precio de venta.'}
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -272,7 +272,7 @@ export default function PerfilPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={cx.label}>Tipo de contribuyente</label>
+                <label className={cx.label}>IGV en tus precios</label>
                 <CustomSelect
                   value={profileForm.tipo_negocio === 'informal' ? 'no_igv' : `formal_${profileForm.igv_rate}`}
                   onChange={(val) => {
@@ -285,11 +285,16 @@ export default function PerfilPage() {
                     }
                   }}
                   options={[
-                    { value: 'formal_18', label: 'Formal (IGV 18%)' },
-                    { value: 'formal_10.5', label: 'Formal (IGV 10.5%)' },
-                    { value: 'no_igv', label: 'No paga IGV' },
+                    { value: 'formal_18', label: 'Mis precios incluyen IGV (18%)' },
+                    { value: 'formal_10.5', label: 'Mis precios incluyen IGV (10.5%)' },
+                    { value: 'no_igv', label: 'Mis precios NO incluyen IGV' },
                   ]}
                 />
+                <p className="text-[10px] text-stone-400 mt-1.5 leading-relaxed">
+                  {profileForm.tipo_negocio === 'informal'
+                    ? 'Tus productos se crean al precio que pones. Si decides boletear, usa el toggle "Con IGV" en el POS para cobrar el IGV adicional.'
+                    : 'Tus precios ya incluyen IGV. El margen de ganancia se calcula descontando el IGV del precio.'}
+                </p>
               </div>
               <div>
                 <label className={cx.label}>Pais</label>
