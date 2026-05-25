@@ -807,6 +807,10 @@ export default function CotizadorPage() {
       toast.error('Ingresa un nombre para el producto');
       return;
     }
+    if (!precioFinal || precioFinal <= 0) {
+      toast.error('Define un precio para el producto');
+      return;
+    }
     handleSave();
   };
 
@@ -1718,13 +1722,13 @@ export default function CotizadorPage() {
                       min="0"
                       max="90"
                       step="0.5"
-                      value={Math.round(costos.margen * 10) / 10}
+                      value={Math.round((costos.margen || 0) * 10) / 10}
                       onChange={(e) => handleMargenChange(Number(e.target.value))}
                       className="flex-1 accent-[var(--accent)] h-1.5"
                     />
                     <input
                       type="number"
-                      value={parseFloat(costos.margen.toFixed(2))}
+                      value={parseFloat((costos.margen || 0).toFixed(2))}
                       onChange={(e) => handleMargenChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))}
                       className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400"
                     />
@@ -1761,8 +1765,8 @@ export default function CotizadorPage() {
                 <div className="py-4 border-b border-stone-100">
                   <label className={cx.label}>Margen por porcion</label>
                   <div className="flex items-center gap-3 mt-1">
-                    <input type="range" min="0" max="90" step="0.5" value={Math.round(costos.margenPorcion * 10) / 10} onChange={(e) => handleMargenPorcionChange(Number(e.target.value))} className="flex-1 accent-[var(--accent)] h-1.5" />
-                    <input type="number" value={parseFloat(costos.margenPorcion.toFixed(2))} onChange={(e) => handleMargenPorcionChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))} className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400" />
+                    <input type="range" min="0" max="90" step="0.5" value={Math.round((costos.margenPorcion || 0) * 10) / 10} onChange={(e) => handleMargenPorcionChange(Number(e.target.value))} className="flex-1 accent-[var(--accent)] h-1.5" />
+                    <input type="number" value={parseFloat((costos.margenPorcion || 0).toFixed(2))} onChange={(e) => handleMargenPorcionChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))} className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400" />
                     <span className="text-stone-400 text-sm">%</span>
                   </div>
                 </div>
@@ -1806,13 +1810,13 @@ export default function CotizadorPage() {
                       min="0"
                       max="90"
                       step="0.5"
-                      value={Math.round(costos.margen * 10) / 10}
+                      value={Math.round((costos.margen || 0) * 10) / 10}
                       onChange={(e) => handleMargenChange(Number(e.target.value))}
                       className="flex-1 accent-[var(--accent)] h-1.5"
                     />
                     <input
                       type="number"
-                      value={parseFloat(costos.margen.toFixed(2))}
+                      value={parseFloat((costos.margen || 0).toFixed(2))}
                       onChange={(e) => handleMargenChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))}
                       className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400"
                     />
