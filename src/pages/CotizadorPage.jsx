@@ -394,7 +394,10 @@ export default function CotizadorPage() {
   const [precioFinal, setPrecioFinal] = useState(0);
   const [precioFinalPorcion, setPrecioFinalPorcion] = useState(null);
   // igv_rate in DB is decimal (0.18), hook expects integer (18)
-  const [igvRate, setIgvRate] = useState(user?.igv_rate != null ? parseFloat((user.igv_rate * 100).toFixed(2)) : 0);
+  const [igvRate, setIgvRate] = useState(
+    user?.tipo_negocio === 'informal' ? 0
+    : user?.igv_rate != null ? parseFloat((user.igv_rate * 100).toFixed(2)) : 0
+  );
   const [tipoPresentacion, setTipoPresentacion] = useState('unidad');
   const [unidadesPorProducto, setUnidadesPorProducto] = useState(1);
   const [saving, setSaving] = useState(false);

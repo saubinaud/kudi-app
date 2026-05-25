@@ -101,7 +101,7 @@ export default function POSPage() {
 
   // Cart totals — desglose tipo boleta
   const esInformal = user?.tipo_negocio === 'informal';
-  const tasaIgvPOS = esInformal ? 0.18 : (parseFloat(user?.igv_rate) || 0);
+  const tasaIgvPOS = parseFloat(user?.igv_rate) || 0.18; // tasa real, incluso para informal
 
   const cartSubtotal = useMemo(() =>
     cartItems.reduce((s, i) => s + itemPrecio(i) * i.cantidad - (parseFloat(i.descuento) || 0), 0),
@@ -163,7 +163,7 @@ export default function POSPage() {
     const esInformal = user?.tipo_negocio === 'informal';
     // Informal: precio ya es sin IGV → calcular con IGV usando tasa estándar 18%
     // Formal: precio ya incluye IGV → precio_venta es sin IGV
-    const tasaIgv = esInformal ? 0.18 : igvProducto;
+    const tasaIgv = esInformal ? tasaIgvPOS : igvProducto;
     let precioConIgv = esInformal ? Math.ceil(precioBase * (1 + tasaIgv) * 10) / 10 : precioBase;
     let precioSinIgv = esInformal ? precioBase : (parseFloat(product.precio_venta) || precioBase);
     if (selectedCarta) {
@@ -206,7 +206,7 @@ export default function POSPage() {
       imagen_url: product.imagen_url || null,
       precio_con_igv: (() => {
         const vp = parseFloat(variant.precio_final) || parseFloat(product.precio_final) || 0;
-        return user?.tipo_negocio === 'informal' ? Math.ceil(vp * 1.18 * 10) / 10 : vp;
+        return user?.tipo_negocio === 'informal' ? Math.ceil(vp * (1 + tasaIgvPOS) * 10) / 10 : vp;
       })(),
       precio_sin_igv: user?.tipo_negocio === 'informal'
         ? (parseFloat(variant.precio_final) || parseFloat(product.precio_final) || 0)
@@ -700,7 +700,7 @@ export default function POSPage() {
                       selectedCarta
                         ? ((p.precios_categoria || []).find(pc => pc.categoria_id === selectedCarta)?.precio || p.precio_final)
                         : (conIgv
-                          ? (user?.tipo_negocio === 'informal' ? Math.ceil(parseFloat(p.precio_final) * 1.18 * 10) / 10 : p.precio_final)
+                          ? (user?.tipo_negocio === 'informal' ? Math.ceil(parseFloat(p.precio_final) * (1 + tasaIgvPOS) * 10) / 10 : p.precio_final)
                           : (user?.tipo_negocio === 'informal' ? p.precio_final : (p.precio_venta || p.precio_final)))
                     )}</p>
                   </button>
