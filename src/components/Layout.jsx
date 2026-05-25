@@ -174,7 +174,6 @@ export default function Layout() {
     { to: '/equipo', label: 'Mi Equipo', icon: Users },
     { to: '/perfil', label: 'Perfil', icon: User },
     { to: '/feedback', label: 'Feedback', icon: MessageSquare },
-    { to: '/novedades', label: 'Novedades', icon: Sparkles },
   ];
 
   const adminLinks = [
