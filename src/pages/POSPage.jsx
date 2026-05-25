@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useApi } from '../hooks/useApi';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
@@ -13,6 +14,7 @@ function todayStr() {
 
 export default function POSPage() {
   const api = useApi();
+  const { user } = useAuth();
   const toast = useToast();
 
   // Products
@@ -28,7 +30,7 @@ export default function POSPage() {
 
   // Cart
   const [cartItems, setCartItems] = useState([]);
-  const [conIgv, setConIgv] = useState(true); // toggle IGV para toda la orden
+  const [conIgv, setConIgv] = useState(user?.tipo_negocio !== 'informal'); // informal = sin IGV por defecto
   const itemPrecio = (item) => conIgv
     ? (item.precio_con_igv || item.precio || 0)
     : (item.precio_sin_igv || item.precio_con_igv || item.precio || 0);
