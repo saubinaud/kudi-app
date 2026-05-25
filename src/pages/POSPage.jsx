@@ -99,11 +99,34 @@ export default function POSPage() {
     return list;
   }, [enrichedProductos, posSearch, selectedCarta]);
 
-  // Cart total
+  // Cart totals — desglose tipo boleta
+  const esInformal = user?.tipo_negocio === 'informal';
+  const tasaIgvPOS = esInformal ? 0.18 : (parseFloat(user?.igv_rate) || 0);
+
   const cartSubtotal = useMemo(() =>
     cartItems.reduce((s, i) => s + itemPrecio(i) * i.cantidad - (parseFloat(i.descuento) || 0), 0),
     [cartItems, conIgv]
   );
+
+  // Base (sin IGV) e IGV del carrito
+  const cartDesglose = useMemo(() => {
+    if (!conIgv || tasaIgvPOS === 0) {
+      // Sin IGV: todo es base, no hay IGV
+      return { base: cartSubtotal, igv: 0, total: cartSubtotal };
+    }
+    if (esInformal) {
+      // Informal + Con IGV: el precio mostrado YA tiene IGV sumado
+      // Base = total / (1 + tasa), IGV = total - base
+      const base = Math.round(cartSubtotal / (1 + tasaIgvPOS) * 100) / 100;
+      const igv = Math.round((cartSubtotal - base) * 100) / 100;
+      return { base, igv, total: cartSubtotal };
+    }
+    // Formal: precio incluye IGV
+    const base = Math.round(cartSubtotal / (1 + tasaIgvPOS) * 100) / 100;
+    const igv = Math.round((cartSubtotal - base) * 100) / 100;
+    return { base, igv, total: cartSubtotal };
+  }, [cartSubtotal, conIgv, tasaIgvPOS, esInformal]);
+
   const costoEnvio = useMemo(() => {
     if (tipoEntrega !== 'delivery' || !zonaSeleccionada) return 0;
     const zona = zonas.find(z => z.id === zonaSeleccionada);
@@ -530,13 +553,19 @@ export default function POSPage() {
                 <ChevronRight size={14} className="text-stone-300 flex-shrink-0" />
               </button>
 
-              {/* Total + confirm */}
+              {/* Total + confirm — desglose tipo boleta */}
               <div className="bg-stone-50 rounded-xl p-4 -mx-1">
                 <div className="space-y-1 mb-2">
                   <div className="flex justify-between text-xs">
-                    <span className="text-stone-400">Productos</span>
-                    <span className="text-stone-600">{formatCurrency(cartSubtotal)}</span>
+                    <span className="text-stone-400">Subtotal</span>
+                    <span className="text-stone-600">{formatCurrency(cartDesglose.base)}</span>
                   </div>
+                  {cartDesglose.igv > 0 && (
+                    <div className="flex justify-between text-xs">
+                      <span className="text-stone-400">IGV ({(tasaIgvPOS * 100).toFixed(0)}%)</span>
+                      <span className="text-stone-600">{formatCurrency(cartDesglose.igv)}</span>
+                    </div>
+                  )}
                   {costoEnvio > 0 && (
                     <div className="flex justify-between text-xs">
                       <span className="text-stone-400">Envío</span>
@@ -567,12 +596,18 @@ export default function POSPage() {
               <div className="space-y-1.5 mb-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-stone-400">Subtotal</span>
-                  <span className="text-stone-600">{formatCurrency(cartItems.reduce((s, i) => s + itemPrecio(i) * i.cantidad, 0))}</span>
+                  <span className="text-stone-600">{formatCurrency(cartDesglose.base)}</span>
                 </div>
                 {cartItems.some(i => i.descuento > 0) && (
                   <div className="flex justify-between text-sm">
                     <span className="text-stone-400">Descuentos</span>
                     <span className="text-rose-500">-{formatCurrency(cartItems.reduce((s, i) => s + (parseFloat(i.descuento) || 0), 0))}</span>
+                  </div>
+                )}
+                {cartDesglose.igv > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-stone-400">IGV ({(tasaIgvPOS * 100).toFixed(0)}%)</span>
+                    <span className="text-stone-600">{formatCurrency(cartDesglose.igv)}</span>
                   </div>
                 )}
                 <div className="flex justify-between pt-1.5 border-t border-stone-100">
