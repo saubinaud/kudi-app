@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import { API_BASE } from '../config/api';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -12,6 +13,21 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('[ErrorBoundary]', error, errorInfo);
+    // Report to backend
+    try {
+      const token = localStorage.getItem('nodum_token');
+      fetch(`${API_BASE}/error`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({
+          mensaje: `[FRONTEND] ${error?.message || 'Unknown error'}`,
+          ruta: window.location.hash || window.location.pathname,
+          metodo: 'RENDER',
+          stack: (error?.stack || '').substring(0, 500),
+          componentStack: (errorInfo?.componentStack || '').substring(0, 300),
+        }),
+      }).catch(() => {});
+    } catch (_) {}
   }
 
   render() {
