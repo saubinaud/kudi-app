@@ -422,17 +422,8 @@ export default function CotizadorPage() {
 
   const costosRaw = useCalculadorCostos(preparaciones, materiales, precioFinal, igvRate, tipoPresentacion, unidadesPorProducto, precioFinalPorcion);
 
-  // Pack cost: sum of item costs * quantities
-  const packCosto = useMemo(() => {
-    if (tipoProducto !== 'pack') return 0;
-    const productos = allProducts || [];
-    if (!pendingPackItems?.length || !productos.length) return 0;
-    return pendingPackItems.reduce((sum, item) => {
-      const prod = productos.find(p => p.id === item.item_producto_id);
-      return sum + (parseFloat(prod?.costo_neto) || 0) * (Number(item.cantidad) || 1);
-    }, 0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipoProducto, pendingPackItems, allProducts?.length]);
+  // Pack cost: uses costoGuardado from DB (loaded when editing existing pack)
+  const packCosto = tipoProducto === 'pack' ? costoGuardado : 0;
 
   // Fallback for Shopify/imported products with no ingredients OR packs
   const fallbackCosto = packCosto > 0 ? packCosto : costoGuardado;
