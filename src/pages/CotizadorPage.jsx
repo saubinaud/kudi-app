@@ -520,7 +520,7 @@ export default function CotizadorPage() {
         // Precio es la verdad — se carga directo
         setPrecioFinal(parseFloat(p.precio_final) || 0);
         // TODO: cargar precio porción del hijo si existe
-        setIgvRate(p.igv_rate != null ? parseFloat((p.igv_rate * 100).toFixed(2)) : (user?.igv_rate != null ? parseFloat((user.igv_rate * 100).toFixed(2)) : 0));
+        setIgvRate(user?.tipo_negocio === 'informal' ? 0 : (p.igv_rate != null ? parseFloat((p.igv_rate * 100).toFixed(2)) : 0));
         setTipoProducto(p.tipo_producto || 'transformable');
         setControlStock(!!p.control_stock);
         setSku(p.sku || '');
