@@ -5,6 +5,7 @@ import { ToastProvider } from './context/ToastContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import Layout from './components/Layout';
+import ErrorBoundary from './components/ErrorBoundary';
 import LoginPage from './pages/LoginPage';
 import OnboardingPage from './pages/OnboardingPage';
 import DashboardPage from './pages/DashboardPage';
@@ -52,6 +53,7 @@ function ScrollToTop() {
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <AuthProvider>
       <ToastProvider>
         <HashRouter>
@@ -120,5 +122,6 @@ export default function App() {
         </HashRouter>
       </ToastProvider>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
