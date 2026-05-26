@@ -99,12 +99,12 @@ function EditablePrice({ value, onChange, simbolo = 'S/', className = '' }) {
     <span
       className={`cursor-pointer hover:opacity-70 transition-opacity ${className}`}
       onClick={() => {
-        setTempVal(Number(value).toFixed(2));
+        setTempVal((Number(value) || 0).toFixed(2));
         setEditing(true);
       }}
       title="Click para editar precio"
     >
-      {simbolo} {Number(value).toFixed(2)}
+      {simbolo} {(Number(value) || 0).toFixed(2)}
     </span>
   );
 }
@@ -1698,7 +1698,14 @@ export default function CotizadorPage() {
         {/* ── Right column: Resumen — premium sticky card ── */}
         <div className="lg:col-span-1 lg:self-start lg:sticky lg:top-6">
           <div className={`${cx.card} p-4`}>
-            <h3 className="text-lg font-semibold text-stone-900 mb-4">Resumen<InfoTip text="El costo neto incluye insumos + empaque. El margen define tu ganancia. El precio sugerido redondea a un valor comercial (.90 o .00)." /></h3>
+            <h3 className="text-lg font-semibold text-stone-900 mb-4">Resumen<InfoTip text="El costo neto incluye insumos + empaque. El margen define tu ganancia." /></h3>
+
+            {/* Pack sin items: mostrar mensaje */}
+            {tipoProducto === 'pack' && costos.costoNeto === 0 && packCosto === 0 && (
+              <div className="bg-amber-50 rounded-lg px-3 py-3 mb-4 text-center">
+                <p className="text-xs text-amber-700">Agrega productos al pack para ver el costo y calcular el precio</p>
+              </div>
+            )}
 
             {tipoPresentacion === 'entero' ? (
               <>
