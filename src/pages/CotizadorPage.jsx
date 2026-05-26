@@ -131,6 +131,8 @@ function PackItemsEditor({ productoId, onItemsChange }) {
   const [loadingItems, setLoadingItems] = useState(false);
   const [allProducts, setAllProducts] = useState([]);
   const [savingItem, setSavingItem] = useState(false);
+  const [packTab, setPackTab] = useState('listos'); // listos | inventario
+  const [packSearch, setPackSearch] = useState('');
   const isLocal = !productoId; // local mode: no API calls, just state
 
   useEffect(() => {
@@ -216,9 +218,6 @@ function PackItemsEditor({ productoId, onItemsChange }) {
   if (loadingItems) {
     return <div className="space-y-2 py-4">{[1,2].map(i => <div key={i} className="bg-stone-100 rounded-xl h-10 animate-pulse" />)}</div>;
   }
-
-  const [packTab, setPackTab] = useState('listos'); // listos | inventario
-  const [packSearch, setPackSearch] = useState('');
 
   const productosListos = allProducts.filter(p => p.tipo_producto === 'transformable');
   const productosInventario = allProducts.filter(p => p.tipo_producto === 'no_transformable');
