@@ -1041,7 +1041,7 @@ function MensajesTab() {
                       <div className="flex items-center gap-2 mb-0.5">
                         {m.de_admin && <span className="text-[9px] px-1.5 py-0.5 bg-[#0A2F24] text-white rounded font-semibold">Admin</span>}
                         {!m.de_admin && <span className="text-[9px] px-1.5 py-0.5 bg-stone-200 text-stone-600 rounded">{m.de_nombre || m.de_email}</span>}
-                        <span className="text-[10px] text-stone-400">{m.para_nombre ? `→ ${m.para_nombre}` : '→ Todos'}</span>
+                        <span className="text-[10px] text-stone-400">{m.para_nombre ? `→ ${m.para_nombre}` : m.de_admin ? '→ Todos' : '→ Soporte'}</span>
                       </div>
                       <p className="text-sm font-medium text-stone-800 truncate">{m.asunto || 'Sin asunto'}</p>
                       <p className="text-xs text-stone-400 truncate">{m.mensaje.slice(0, 100)}</p>
