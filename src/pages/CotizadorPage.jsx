@@ -422,8 +422,14 @@ export default function CotizadorPage() {
 
   const costosRaw = useCalculadorCostos(preparaciones, materiales, precioFinal, igvRate, tipoPresentacion, unidadesPorProducto, precioFinalPorcion);
 
-  // Pack cost: uses costoGuardado from DB (loaded when editing existing pack)
-  const packCosto = tipoProducto === 'pack' ? costoGuardado : 0;
+  // Pack cost: sum item costs in real-time from pendingPackItems
+  const packCosto = useMemo(() => {
+    if (tipoProducto !== 'pack' || !pendingPackItems?.length) return costoGuardado || 0;
+    const calculated = pendingPackItems.reduce((sum, item) => {
+      return sum + (parseFloat(item.costo_neto) || 0) * (Number(item.cantidad) || 1);
+    }, 0);
+    return calculated > 0 ? calculated : (costoGuardado || 0);
+  }, [tipoProducto, pendingPackItems, costoGuardado]);
 
   // Fallback for Shopify/imported products with no ingredients OR packs
   const fallbackCosto = packCosto > 0 ? packCosto : costoGuardado;
@@ -1699,8 +1705,8 @@ export default function CotizadorPage() {
                 {/* Cost lines */}
                 <div className="space-y-3 pb-4 border-b border-stone-100">
                   <div className="flex justify-between text-sm">
-                    <span className="text-stone-500">Costo {(t.insumos || 'insumos').toLowerCase()}</span>
-                    <span className="text-stone-800 font-medium">{formatCurrency(costos.costoInsumosProducto)}</span>
+                    <span className="text-stone-500">{tipoProducto === 'pack' ? 'Costo items' : `Costo ${(t.insumos || 'insumos').toLowerCase()}`}</span>
+                    <span className="text-stone-800 font-medium">{formatCurrency(tipoProducto === 'pack' ? packCosto : costos.costoInsumosProducto)}</span>
                   </div>
                   {costos.costoEmpaqueEntero > 0 && (
                     <div className="flex justify-between text-sm">
