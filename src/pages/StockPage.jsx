@@ -289,15 +289,16 @@ export default function StockPage() {
     setUploadingImage(true);
     try {
       const formData = new FormData();
-      formData.append('imagen', file);
+      formData.append('image', file);
       const baseUrl = API_BASE.replace('/api', '');
       const res = await fetch(`${baseUrl}/api/upload/producto/${sidebarProduct.id}`, {
         method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('nodum_token')}` },
         body: formData,
       });
       const data = await res.json();
-      if (data.url) {
-        setSidebarImagenUrl(data.url);
+      if (data.success && data.data?.url) {
+        setSidebarImagenUrl(data.data.url);
         toast.success('Imagen subida');
       }
     } catch {
