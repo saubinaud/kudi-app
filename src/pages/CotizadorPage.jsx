@@ -852,8 +852,8 @@ export default function CotizadorPage() {
         nombre: nombre.trim(),
         descripcion: descripcion.trim() || null,
         imagen_url: imagenUrl.trim() || null,
-        margen: costos.margen,    // derivado del precio
-        margen_porcion: costos.margenPorcion,
+        margen: Math.max(-99, Math.min(99, costos.margen || 0)),
+        margen_porcion: Math.max(-99, Math.min(99, costos.margenPorcion || 0)),
         igv_rate: igvRate / 100,
         tipo_presentacion: tipoPresentacion,
         unidades_por_producto: tipoPresentacion === 'entero' ? unidadesPorProducto : 1,
