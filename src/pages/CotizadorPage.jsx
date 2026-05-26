@@ -537,8 +537,10 @@ export default function CotizadorPage() {
         if (p.variantes) setVariantes(p.variantes);
 
         if (p.preparaciones?.length) {
+          // Filter out ghost preps (empty name, no insumos) that can crash the UI
+          const validPreps = p.preparaciones.filter(prep => prep.nombre || prep.insumos?.length);
           setPreparaciones(
-            p.preparaciones.map((prep) => ({
+            validPreps.map((prep) => ({
               _id: newTempId(),
               id: prep.id,
               nombre: prep.nombre || '',
