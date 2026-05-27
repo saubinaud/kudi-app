@@ -53,13 +53,13 @@ export default function PerfilPage() {
     api.get('/auth/giros').then(res => {
       const data = res.data || res;
       setGiros((data.giros || []).map(g => ({ value: g.id, label: g.nombre })));
-    }).catch(() => {});
+    }).catch(() => toast.error('Error cargando datos'));
   }, []);
 
   useEffect(() => {
     if (tab === 'plan' && pagos.length === 0) {
       setLoadingPagos(true);
-      api.get('/auth/mis-pagos').then(r => setPagos(r.data || [])).catch(() => {}).finally(() => setLoadingPagos(false));
+      api.get('/auth/mis-pagos').then(r => setPagos(r.data || [])).catch(() => toast.error('Error cargando datos')).finally(() => setLoadingPagos(false));
     }
   }, [tab]);
 

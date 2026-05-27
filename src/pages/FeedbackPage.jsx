@@ -33,7 +33,7 @@ export default function FeedbackPage() {
   const loadItems = () => {
     api.get('/feedback')
       .then(r => setItems(r.data || []))
-      .catch(() => {})
+      .catch(() => toast.error('Error cargando datos'))
       .finally(() => setLoading(false));
   };
 

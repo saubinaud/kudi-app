@@ -72,7 +72,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadProducts();
-    api.get('/precios/categorias').then(r => setCategorias(r?.data || r || [])).catch(() => {});
+    api.get('/precios/categorias').then(r => setCategorias(r?.data || r || [])).catch(() => toast.error('Error cargando datos'));
   }, []);
 
   const loadProducts = async () => {

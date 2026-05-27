@@ -108,7 +108,7 @@ export default function StockPage() {
   const loadAllProductos = () => {
     api.get('/stock/todos')
       .then((r) => setAllProductos(r.data || []))
-      .catch(() => {});
+      .catch(() => toast.error('Error cargando datos'));
   };
 
   useEffect(() => {
@@ -256,7 +256,7 @@ export default function StockPage() {
       setLoadingMov(p => ({ ...p, [prod.id]: true }));
       api.get(`/stock/movimientos?producto_id=${prod.id}`)
         .then(r => setMovimientos(p => ({ ...p, [prod.id]: r.data || [] })))
-        .catch(() => {})
+        .catch(() => toast.error('Error cargando movimientos'))
         .finally(() => setLoadingMov(p => ({ ...p, [prod.id]: false })));
     }
   };
@@ -285,7 +285,8 @@ export default function StockPage() {
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !sidebarProduct) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error('Imagen debe ser menor a 5MB'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('La imagen debe pesar máximo 5MB'); return; }
+    if (!file.type.startsWith('image/')) { toast.error('Solo se permiten archivos de imagen (JPG, PNG, WebP)'); return; }
     setUploadingImage(true);
     try {
       const formData = new FormData();
@@ -296,13 +297,16 @@ export default function StockPage() {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('nodum_token')}` },
         body: formData,
       });
+      if (res.status === 401) { toast.error('Sesión expirada, vuelve a iniciar sesión'); return; }
       const data = await res.json();
       if (data.success && data.data?.url) {
         setSidebarImagenUrl(data.data.url);
         toast.success('Imagen subida');
+      } else {
+        toast.error(data.error || 'Error subiendo imagen');
       }
     } catch {
-      toast.error('Error subiendo imagen');
+      toast.error('Error de conexión al subir imagen');
     } finally {
       setUploadingImage(false);
     }

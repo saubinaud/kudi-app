@@ -46,7 +46,7 @@ export default function ShopifyPage() {
     api
       .get('/shopify/logs')
       .then((r) => setLogs(r?.data || r || []))
-      .catch(() => {});
+      .catch(() => toast.error('Error cargando datos'));
 
   const handleConnect = async () => {
     if (!storeUrl || !clientId || !clientSecret) {

@@ -140,14 +140,14 @@ function PackItemsEditor({ productoId, onItemsChange }) {
     setLoadingItems(true);
     api.get(`/productos/${productoId}/pack-items`)
       .then(r => setItems(r?.data || r || []))
-      .catch(() => {})
+      .catch(() => toast.error('Error cargando items del pack'))
       .finally(() => setLoadingItems(false));
   }, [productoId]);
 
   useEffect(() => {
     api.get('/productos')
       .then(r => setAllProducts((r?.data || r || []).filter(p => p.tipo_producto !== 'pack')))
-      .catch(() => {});
+      .catch(() => toast.error('Error cargando productos'));
   }, []);
 
   // Notify parent of items changes (for saving with the product)
@@ -503,11 +503,11 @@ export default function CotizadorPage() {
       setCatalogMateriales(c.materiales || []);
       setCatalogPreps(c.preparaciones_pred || []);
       setCatalogEmpaques(c.empaques_pred || []);
-    }).catch(() => {});
+    }).catch(() => toast.error('Error cargando catálogos'));
     // Load inventory products available for sale (no_transformable with disponible_venta)
     api.get('/productos').then((d) => {
       setInventarioProductos((d.data || []).filter(p => p.tipo_producto === 'no_transformable' && p.disponible_venta));
-    }).catch(() => {});
+    }).catch(() => toast.error('Error cargando productos'));
   }, []);
 
   // Load product for edit mode
@@ -643,7 +643,7 @@ export default function CotizadorPage() {
           .map((i) => ({ insumo_id: i.insumo_id, cantidad: Number(i.cantidad) || 0, uso_unidad: i.uso_unidad || i.unidad_medida || null })),
       });
       toast.success(`"${prep.nombre}" guardada como predeterminada`);
-      api.get('/predeterminados/preparaciones').then((d) => setCatalogPreps(d.data || [])).catch(() => {});
+      api.get('/predeterminados/preparaciones').then((d) => setCatalogPreps(d.data || [])).catch(() => {});  // post-save refresh, silent ok
     } catch (err) {
       toast.error(err.message || 'Error guardando plantilla');
     }
@@ -671,7 +671,7 @@ export default function CotizadorPage() {
         materiales: mats.filter(m => m.material_id).map(m => ({ material_id: m.material_id, cantidad: Number(m.cantidad) || 1 })),
       });
       toast.success(`"${nombre}" guardado como empaque predeterminado`);
-      api.get('/predeterminados/empaques').then(d => setCatalogEmpaques(d.data || [])).catch(() => {});
+      api.get('/predeterminados/empaques').then(d => setCatalogEmpaques(d.data || [])).catch(() => {});  // post-save refresh, silent ok
     } catch (err) {
       toast.error(err.message || 'Error guardando empaque');
     }
@@ -1140,7 +1140,8 @@ export default function CotizadorPage() {
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
-                          if (file.size > 5 * 1024 * 1024) { toast.error('Imagen muy grande (max 5MB)'); return; }
+                          if (file.size > 5 * 1024 * 1024) { toast.error('La imagen debe pesar máximo 5MB'); return; }
+                          if (!file.type.startsWith('image/')) { toast.error('Solo se permiten archivos de imagen (JPG, PNG, WebP)'); return; }
                           // If product is saved, upload to R2
                           if (id) {
                             try {
@@ -1151,6 +1152,7 @@ export default function CotizadorPage() {
                                 headers: { 'Authorization': `Bearer ${localStorage.getItem('nodum_token')}` },
                                 body: formData,
                               });
+                              if (res.status === 401) { toast.error('Sesión expirada, vuelve a iniciar sesión'); return; }
                               const data = await res.json();
                               if (data.success) {
                                 setImagenUrl(data.data.url);
@@ -1158,7 +1160,7 @@ export default function CotizadorPage() {
                               } else {
                                 toast.error(data.error || 'Error subiendo imagen');
                               }
-                            } catch (err) { toast.error('Error subiendo imagen'); }
+                            } catch (err) { toast.error('Error de conexión al subir imagen'); }
                           } else {
                             // Preview only — will upload after first save
                             const reader = new FileReader();

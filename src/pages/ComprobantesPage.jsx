@@ -74,7 +74,7 @@ export default function ComprobantesPage() {
   // Load periodos + config on mount
   useEffect(() => {
     loadConfig();
-    api.get('/print/config').then(r => setPrinterConfig(r?.data || r || {})).catch(() => {});
+    api.get('/print/config').then(r => setPrinterConfig(r?.data || r || {})).catch(() => toast.error('Error cargando datos'));
     api.get('/pl/periodos').then(res => {
       const pers = res.data || res || [];
       setRawPeriodos(pers);

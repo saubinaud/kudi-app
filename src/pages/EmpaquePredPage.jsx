@@ -24,7 +24,7 @@ export default function EmpaquePredPage() {
 
   useEffect(() => {
     loadEmpaques();
-    api.get('/materiales').then((d) => setCatalogMateriales(d.data || [])).catch(() => {});
+    api.get('/materiales').then((d) => setCatalogMateriales(d.data || [])).catch(() => toast.error('Error cargando datos'));
   }, []);
 
   const loadEmpaques = async () => {

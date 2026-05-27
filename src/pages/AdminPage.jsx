@@ -946,7 +946,7 @@ function MensajesTab() {
     ]).then(([m, u]) => {
       setMensajes(m.data || []);
       setUsuarios((u.data || []).filter(x => x.rol !== 'admin'));
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(() => toast.error('Error cargando datos')).finally(() => setLoading(false));
   }, []);
 
   const handleSend = async () => {
@@ -1107,7 +1107,7 @@ function FeedbackTab() {
   const [respuesta, setRespuesta] = useState('');
 
   useEffect(() => {
-    api.get('/admin/feedback').then(r => setItems(r.data || [])).catch(() => {}).finally(() => setLoading(false));
+    api.get('/admin/feedback').then(r => setItems(r.data || [])).catch(() => toast.error('Error cargando datos')).finally(() => setLoading(false));
   }, []);
 
   const handleRespond = async (id) => {
@@ -1179,11 +1179,12 @@ function FeedbackTab() {
 // Tab 6: Errores
 function ErroresTab() {
   const api = useApi();
+  const toast = useToast();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/admin/errores').then(r => setItems(r.data || [])).catch(() => {}).finally(() => setLoading(false));
+    api.get('/admin/errores').then(r => setItems(r.data || [])).catch(() => toast.error('Error cargando datos')).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="space-y-3">{[1,2,3].map(i => <div key={i} className={cx.skeleton + ' h-16'} />)}</div>;

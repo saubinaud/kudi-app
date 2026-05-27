@@ -42,7 +42,7 @@ export default function AnalisisPage() {
   useEffect(() => {
     api.get('/productos')
       .then(r => setProductos(r.data))
-      .catch(() => {});
+      .catch(() => toast.error('Error cargando datos'));
   }, []);
 
   const sortedProducts = useMemo(() => {

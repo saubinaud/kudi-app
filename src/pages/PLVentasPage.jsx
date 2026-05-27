@@ -602,7 +602,7 @@ export default function PLVentasPage() {
     setEmitirClienteId('');
     api.get('/clientes').then(res => {
       setEmitirClientes((res.data || res || []).map(c => ({ value: c.id, label: `${c.num_doc} - ${c.razon_social || ''}` })));
-    }).catch(() => {});
+    }).catch(() => toast.error('Error cargando datos'));
   }
 
   async function handleEmitir() {

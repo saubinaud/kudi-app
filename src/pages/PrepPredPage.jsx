@@ -76,7 +76,7 @@ export default function PrepPredPage() {
 
   useEffect(() => {
     loadPreps();
-    api.get('/insumos').then((d) => setCatalogInsumos(d.data || [])).catch(() => {});
+    api.get('/insumos').then((d) => setCatalogInsumos(d.data || [])).catch(() => toast.error('Error cargando datos'));
   }, []);
 
   const enrichedInsumos = useMemo(() => {
