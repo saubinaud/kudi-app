@@ -734,12 +734,15 @@ export default function CotizadorPage() {
       Number(catalogItem.cantidad_presentacion) > 0
         ? Number(catalogItem.precio_presentacion) / Number(catalogItem.cantidad_presentacion)
         : Number(catalogItem.precio_presentacion);
+    // Default to smallest compatible unit (g instead of kg, ml instead of L)
+    const smallestUnit = { kg: 'g', L: 'ml', mt: 'cm' };
+    const defaultUnit = smallestUnit[catalogItem.unidad_medida] || catalogItem.unidad_medida;
     updateInsumo(prepId, insId, {
       insumo_id: catalogItem.id,
       nombre: catalogItem._originalNombre || catalogItem.nombre,
       costo_unitario: costoUnit,
       unidad_medida: catalogItem.unidad_medida,
-      uso_unidad: catalogItem.unidad_medida,
+      uso_unidad: defaultUnit,
       merma_pct: catalogItem.merma_pct || 0,
     });
   };

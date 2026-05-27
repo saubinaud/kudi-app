@@ -187,7 +187,7 @@ export default function PrepPredPage() {
     setEditData((prev) => ({
       ...prev,
       insumos: prev.insumos.map((i) =>
-        i._id === iid ? { ...i, insumo_id: cat.id, nombre: cat._originalNombre || cat.nombre, costo_unitario: costoUnit, unidad_medida: cat.unidad_medida || '', uso_unidad: cat.unidad_medida || '' } : i
+        i._id === iid ? { ...i, insumo_id: cat.id, nombre: cat._originalNombre || cat.nombre, costo_unitario: costoUnit, unidad_medida: cat.unidad_medida || '', uso_unidad: ({ kg: 'g', L: 'ml', mt: 'cm' })[cat.unidad_medida] || cat.unidad_medida || '' } : i
       ),
     }));
   };
