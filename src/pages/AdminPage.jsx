@@ -82,6 +82,7 @@ function timeAgo(dateStr) {
 // Tab 1: Dashboard
 // ══════════════════════════════════════════════════════════════
 // ── MiniChart: bar chart with CSS ──
+const BAR_HEIGHT = 64; // px
 function MiniChart({ title, data = [], color = 'bg-stone-700', valueKey = 'count', suffix = '', icon: Icon }) {
   const maxVal = Math.max(...data.map(d => d[valueKey] || 0), 1);
   const total = data.reduce((s, d) => s + (d[valueKey] || 0), 0);
@@ -96,24 +97,34 @@ function MiniChart({ title, data = [], color = 'bg-stone-700', valueKey = 'count
         </div>
         <span className="text-sm font-bold text-stone-800">{total.toLocaleString()}{suffix}</span>
       </div>
-      <div className="flex items-end gap-[3px] h-16">
+      <div className="flex items-end gap-[3px]" style={{ height: BAR_HEIGHT }}>
         {data.map((d, i) => {
           const val = d[valueKey] || 0;
-          const pct = maxVal > 0 ? (val / maxVal) * 100 : 0;
+          const h = maxVal > 0 ? Math.max(Math.round((val / maxVal) * BAR_HEIGHT), val > 0 ? 4 : 1) : 1;
           const dayName = dayLabels[new Date(d.date + 'T12:00:00').getDay()];
           const isToday = d.date === new Date().toISOString().slice(0, 10);
           return (
-            <div key={d.date} className="flex-1 flex flex-col items-center gap-0.5 group relative">
-              <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-stone-800 text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-100 whitespace-nowrap pointer-events-none z-10">
+            <div key={d.date} className="flex-1 flex flex-col items-end justify-end group relative" style={{ height: BAR_HEIGHT }}>
+              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-stone-800 text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-100 whitespace-nowrap pointer-events-none z-10">
                 {d.date.slice(5)} · {val}{suffix}
               </div>
               <div
-                className={`w-full rounded-t-sm ${val > 0 ? color : 'bg-stone-100'} ${isToday ? 'opacity-100' : 'opacity-70'} hover:opacity-100 transition-opacity duration-100`}
-                style={{ height: `${Math.max(pct, val > 0 ? 8 : 2)}%` }}
+                className={`w-full rounded-t-sm ${val > 0 ? color : 'bg-stone-100'} ${isToday ? '' : 'opacity-70'} hover:opacity-100 transition-opacity duration-100`}
+                style={{ height: h }}
               />
-              {i % 2 === 0 && <span className={`text-[8px] ${isToday ? 'text-stone-800 font-bold' : 'text-stone-300'}`}>{dayName}</span>}
             </div>
           );
+        })}
+      </div>
+      <div className="flex gap-[3px] mt-1">
+        {data.map((d, i) => {
+          const dayName = dayLabels[new Date(d.date + 'T12:00:00').getDay()];
+          const isToday = d.date === new Date().toISOString().slice(0, 10);
+          return i % 2 === 0 ? (
+            <div key={d.date} className="flex-1 text-center">
+              <span className={`text-[8px] ${isToday ? 'text-stone-800 font-bold' : 'text-stone-300'}`}>{dayName}</span>
+            </div>
+          ) : <div key={d.date} className="flex-1" />;
         })}
       </div>
     </div>
