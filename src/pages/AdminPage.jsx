@@ -93,10 +93,25 @@ function fmtChartDate(dateStr) {
 // Today in Lima timezone
 const todayLima = () => { const d = new Date(); return new Date(d.toLocaleString('en-US', { timeZone: 'America/Lima' })).toISOString().slice(0, 10); };
 
-function MiniChart({ title, data = [], color = 'bg-stone-700', valueKey = 'count', suffix = '', formatVal, icon: Icon }) {
+function MiniChart({ title, data = [], color = 'bg-stone-700', valueKey = 'count', suffix = '', formatVal, icon: Icon, metric, api }) {
   const maxVal = Math.max(...data.map(d => d[valueKey] || 0), 1);
   const total = data.reduce((s, d) => s + (d[valueKey] || 0), 0);
   const today = todayLima();
+  const [selected, setSelected] = useState(null); // date string
+  const [detail, setDetail] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  const handleBarClick = async (date, val) => {
+    if (val === 0 || !metric || !api) return;
+    if (selected === date) { setSelected(null); setDetail(null); return; } // toggle off
+    setSelected(date);
+    setLoadingDetail(true);
+    try {
+      const r = await api.get(`/admin/dashboard-detail?date=${date}&metric=${metric}`);
+      setDetail(r.data || []);
+    } catch { setDetail([]); }
+    finally { setLoadingDetail(false); }
+  };
 
   return (
     <div className={`${cx.card} p-4`}>
@@ -112,6 +127,7 @@ function MiniChart({ title, data = [], color = 'bg-stone-700', valueKey = 'count
           const val = d[valueKey] || 0;
           const h = maxVal > 0 ? Math.max(Math.round((val / maxVal) * BAR_HEIGHT), val > 0 ? 4 : 1) : 1;
           const isToday = d.date === today;
+          const isSelected = d.date === selected;
           const label = fmtChartDate(d.date);
           const displayVal = formatVal ? formatVal(val) : val;
           return (
@@ -122,7 +138,8 @@ function MiniChart({ title, data = [], color = 'bg-stone-700', valueKey = 'count
                 {d.total != null && <span className="text-emerald-300 ml-1">S/{d.total.toFixed(0)}</span>}
               </div>
               <div
-                className={`w-full rounded-t-sm ${val > 0 ? color : 'bg-stone-100'} ${isToday ? 'ring-1 ring-stone-400' : 'opacity-70'} hover:opacity-100 transition-opacity duration-100 cursor-pointer`}
+                onClick={() => handleBarClick(d.date, val)}
+                className={`w-full rounded-t-sm ${val > 0 ? color : 'bg-stone-100'} ${isSelected ? 'ring-2 ring-stone-800 opacity-100' : isToday ? 'ring-1 ring-stone-400' : 'opacity-70'} hover:opacity-100 transition-all duration-100 cursor-pointer`}
                 style={{ height: h }}
               />
             </div>
@@ -140,6 +157,34 @@ function MiniChart({ title, data = [], color = 'bg-stone-700', valueKey = 'count
           ) : <div key={d.date} className="flex-1" />;
         })}
       </div>
+
+      {/* Detail panel */}
+      {selected && (
+        <div className="mt-3 pt-3 border-t border-stone-100">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-semibold text-stone-500 uppercase">{fmtChartDate(selected)}</span>
+            <button onClick={() => { setSelected(null); setDetail(null); }} className="text-stone-300 hover:text-stone-500"><X size={12} /></button>
+          </div>
+          {loadingDetail ? (
+            <div className="space-y-1.5">{[1,2].map(i => <div key={i} className={cx.skeleton + ' h-5'} />)}</div>
+          ) : detail?.length > 0 ? (
+            <div className="space-y-1 max-h-32 overflow-y-auto">
+              {detail.map((item, i) => (
+                <div key={i} className="flex items-center justify-between text-xs gap-2">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-stone-800 font-medium truncate block">{item.nombre}</span>
+                    {item.empresa && <span className="text-stone-400 text-[10px]">{item.empresa}</span>}
+                    {item.detalle && <span className="text-stone-400 text-[10px] block truncate">{item.detalle}</span>}
+                  </div>
+                  {item.hora && <span className="text-stone-400 flex-shrink-0">{item.hora}</span>}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-stone-400 text-center py-2">Sin datos</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -212,11 +257,11 @@ function DashboardTab({ onNavigate }) {
         <>
           <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wider">Actividad — últimos 14 días</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <MiniChart title="Logins" data={charts.logins} color="bg-blue-500" icon={Users} />
-            <MiniChart title="Registros" data={charts.registros} color="bg-indigo-500" icon={UserPlus} />
-            <MiniChart title="Productos creados" data={charts.productos} color="bg-stone-700" icon={Package} />
-            <MiniChart title="Ventas" data={charts.ventas} color="bg-emerald-500" icon={ShoppingCart} />
-            <MiniChart title="Errores" data={charts.errores} color="bg-rose-500" icon={AlertTriangle} />
+            <MiniChart title="Logins" data={charts.logins} color="bg-blue-500" icon={Users} metric="logins" api={api} />
+            <MiniChart title="Registros" data={charts.registros} color="bg-indigo-500" icon={UserPlus} metric="registros" api={api} />
+            <MiniChart title="Productos creados" data={charts.productos} color="bg-stone-700" icon={Package} metric="productos" api={api} />
+            <MiniChart title="Ventas" data={charts.ventas} color="bg-emerald-500" icon={ShoppingCart} metric="ventas" api={api} />
+            <MiniChart title="Errores" data={charts.errores} color="bg-rose-500" icon={AlertTriangle} metric="errores" api={api} />
 
             {/* Usuarios activos hoy */}
             <div className={`${cx.card} p-4`}>
