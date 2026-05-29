@@ -81,19 +81,63 @@ function timeAgo(dateStr) {
 // ══════════════════════════════════════════════════════════════
 // Tab 1: Dashboard
 // ══════════════════════════════════════════════════════════════
+// ── MiniChart: bar chart with CSS ──
+function MiniChart({ title, data = [], color = 'bg-stone-700', valueKey = 'count', suffix = '', icon: Icon }) {
+  const maxVal = Math.max(...data.map(d => d[valueKey] || 0), 1);
+  const total = data.reduce((s, d) => s + (d[valueKey] || 0), 0);
+  const dayLabels = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+
+  return (
+    <div className={`${cx.card} p-4`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          {Icon && <Icon size={14} className="text-stone-400" />}
+          <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">{title}</span>
+        </div>
+        <span className="text-sm font-bold text-stone-800">{total.toLocaleString()}{suffix}</span>
+      </div>
+      <div className="flex items-end gap-[3px] h-16">
+        {data.map((d, i) => {
+          const val = d[valueKey] || 0;
+          const pct = maxVal > 0 ? (val / maxVal) * 100 : 0;
+          const dayName = dayLabels[new Date(d.date + 'T12:00:00').getDay()];
+          const isToday = d.date === new Date().toISOString().slice(0, 10);
+          return (
+            <div key={d.date} className="flex-1 flex flex-col items-center gap-0.5 group relative">
+              <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-stone-800 text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-100 whitespace-nowrap pointer-events-none z-10">
+                {d.date.slice(5)} · {val}{suffix}
+              </div>
+              <div
+                className={`w-full rounded-t-sm ${val > 0 ? color : 'bg-stone-100'} ${isToday ? 'opacity-100' : 'opacity-70'} hover:opacity-100 transition-opacity duration-100`}
+                style={{ height: `${Math.max(pct, val > 0 ? 8 : 2)}%` }}
+              />
+              {i % 2 === 0 && <span className={`text-[8px] ${isToday ? 'text-stone-800 font-bold' : 'text-stone-300'}`}>{dayName}</span>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function DashboardTab({ onNavigate }) {
   const api = useApi();
   const toast = useToast();
   const [stats, setStats] = useState(null);
+  const [charts, setCharts] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
-        const data = await api.get('/admin/stats');
-        setStats(data.data || data);
+        const [statsData, chartsData] = await Promise.all([
+          api.get('/admin/stats'),
+          api.get('/admin/dashboard-charts'),
+        ]);
+        setStats(statsData.data || statsData);
+        setCharts(chartsData.data || chartsData);
       } catch {
-        toast.error('Error cargando estadisticas');
+        toast.error('Error cargando estadísticas');
       } finally {
         setLoading(false);
       }
@@ -119,22 +163,60 @@ function DashboardTab({ onNavigate }) {
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {cards.map((c) => (
-        <div key={c.label} onClick={() => c.tab && onNavigate?.(c.tab)}
-          className={`${cx.card} p-5 relative ${c.tab ? 'cursor-pointer hover:shadow-md transition-shadow duration-150' : ''}`}>
-          <div className="flex items-center justify-between mb-2">
-            <c.icon size={18} className={c.color} />
-            {c.badge && (
-              <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
-                {c.value}
-              </span>
-            )}
+    <div className="space-y-6">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {cards.map((c) => (
+          <div key={c.label} onClick={() => c.tab && onNavigate?.(c.tab)}
+            className={`${cx.card} p-5 relative ${c.tab ? 'cursor-pointer hover:shadow-md transition-shadow duration-150' : ''}`}>
+            <div className="flex items-center justify-between mb-2">
+              <c.icon size={18} className={c.color} />
+              {c.badge && (
+                <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
+                  {c.value}
+                </span>
+              )}
+            </div>
+            <p className="text-2xl font-bold text-stone-800">{c.value ?? 0}</p>
+            <p className="text-xs text-stone-400 mt-0.5">{c.label}</p>
           </div>
-          <p className="text-2xl font-bold text-stone-800">{c.value ?? 0}</p>
-          <p className="text-xs text-stone-400 mt-0.5">{c.label}</p>
-        </div>
-      ))}
+        ))}
+      </div>
+
+      {/* Activity charts (14 days) */}
+      {charts && (
+        <>
+          <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wider">Actividad — últimos 14 días</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <MiniChart title="Logins" data={charts.logins} color="bg-blue-500" icon={Users} />
+            <MiniChart title="Registros" data={charts.registros} color="bg-indigo-500" icon={UserPlus} />
+            <MiniChart title="Productos creados" data={charts.productos} color="bg-stone-700" icon={Package} />
+            <MiniChart title="Ventas" data={charts.ventas} color="bg-emerald-500" icon={ShoppingCart} />
+            <MiniChart title="Errores" data={charts.errores} color="bg-rose-500" icon={AlertTriangle} />
+
+            {/* Usuarios activos hoy */}
+            <div className={`${cx.card} p-4`}>
+              <div className="flex items-center gap-2 mb-3">
+                <Clock size={14} className="text-stone-400" />
+                <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">Activos hoy</span>
+                <span className="text-sm font-bold text-stone-800">{charts.activos_hoy?.length || 0}</span>
+              </div>
+              {charts.activos_hoy?.length > 0 ? (
+                <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                  {charts.activos_hoy.map((u, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs">
+                      <span className="text-stone-700 truncate">{u.nombre}</span>
+                      <span className="text-stone-400 flex-shrink-0 ml-2">{u.hora}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-stone-400 text-center py-4">Sin logins hoy</p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
