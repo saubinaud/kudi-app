@@ -189,6 +189,105 @@ function MiniChart({ title, data = [], color = 'bg-stone-700', valueKey = 'count
   );
 }
 
+function ModulosChart({ modulos, api }) {
+  const [expanded, setExpanded] = useState(null); // module name
+  const [detail, setDetail] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleClick = async (modulo) => {
+    if (expanded === modulo) { setExpanded(null); setDetail(null); return; }
+    setExpanded(modulo);
+    setLoading(true);
+    try {
+      const r = await api.get(`/admin/modulo-detail?modulo=${encodeURIComponent(modulo)}`);
+      setDetail(r.data || null);
+    } catch { setDetail(null); }
+    finally { setLoading(false); }
+  };
+
+  const maxVisitas = modulos[0]?.visitas || 1;
+
+  return (
+    <div className={`${cx.card} p-4`}>
+      <div className="space-y-1">
+        {modulos.map((m, i) => {
+          const pct = Math.round((m.visitas / maxVisitas) * 100);
+          const isExpanded = expanded === m.modulo;
+          return (
+            <div key={m.modulo}>
+              <div onClick={() => handleClick(m.modulo)} className="flex items-center gap-3 py-1.5 cursor-pointer hover:bg-stone-50 rounded-lg px-1 transition-colors duration-100">
+                <span className={`text-xs w-28 truncate font-medium ${isExpanded ? 'text-stone-900' : 'text-stone-600'}`}>{m.modulo}</span>
+                <div className="flex-1 h-5 bg-stone-100 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-200 ${isExpanded ? 'bg-[#16A34A]' : i === 0 ? 'bg-[#16A34A]' : i < 3 ? 'bg-emerald-400' : 'bg-stone-300'}`} style={{ width: `${Math.max(pct, 3)}%` }} />
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-xs font-bold text-stone-800 w-10 text-right">{m.visitas}</span>
+                  <span className="text-[10px] text-stone-400 w-16">{m.usuarios} usuario{m.usuarios !== 1 ? 's' : ''}</span>
+                </div>
+              </div>
+
+              {isExpanded && (
+                <div className="ml-1 mr-1 mb-2 p-3 bg-stone-50 rounded-lg">
+                  {loading ? (
+                    <div className="space-y-2">{[1,2].map(k => <div key={k} className={cx.skeleton + ' h-5'} />)}</div>
+                  ) : detail ? (
+                    <div className="space-y-3">
+                      {/* Mini chart for this module */}
+                      {detail.daily?.length > 0 && (() => {
+                        const maxD = Math.max(...detail.daily.map(d => d.count), 1);
+                        const today = todayLima();
+                        return (
+                          <div>
+                            <div className="flex items-end gap-[2px]" style={{ height: 40 }}>
+                              {detail.daily.map(d => {
+                                const h = Math.max(Math.round((d.count / maxD) * 40), d.count > 0 ? 3 : 1);
+                                const isToday = d.date === today;
+                                return (
+                                  <div key={d.date} className="flex-1 group relative">
+                                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-stone-800 text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                                      {fmtChartDate(d.date)} · {d.count}
+                                    </div>
+                                    <div className={`w-full rounded-t-sm ${d.count > 0 ? 'bg-[#16A34A]' : 'bg-stone-200'} ${isToday ? '' : 'opacity-60'} hover:opacity-100`} style={{ height: h }} />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div className="flex gap-[2px] mt-0.5">
+                              {detail.daily.map((d, idx) => idx % 3 === 0 ? (
+                                <div key={d.date} className="flex-1 text-center"><span className="text-[7px] text-stone-300">{d.date.slice(8)}</span></div>
+                              ) : <div key={d.date} className="flex-1" />)}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Top users */}
+                      {detail.usuarios?.length > 0 && (
+                        <div className="space-y-1 pt-2 border-t border-stone-200">
+                          <span className="text-[9px] font-semibold text-stone-400 uppercase">Top usuarios</span>
+                          {detail.usuarios.map((u, i) => (
+                            <div key={i} className="flex items-center justify-between text-xs">
+                              <div className="flex-1 min-w-0">
+                                <span className="text-stone-800 font-medium">{u.nombre}</span>
+                                {u.empresa && <span className="text-stone-400 ml-1 text-[10px]">· {u.empresa}</span>}
+                              </div>
+                              <span className="text-stone-500 font-semibold flex-shrink-0">{u.visitas}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : <p className="text-xs text-stone-400 text-center">Sin datos</p>}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function DashboardTab({ onNavigate }) {
   const api = useApi();
   const toast = useToast();
@@ -289,26 +388,7 @@ function DashboardTab({ onNavigate }) {
           {charts.modulos?.length > 0 && (
             <>
               <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wider">Uso de módulos — últimos 14 días</h3>
-              <div className={`${cx.card} p-4`}>
-                <div className="space-y-2">
-                  {charts.modulos.map((m, i) => {
-                    const maxVisitas = charts.modulos[0]?.visitas || 1;
-                    const pct = Math.round((m.visitas / maxVisitas) * 100);
-                    return (
-                      <div key={m.modulo} className="flex items-center gap-3">
-                        <span className="text-xs text-stone-600 w-28 truncate font-medium">{m.modulo}</span>
-                        <div className="flex-1 h-5 bg-stone-100 rounded-full overflow-hidden">
-                          <div className={`h-full rounded-full ${i === 0 ? 'bg-[#16A34A]' : i < 3 ? 'bg-emerald-400' : 'bg-stone-300'}`} style={{ width: `${Math.max(pct, 3)}%` }} />
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-xs font-bold text-stone-800 w-10 text-right">{m.visitas}</span>
-                          <span className="text-[10px] text-stone-400 w-16">{m.usuarios} usuario{m.usuarios !== 1 ? 's' : ''}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              <ModulosChart modulos={charts.modulos} api={api} />
             </>
           )}
         </>
