@@ -43,10 +43,36 @@ import NovedadesPage from './pages/NovedadesPage';
 import LandingPage from './pages/LandingPage';
 
 
+// Map routes to module names for usage tracking
+const ROUTE_MODULES = {
+  '/dashboard': 'Dashboard', '/cotizador': 'Cotizador', '/insumos': 'Insumos',
+  '/materiales': 'Materiales', '/preparaciones-predeterminadas': 'Plantillas prep',
+  '/empaques-predeterminados': 'Plantillas empaque', '/pos': 'POS',
+  '/pl': 'P&L', '/pl/ventas': 'Ventas', '/pl/gastos': 'Gastos',
+  '/pl/compras': 'Compras', '/pl/cashflow': 'Cashflow', '/pl/resumen': 'Resumen P&L',
+  '/stock': 'Stock', '/perdidas': 'Pérdidas', '/clientes': 'Clientes',
+  '/pedidos': 'Pedidos', '/comprobantes': 'Facturación', '/analisis': 'Análisis',
+  '/canales': 'Canales', '/comisiones': 'Comisiones', '/proveedores': 'Proveedores',
+  '/shopify': 'Shopify', '/equipo': 'Equipo', '/perfil': 'Perfil',
+  '/feedback': 'Feedback', '/novedades': 'Novedades',
+};
+
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
+    // Track module usage (fire-and-forget)
+    const basePath = '/' + pathname.split('/').filter(Boolean).slice(0, 2).join('/');
+    const modulo = ROUTE_MODULES[basePath] || ROUTE_MODULES['/' + pathname.split('/')[1]];
+    if (modulo) {
+      const token = localStorage.getItem('nodum_token');
+      if (token) {
+        fetch((import.meta.env.VITE_API_BASE || 'https://cotizador-api.s6hx3x.easypanel.host/api') + '/track', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ modulo }),
+        }).catch(() => {});
+      }
+    }
   }, [pathname]);
   return null;
 }

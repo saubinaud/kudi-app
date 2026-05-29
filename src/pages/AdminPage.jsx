@@ -284,6 +284,33 @@ function DashboardTab({ onNavigate }) {
               )}
             </div>
           </div>
+
+          {/* Uso de módulos */}
+          {charts.modulos?.length > 0 && (
+            <>
+              <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wider">Uso de módulos — últimos 14 días</h3>
+              <div className={`${cx.card} p-4`}>
+                <div className="space-y-2">
+                  {charts.modulos.map((m, i) => {
+                    const maxVisitas = charts.modulos[0]?.visitas || 1;
+                    const pct = Math.round((m.visitas / maxVisitas) * 100);
+                    return (
+                      <div key={m.modulo} className="flex items-center gap-3">
+                        <span className="text-xs text-stone-600 w-28 truncate font-medium">{m.modulo}</span>
+                        <div className="flex-1 h-5 bg-stone-100 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${i === 0 ? 'bg-[#16A34A]' : i < 3 ? 'bg-emerald-400' : 'bg-stone-300'}`} style={{ width: `${Math.max(pct, 3)}%` }} />
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-xs font-bold text-stone-800 w-10 text-right">{m.visitas}</span>
+                          <span className="text-[10px] text-stone-400 w-16">{m.usuarios} usuario{m.usuarios !== 1 ? 's' : ''}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
         </>
       )}
     </div>
