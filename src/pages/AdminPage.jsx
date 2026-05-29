@@ -82,11 +82,21 @@ function timeAgo(dateStr) {
 // Tab 1: Dashboard
 // ══════════════════════════════════════════════════════════════
 // ── MiniChart: bar chart with CSS ──
-const BAR_HEIGHT = 64; // px
-function MiniChart({ title, data = [], color = 'bg-stone-700', valueKey = 'count', suffix = '', icon: Icon }) {
+const BAR_HEIGHT = 64;
+const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const MONTH_NAMES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+function fmtChartDate(dateStr) {
+  const [, m, d] = dateStr.split('-');
+  const dt = new Date(dateStr + 'T12:00:00');
+  return `${DAY_NAMES[dt.getDay()]} ${parseInt(d)} ${MONTH_NAMES[parseInt(m) - 1]}`;
+}
+// Today in Lima timezone
+const todayLima = () => { const d = new Date(); return new Date(d.toLocaleString('en-US', { timeZone: 'America/Lima' })).toISOString().slice(0, 10); };
+
+function MiniChart({ title, data = [], color = 'bg-stone-700', valueKey = 'count', suffix = '', formatVal, icon: Icon }) {
   const maxVal = Math.max(...data.map(d => d[valueKey] || 0), 1);
   const total = data.reduce((s, d) => s + (d[valueKey] || 0), 0);
-  const dayLabels = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];
+  const today = todayLima();
 
   return (
     <div className={`${cx.card} p-4`}>
@@ -95,21 +105,24 @@ function MiniChart({ title, data = [], color = 'bg-stone-700', valueKey = 'count
           {Icon && <Icon size={14} className="text-stone-400" />}
           <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">{title}</span>
         </div>
-        <span className="text-sm font-bold text-stone-800">{total.toLocaleString()}{suffix}</span>
+        <span className="text-sm font-bold text-stone-800">{formatVal ? formatVal(total) : total.toLocaleString()}{suffix}</span>
       </div>
       <div className="flex items-end gap-[3px]" style={{ height: BAR_HEIGHT }}>
-        {data.map((d, i) => {
+        {data.map((d) => {
           const val = d[valueKey] || 0;
           const h = maxVal > 0 ? Math.max(Math.round((val / maxVal) * BAR_HEIGHT), val > 0 ? 4 : 1) : 1;
-          const dayName = dayLabels[new Date(d.date + 'T12:00:00').getDay()];
-          const isToday = d.date === new Date().toISOString().slice(0, 10);
+          const isToday = d.date === today;
+          const label = fmtChartDate(d.date);
+          const displayVal = formatVal ? formatVal(val) : val;
           return (
             <div key={d.date} className="flex-1 flex flex-col items-end justify-end group relative" style={{ height: BAR_HEIGHT }}>
-              <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-stone-800 text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-100 whitespace-nowrap pointer-events-none z-10">
-                {d.date.slice(5)} · {val}{suffix}
+              <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-stone-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-100 whitespace-nowrap pointer-events-none z-10 shadow-lg">
+                <span className="font-semibold">{displayVal}{suffix}</span>
+                <span className="text-stone-400 ml-1">· {label}</span>
+                {d.total != null && <span className="text-emerald-300 ml-1">S/{d.total.toFixed(0)}</span>}
               </div>
               <div
-                className={`w-full rounded-t-sm ${val > 0 ? color : 'bg-stone-100'} ${isToday ? '' : 'opacity-70'} hover:opacity-100 transition-opacity duration-100`}
+                className={`w-full rounded-t-sm ${val > 0 ? color : 'bg-stone-100'} ${isToday ? 'ring-1 ring-stone-400' : 'opacity-70'} hover:opacity-100 transition-opacity duration-100 cursor-pointer`}
                 style={{ height: h }}
               />
             </div>
@@ -118,11 +131,11 @@ function MiniChart({ title, data = [], color = 'bg-stone-700', valueKey = 'count
       </div>
       <div className="flex gap-[3px] mt-1">
         {data.map((d, i) => {
-          const dayName = dayLabels[new Date(d.date + 'T12:00:00').getDay()];
-          const isToday = d.date === new Date().toISOString().slice(0, 10);
+          const dayLetter = DAY_NAMES[new Date(d.date + 'T12:00:00').getDay()][0];
+          const isToday = d.date === today;
           return i % 2 === 0 ? (
             <div key={d.date} className="flex-1 text-center">
-              <span className={`text-[8px] ${isToday ? 'text-stone-800 font-bold' : 'text-stone-300'}`}>{dayName}</span>
+              <span className={`text-[8px] ${isToday ? 'text-stone-800 font-bold' : 'text-stone-300'}`}>{dayLetter}</span>
             </div>
           ) : <div key={d.date} className="flex-1" />;
         })}
