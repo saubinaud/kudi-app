@@ -384,6 +384,47 @@ function DashboardTab({ onNavigate }) {
             </div>
           </div>
 
+          {/* Trials por vencer */}
+          {charts.trials_proximos?.length > 0 && (
+            <>
+              <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wider">Trials por vencer</h3>
+              <div className={`${cx.card} overflow-hidden`}>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-stone-50 text-stone-500 text-left">
+                      <th className="px-4 py-2.5 font-semibold">Empresa</th>
+                      <th className="px-4 py-2.5 font-semibold hidden sm:table-cell">Email</th>
+                      <th className="px-4 py-2.5 font-semibold text-center">Productos</th>
+                      <th className="px-4 py-2.5 font-semibold text-right">Vence</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {charts.trials_proximos.map((t, i) => (
+                      <tr key={i} className={t.vencido ? 'bg-rose-50/50' : t.dias <= 2 ? 'bg-amber-50/50' : ''}>
+                        <td className="px-4 py-2.5">
+                          <span className="text-stone-800 font-medium">{t.empresa}</span>
+                          <span className="text-stone-400 block sm:hidden text-[10px]">{t.email}</span>
+                        </td>
+                        <td className="px-4 py-2.5 text-stone-500 hidden sm:table-cell">{t.email}</td>
+                        <td className="px-4 py-2.5 text-center text-stone-700 font-semibold">{t.productos}</td>
+                        <td className="px-4 py-2.5 text-right">
+                          {t.vencido ? (
+                            <span className="text-rose-500 font-semibold">Vencido</span>
+                          ) : (
+                            <span className={`font-semibold ${t.dias <= 2 ? 'text-amber-600' : 'text-stone-600'}`}>
+                              {t.dias === 0 ? 'Hoy' : t.dias === 1 ? 'Mañana' : `${t.dias} días`}
+                            </span>
+                          )}
+                          <span className="text-stone-400 block text-[10px]">{t.vence}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+
           {/* Uso de módulos */}
           {charts.modulos?.length > 0 && (
             <>
