@@ -44,11 +44,12 @@ const steps = [
 
 const plans = [
   {
-    name: 'Emprendedor',
-    price: 0,
-    priceAnnual: 0,
+    name: 'Independiente',
+    planKey: 'independiente',
+    price: 80,
+    priceAnnual: 64,
     desc: 'Para empezar a costear tu negocio',
-    cta: 'Empieza gratis',
+    cta: 'Pagar ahora',
     highlighted: false,
     features: [
       { text: 'Hasta 20 productos', included: true },
@@ -62,11 +63,12 @@ const plans = [
     ],
   },
   {
-    name: 'Profesional',
+    name: 'Emprendedor',
+    planKey: 'emprendedor',
     price: 100,
     priceAnnual: 80,
     desc: 'Para negocios que facturan y venden',
-    cta: 'Empieza ahora',
+    cta: 'Pagar ahora',
     highlighted: true,
     features: [
       { text: 'Productos ilimitados', included: true },
@@ -80,14 +82,15 @@ const plans = [
     ],
   },
   {
-    name: 'Negocio',
+    name: 'Empresario',
+    planKey: 'empresario',
     price: 180,
     priceAnnual: 144,
     desc: 'Para equipos y multiples sedes',
-    cta: 'Contactar ventas',
+    cta: 'Pagar ahora',
     highlighted: false,
     features: [
-      { text: 'Todo de Profesional', included: true },
+      { text: 'Todo de Emprendedor', included: true },
       { text: 'Usuarios ilimitados', included: true },
       { text: 'Multi-sede', included: true },
       { text: 'Reportes avanzados', included: true },
@@ -166,8 +169,6 @@ export default function LandingPage() {
 
   const goLogin = () => navigate('/login');
   const goRegistro = (planKey) => navigate(planKey ? `/onboarding?plan=${planKey}` : '/onboarding');
-  // Map landing plan names to onboarding plan keys
-  const PLAN_KEYS = { 'Emprendedor': null, 'Profesional': 'emprendedor', 'Negocio': 'empresario' };
   const scrollTo = (id) => {
     setMobileMenu(false);
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -390,7 +391,7 @@ export default function LandingPage() {
                 </div>
 
                 <button
-                  onClick={() => goRegistro(PLAN_KEYS[plan.name])}
+                  onClick={() => goRegistro(plan.planKey)}
                   className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-colors duration-150 active:scale-[0.97] ${
                     plan.highlighted
                       ? 'bg-[#16A34A] hover:bg-[#15803D] text-white shadow-sm'
