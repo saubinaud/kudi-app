@@ -836,6 +836,14 @@ export default function CotizadorPage() {
       toast.error('Ingresa un nombre para el producto');
       return;
     }
+    if (tipoProducto === 'transformable' && preparaciones.every(p => !p.insumos?.some(i => i.insumo_id))) {
+      toast.error('Agrega al menos un insumo a la receta');
+      return;
+    }
+    if (tipoProducto === 'pack' && (!pendingPackItems || pendingPackItems.length === 0)) {
+      toast.error('Agrega al menos un producto al pack');
+      return;
+    }
 
     // Trial guard: block creation if at product limit
     if (!id && user?.plan === 'trial' && user?.rol !== 'admin') {

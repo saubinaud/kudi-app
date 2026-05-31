@@ -132,10 +132,9 @@ export default function InsumosPage() {
 
   const saveEdit = async () => {
     const { nombre, cantidad_presentacion, unidad_medida, precio_presentacion } = editData;
-    if (!nombre || !cantidad_presentacion || !precio_presentacion) {
-      toast.error('Completa todos los campos');
-      return;
-    }
+    if (!nombre?.trim()) { toast.error('Ingresa el nombre del insumo'); return; }
+    if (!cantidad_presentacion || Number(cantidad_presentacion) <= 0) { toast.error('La cantidad de presentación debe ser mayor a 0'); return; }
+    if (!precio_presentacion || Number(precio_presentacion) <= 0) { toast.error('El precio de presentación debe ser mayor a 0'); return; }
 
     try {
       if (editingId === 'new') {

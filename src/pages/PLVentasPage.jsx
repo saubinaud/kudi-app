@@ -596,13 +596,25 @@ export default function PLVentasPage() {
   };
 
   // Emitir comprobante handlers
-  function openEmitirModal(venta) {
+  async function openEmitirModal(venta) {
+    // Pre-check: facturación configurada
+    try {
+      const configRes = await api.get('/facturacion/config');
+      const config = configRes.data || configRes;
+      if (!config.habilitado) {
+        toast.error('No tienes configurada la emisión de comprobantes. Ve a Comprobantes → Configuración para habilitarla.');
+        return;
+      }
+    } catch {
+      toast.error('No tienes configurada la emisión de comprobantes. Ve a Comprobantes → Configuración para habilitarla.');
+      return;
+    }
     setEmitirModal(venta);
     setEmitirTipo('boleta');
     setEmitirClienteId('');
     api.get('/clientes').then(res => {
       setEmitirClientes((res.data || res || []).map(c => ({ value: c.id, label: `${c.num_doc} - ${c.razon_social || ''}` })));
-    }).catch(() => toast.error('Error cargando datos'));
+    }).catch(() => toast.error('Error cargando clientes'));
   }
 
   async function handleEmitir() {
