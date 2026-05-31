@@ -632,7 +632,7 @@ export default function POSPage() {
     <div className="max-w-7xl mx-auto pb-12">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
-        <h1 className="text-xl font-bold text-stone-900">Punto de Venta</h1>
+        <h1 className="text-xl font-bold text-stone-900">Caja virtual</h1>
       </div>
 
       {loadingProductos ? (
