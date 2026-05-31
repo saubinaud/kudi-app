@@ -8,7 +8,7 @@ import PeriodoSelector from '../components/PeriodoSelector';
 import ConfirmDialog, { PromptDialog } from '../components/ConfirmDialog';
 import { useAuth } from '../context/AuthContext';
 import {
-  FileText, Receipt, Eye, Ban, DollarSign, Trash2,
+  FileText, Receipt, Eye, Ban, DollarSign, Trash2, RotateCcw,
   Settings, Upload, CheckCircle, Circle, AlertTriangle, Search, Printer, Truck,
 } from 'lucide-react';
 import { API_BASE } from '../config/api';
@@ -697,7 +697,12 @@ export default function ComprobantesPage() {
                     <td className={cx.td + ' text-stone-600 text-xs'}>{c.cliente_razon_social || '-'}</td>
                     <td className={cx.td + ' text-right font-semibold text-stone-900'}>{formatCurrency(c.mto_total)}</td>
                     <td className={cx.td}>
-                      <span className={estadoBadge(c.estado)}>{ESTADO_LABELS[c.estado] || c.estado}</span>
+                      <span className={estadoBadge(c.estado)} title={c.estado === 'error' && c.sunat_message ? c.sunat_message : ''}>
+                        {ESTADO_LABELS[c.estado] || c.estado}
+                      </span>
+                      {c.estado === 'error' && c.sunat_message && (
+                        <p className="text-[10px] text-rose-400 mt-0.5 truncate max-w-[150px]" title={c.sunat_message}>{c.sunat_message}</p>
+                      )}
                     </td>
                     <td className={cx.td + ' text-stone-500'}>{formatDate(c.fecha_emision || c.created_at)}</td>
                     <td className={cx.td}>
@@ -723,6 +728,22 @@ export default function ComprobantesPage() {
                             title="Ticket de envío"
                           >
                             <Truck size={14} />
+                          </button>
+                        )}
+                        {c.estado === 'error' && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                const r = await api.post(`/facturacion/comprobantes/${c.id}/reintentar`);
+                                const s = r.data?.sunat;
+                                if (s?.success) { toast.success(`${c.serie}-${c.correlativo} emitido correctamente`); }
+                                else { toast.error(s?.message || 'SUNAT rechazó nuevamente'); }
+                                loadComprobantes();
+                              } catch (err) { toast.error(err.message || 'Error reintentando'); }
+                            }}
+                            className={cx.btnIcon + ' hover:text-amber-600'} title="Reintentar emisión"
+                          >
+                            <RotateCcw size={14} />
                           </button>
                         )}
                         {c.estado === 'emitido' && (
@@ -781,6 +802,22 @@ export default function ComprobantesPage() {
                         title="Ticket de envío"
                       >
                         <Truck size={12} /> Envío
+                      </button>
+                    )}
+                    {c.estado === 'error' && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            const r = await api.post(`/facturacion/comprobantes/${c.id}/reintentar`);
+                            const s = r.data?.sunat;
+                            if (s?.success) { toast.success(`${c.serie}-${c.correlativo} emitido correctamente`); }
+                            else { toast.error(s?.message || 'SUNAT rechazó nuevamente'); }
+                            loadComprobantes();
+                          } catch (err) { toast.error(err.message || 'Error reintentando'); }
+                        }}
+                        className={cx.btnGhost + ' text-xs flex items-center gap-1 text-amber-600'}
+                      >
+                        <RotateCcw size={12} /> Reintentar
                       </button>
                     )}
                     {c.estado === 'emitido' && (
