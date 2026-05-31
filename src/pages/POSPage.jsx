@@ -46,6 +46,9 @@ export default function POSPage() {
   const [buscandoDoc, setBuscandoDoc] = useState(false);
   const [saving, setSaving] = useState(false);
   const [metodoPago, setMetodoPago] = useState('efectivo');
+  const [pagaCon, setPagaCon] = useState(''); // calculadora de vuelto
+  const [pagoMixto, setPagoMixto] = useState(false);
+  const [pagoPartes, setPagoPartes] = useState([{ metodo: 'efectivo', monto: '' }, { metodo: 'yape', monto: '' }]);
 
   // Arqueo de caja (non-blocking)
   const [caja, setCaja] = useState(null);
@@ -232,29 +235,38 @@ export default function POSPage() {
     }]);
   };
 
-  // DNI/RUC lookup
+  // DNI/RUC lookup — 1) BD local → 2) RENIEC/SUNAT → 3) manual
   const buscarDocumento = async (tipo, numero) => {
     setBuscandoDoc(true);
     setClienteEncontrado(false);
     try {
-      const endpoint = tipo === 'DNI'
-        ? `/facturacion/buscar-dni/${numero}`
-        : `/facturacion/buscar-ruc/${numero}`;
+      // Step 1: buscar en BD local
+      const local = await api.get(`/clientes/buscar?q=${numero}`).catch(() => ({ data: [] }));
+      const found = (local?.data || local || []).find(c => c.num_doc === numero);
+      if (found) {
+        setPosCliente(prev => ({ ...prev, nombre: found.razon_social || found.nombre || '', email: found.email || '', telefono: found.telefono || '' }));
+        setClienteEncontrado(true);
+        toast.success('Cliente encontrado en tu base de datos');
+        setBuscandoDoc(false);
+        return;
+      }
+
+      // Step 2: buscar en RENIEC/SUNAT
+      const endpoint = tipo === 'DNI' ? `/facturacion/buscar-dni/${numero}` : `/facturacion/buscar-ruc/${numero}`;
       const r = await api.get(endpoint);
       const d = r?.data || r;
       if (d && (d.nombre_completo || d.razon_social || d.nombre)) {
-        setPosCliente(prev => ({
-          ...prev,
-          nombre: d.nombre_completo || d.razon_social || d.nombre || '',
-        }));
+        setPosCliente(prev => ({ ...prev, nombre: d.nombre_completo || d.razon_social || d.nombre || '' }));
         setClienteEncontrado(true);
-        toast.success('Cliente encontrado');
+        toast.success(tipo === 'DNI' ? 'Encontrado en RENIEC' : 'Encontrado en SUNAT');
+        setBuscandoDoc(false);
+        return;
       }
     } catch {
-      // Not found — user can enter manually
-    } finally {
-      setBuscandoDoc(false);
+      // Not found anywhere
     }
+    toast.info('No encontrado — ingresa los datos manualmente');
+    setBuscandoDoc(false);
   };
 
   // Checkout submit
@@ -286,11 +298,23 @@ export default function POSPage() {
         }
       }
 
+      // Determinar método de pago
+      let metodoPagoFinal = metodoPago;
+      let pagoDetalle = null;
+      if (pagoMixto) {
+        const partes = pagoPartes.filter(p => parseFloat(p.monto) > 0);
+        if (partes.length > 0) {
+          metodoPagoFinal = 'mixto';
+          pagoDetalle = partes.map(p => ({ metodo: p.metodo, monto: parseFloat(p.monto) }));
+        }
+      }
+
       const payload = {
         fecha: todayStr(),
         cliente_id: clienteId,
         tipo_venta: 'directo',
-        metodo_pago: metodoPago,
+        metodo_pago: metodoPagoFinal,
+        pago_detalle: pagoDetalle,
         items: cartItems.map(i => ({
           producto_id: i.producto_id,
           variante_id: i.variante_id || null,
@@ -313,6 +337,9 @@ export default function POSPage() {
       setPosCliente({ tipo_doc: 'DNI', num_doc: '', nombre: '', email: '', telefono: '' });
       setClienteEncontrado(false);
       setMetodoPago('efectivo');
+      setPagaCon('');
+      setPagoMixto(false);
+      setPagoPartes([{ metodo: 'efectivo', monto: '' }, { metodo: 'yape', monto: '' }]);
       setTipoEntrega('recojo');
       setZonaSeleccionada(null);
       setDireccion({ departamento: '', provincia: '', distrito: '', direccion: '', referencia: '' });
@@ -508,6 +535,63 @@ export default function POSPage() {
                 </div>
               </div>
 
+              {/* Pago mixto toggle */}
+              <button
+                onClick={() => { setPagoMixto(!pagoMixto); if (!pagoMixto) setPagoPartes([{ metodo: 'efectivo', monto: '' }, { metodo: 'yape', monto: '' }]); }}
+                className={`text-[10px] font-medium ${pagoMixto ? 'text-[#16A34A]' : 'text-stone-400 hover:text-stone-600'} transition-colors duration-100`}
+              >
+                {pagoMixto ? '✓ Pago mixto activo' : 'Pago mixto (efectivo + yape)'}
+              </button>
+
+              {/* Pago mixto filas */}
+              {pagoMixto && (
+                <div className="space-y-2 bg-stone-50 rounded-xl p-3">
+                  {pagoPartes.map((p, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <select value={p.metodo} onChange={e => { const next = [...pagoPartes]; next[idx].metodo = e.target.value; setPagoPartes(next); }}
+                        className="text-xs border border-stone-200 rounded-lg px-2 py-1.5 bg-white text-stone-700 w-28">
+                        <option value="efectivo">Efectivo</option>
+                        <option value="yape">Yape</option>
+                        <option value="transferencia">Transfer.</option>
+                      </select>
+                      <input type="number" step="0.01" min="0" value={p.monto} onChange={e => { const next = [...pagoPartes]; next[idx].monto = e.target.value; setPagoPartes(next); }}
+                        className={cx.input + ' flex-1 text-right text-sm font-semibold'} placeholder="0.00" />
+                      {pagoPartes.length > 2 && (
+                        <button onClick={() => setPagoPartes(pagoPartes.filter((_, i) => i !== idx))} className="text-stone-300 hover:text-rose-500"><X size={12} /></button>
+                      )}
+                    </div>
+                  ))}
+                  {pagoPartes.length < 3 && (
+                    <button onClick={() => setPagoPartes([...pagoPartes, { metodo: 'transferencia', monto: '' }])}
+                      className="text-[10px] text-stone-400 hover:text-stone-600">+ Agregar método</button>
+                  )}
+                  {(() => {
+                    const totalPartes = pagoPartes.reduce((s, p) => s + (parseFloat(p.monto) || 0), 0);
+                    const restante = cartTotal - totalPartes;
+                    return restante > 0.01
+                      ? <p className="text-xs text-amber-600 font-semibold text-right">Falta: {formatCurrency(restante)}</p>
+                      : restante < -0.01
+                        ? <p className="text-xs text-emerald-600 font-semibold text-right">Vuelto: {formatCurrency(Math.abs(restante))}</p>
+                        : <p className="text-xs text-emerald-600 font-semibold text-right">Monto completo ✓</p>;
+                  })()}
+                </div>
+              )}
+
+              {/* Calculadora de vuelto (solo efectivo, no mixto) */}
+              {metodoPago === 'efectivo' && !pagoMixto && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-stone-500 whitespace-nowrap">Paga con:</span>
+                  <input type="number" step="0.01" min="0" value={pagaCon} onChange={e => setPagaCon(e.target.value)}
+                    className={cx.input + ' flex-1 text-right text-sm font-semibold'} placeholder={formatCurrency(cartTotal)} />
+                  {pagaCon && (() => {
+                    const vuelto = parseFloat(pagaCon) - cartTotal;
+                    return vuelto >= 0
+                      ? <span className="text-xs font-bold text-emerald-600 whitespace-nowrap">Vuelto: {formatCurrency(vuelto)}</span>
+                      : <span className="text-xs font-bold text-rose-500 whitespace-nowrap">Falta: {formatCurrency(Math.abs(vuelto))}</span>;
+                  })()}
+                </div>
+              )}
+
               {/* Delivery / Recojo */}
               <div>
                 <label className="text-xs text-stone-500 font-medium block mb-2">Entrega</label>
@@ -563,7 +647,7 @@ export default function POSPage() {
                       </p>
                     </>
                   ) : (
-                    <p className="text-xs text-stone-500">Agregar cliente y dirección</p>
+                    <p className="text-xs text-stone-400">Cliente y dirección <span className="text-stone-300">(opcional)</span></p>
                   )}
                 </div>
                 <ChevronRight size={14} className="text-stone-300 flex-shrink-0" />
