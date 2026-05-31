@@ -936,7 +936,7 @@ export default function StockPage() {
               <div className="flex items-center justify-between p-4 bg-stone-50 rounded-xl">
                 <div>
                   <p className="text-sm font-medium text-stone-800">Disponible para venta directa</p>
-                  <p className="text-[10px] text-stone-400 mt-0.5">Aparece en catálogo y POS</p>
+                  <p className="text-[10px] text-stone-400 mt-0.5">Aparece en catálogo y Caja</p>
                 </div>
                 <button
                   onClick={() => setSidebarDisponibleVenta(!sidebarDisponibleVenta)}

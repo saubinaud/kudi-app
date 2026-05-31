@@ -30,7 +30,7 @@ const businessTypes = [
 const features = [
   { icon: Calculator, title: 'Costeo de produccion', desc: 'Sabe exactamente cuanto te cuesta producir cada producto. Recetas, insumos, empaque y margen en tiempo real.', span: 2, visual: 'Slider de margen: Costo S/3.20 → Precio S/8.90 → Ganancia S/3.81' },
   { icon: FileText, title: 'Facturacion SUNAT', desc: 'Emite boletas y facturas electronicas en 2 clicks. Conectado a SUNAT, con serie y correlativo automatico.', span: 1, visual: 'Comprobante B001-00047 — Aceptado ✓' },
-  { icon: ShoppingCart, title: 'Punto de Venta (POS)', desc: 'Tu caja registradora inteligente. Grid de productos, carrito, checkout con DNI/RUC y busqueda RENIEC.', span: 1, visual: 'Grid de productos + Carrito lateral' },
+  { icon: ShoppingCart, title: 'Caja', desc: 'Tu caja registradora inteligente. Grid de productos, carrito, checkout con DNI/RUC y busqueda RENIEC.', span: 1, visual: 'Grid de productos + Carrito lateral' },
   { icon: Package, title: 'Inventario inteligente', desc: 'Control de stock con variantes, ubicaciones multiples y alertas de bajo stock. Todo en tiempo real.', span: 2, visual: 'Semaforo: OK ● | Bajo ● | Agotado ●' },
   { icon: BarChart3, title: 'Estado de resultados', desc: 'Tu P&L completo sin ser contador. Ingresos, costos, gastos, utilidad neta y punto de equilibrio.', span: 1, visual: 'Utilidad Neta: +S/ 4,250.00' },
   { icon: Link2, title: 'Shopify + integraciones', desc: 'Sincroniza productos, stock y ordenes con Shopify automaticamente. Cada 5 minutos, sin esfuerzo.', span: 1, visual: 'Shopify ↔ Kudi: 363 productos sync' },
@@ -39,7 +39,7 @@ const features = [
 const steps = [
   { title: 'Registra tus insumos y recetas', desc: 'Agrega tus insumos, materiales y el proceso de produccion de cada producto.' },
   { title: 'Costea con margen real', desc: 'El sistema calcula tu costo real y te sugiere un precio con el margen que necesitas.' },
-  { title: 'Vende, factura y controla', desc: 'POS, boletas SUNAT, control de stock e inventario. Todo en un solo lugar.' },
+  { title: 'Vende, factura y controla', desc: 'Caja, boletas SUNAT, control de stock e inventario. Todo en un solo lugar.' },
 ];
 
 const plans = [
@@ -57,7 +57,7 @@ const plans = [
       { text: 'Control de stock basico', included: true },
       { text: '1 usuario', included: true },
       { text: 'Facturacion SUNAT', included: false },
-      { text: 'Punto de Venta (POS)', included: false },
+      { text: 'Caja', included: false },
       { text: 'Shopify sync', included: false },
       { text: 'Variantes de producto', included: false },
     ],
@@ -76,7 +76,7 @@ const plans = [
       { text: 'Control de stock completo', included: true },
       { text: 'Hasta 3 usuarios', included: true },
       { text: 'Facturacion SUNAT', included: true },
-      { text: 'Punto de Venta (POS)', included: true },
+      { text: 'Caja', included: true },
       { text: 'Shopify sync', included: true },
       { text: 'Variantes de producto', included: true },
     ],
@@ -227,7 +227,7 @@ export default function LandingPage() {
               y crecer
             </h1>
             <p className="mt-6 text-base lg:text-lg text-white/50 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-              Costeo de produccion + Facturacion SUNAT + Inventario + POS en una sola herramienta. Hecho para productores peruanos.
+              Costeo de produccion + Facturacion SUNAT + Inventario + Caja en una sola herramienta. Hecho para productores peruanos.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
               <button onClick={goRegistro} className="px-8 py-3.5 bg-[#16A34A] hover:bg-[#15803D] text-white font-semibold rounded-xl text-base transition-colors duration-150 active:scale-[0.97] shadow-lg shadow-green-900/20 flex items-center justify-center gap-2">

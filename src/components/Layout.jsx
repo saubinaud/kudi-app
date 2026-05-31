@@ -140,7 +140,7 @@ export default function Layout() {
       label: 'Ingresos',
       icon: ShoppingCart,
       links: [
-        { to: '/pos', label: 'POS', icon: ShoppingCart, perm: 'ventas' },
+        { to: '/pos', label: 'Caja', icon: ShoppingCart, perm: 'ventas' },
         { to: '/pl/ventas', label: 'Órdenes', icon: DollarSign, perm: 'ventas' },
         { to: '/comprobantes', label: 'Facturación', icon: FileText, perm: 'facturacion' },
         { to: '/clientes', label: 'Clientes', icon: Users, perm: 'facturacion' },

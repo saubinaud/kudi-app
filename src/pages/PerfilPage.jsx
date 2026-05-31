@@ -278,7 +278,7 @@ export default function PerfilPage() {
               )}
             </div>
             {(user?.plan === 'trial' || !user?.plan) && (
-              <p className="text-sm text-stone-500 mb-3">Activa un plan para productos ilimitados, POS, facturación y más.</p>
+              <p className="text-sm text-stone-500 mb-3">Activa un plan para productos ilimitados, caja, facturación y más.</p>
             )}
           </div>
 

@@ -47,7 +47,7 @@ import LandingPage from './pages/LandingPage';
 const ROUTE_MODULES = {
   '/dashboard': 'Dashboard', '/cotizador': 'Cotizador', '/insumos': 'Insumos',
   '/materiales': 'Materiales', '/preparaciones-predeterminadas': 'Plantillas prep',
-  '/empaques-predeterminados': 'Plantillas empaque', '/pos': 'POS',
+  '/empaques-predeterminados': 'Plantillas empaque', '/pos': 'Caja',
   '/pl': 'P&L', '/pl/ventas': 'Ventas', '/pl/gastos': 'Gastos',
   '/pl/compras': 'Compras', '/pl/cashflow': 'Cashflow', '/pl/resumen': 'Resumen P&L',
   '/stock': 'Stock', '/perdidas': 'Pérdidas', '/clientes': 'Clientes',
