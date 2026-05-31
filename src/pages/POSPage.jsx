@@ -551,34 +551,38 @@ export default function POSPage() {
 
               {/* Pago mixto filas */}
               {pagoMixto && (
-                <div className="space-y-1.5 bg-stone-50 rounded-xl p-2.5">
+                <div className="space-y-2 bg-stone-50 rounded-xl p-2.5">
                   {pagoPartes.map((p, idx) => (
-                    <div key={idx} className="flex items-center gap-1.5">
-                      <div className="flex gap-0.5">
-                        {[{ key: 'efectivo', label: 'Efectivo' }, { key: 'yape', label: 'Yape' }, { key: 'transferencia', label: 'Transf.' }].map(m => (
-                          <button key={m.key} onClick={() => { const next = [...pagoPartes]; next[idx].metodo = m.key; setPagoPartes(next); }}
-                            className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors duration-100 ${
-                              p.metodo === m.key ? 'bg-[#16A34A] text-white' : 'bg-white border border-stone-200 text-stone-500'
-                            }`}>{m.label}</button>
-                        ))}
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className={`text-xs font-semibold w-20 truncate ${p.metodo === 'efectivo' ? 'text-stone-800' : 'text-[#16A34A]'}`}>
+                        {{ efectivo: 'Efectivo', yape: 'Yape', transferencia: 'Transf.' }[p.metodo]}
+                      </span>
+                      <select value={p.metodo} onChange={e => { const next = [...pagoPartes]; next[idx].metodo = e.target.value; setPagoPartes(next); }}
+                        className="text-xs border border-stone-200 rounded-lg px-1.5 py-2 bg-white text-stone-600 w-10 appearance-none text-center">
+                        <option value="efectivo">💵</option>
+                        <option value="yape">📱</option>
+                        <option value="transferencia">🏦</option>
+                      </select>
+                      <div className="flex-1 relative">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-stone-400">S/</span>
+                        <input type="number" step="0.01" min="0" value={p.monto} onChange={e => { const next = [...pagoPartes]; next[idx].monto = e.target.value; setPagoPartes(next); }}
+                          className="w-full text-sm border border-stone-200 rounded-lg pl-7 pr-2 py-2 text-right font-semibold focus:outline-none focus:border-stone-400" placeholder="0.00" />
                       </div>
-                      <input type="number" step="0.01" min="0" value={p.monto} onChange={e => { const next = [...pagoPartes]; next[idx].monto = e.target.value; setPagoPartes(next); }}
-                        className="flex-1 text-xs border border-stone-200 rounded-lg px-2 py-1.5 text-right font-semibold focus:outline-none focus:border-stone-400" placeholder="0.00" />
                       {pagoPartes.length > 2 && (
-                        <button onClick={() => setPagoPartes(pagoPartes.filter((_, i) => i !== idx))} className="text-stone-300 hover:text-rose-500"><X size={12} /></button>
+                        <button onClick={() => setPagoPartes(pagoPartes.filter((_, i) => i !== idx))} className="text-stone-300 hover:text-rose-500"><X size={14} /></button>
                       )}
                     </div>
                   ))}
-                  <div className="flex items-center justify-between pt-1">
-                    {pagoPartes.length < 3 && (
+                  <div className="flex items-center justify-between pt-1 border-t border-stone-200">
+                    {pagoPartes.length < 3 ? (
                       <button onClick={() => setPagoPartes([...pagoPartes, { metodo: 'transferencia', monto: '' }])}
-                        className="text-[10px] text-stone-400 hover:text-stone-600">+ Otro método</button>
-                    )}
+                        className="text-xs text-stone-400 hover:text-stone-600">+ Otro</button>
+                    ) : <span />}
                     {(() => {
                       const totalPartes = pagoPartes.reduce((s, p) => s + (parseFloat(p.monto) || 0), 0);
                       const restante = cartTotal - totalPartes;
-                      return <span className={`text-[10px] font-semibold ml-auto ${restante > 0.01 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                        {restante > 0.01 ? `Falta: ${formatCurrency(restante)}` : restante < -0.01 ? `Vuelto: ${formatCurrency(Math.abs(restante))}` : 'Completo ✓'}
+                      return <span className={`text-xs font-bold ${restante > 0.01 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                        {restante > 0.01 ? `Falta: ${formatCurrency(restante)}` : restante < -0.01 ? `Vuelto: ${formatCurrency(Math.abs(restante))}` : '✓ Completo'}
                       </span>;
                     })()}
                   </div>
