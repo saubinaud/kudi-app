@@ -654,9 +654,9 @@ export default function POSPage() {
               <Lock size={12} /> Cerrar caja
             </button>
           )}
-          {!caja && !cajaDismissed && (
-            <button onClick={() => setShowAbrirCaja(true)} className="px-3 py-1.5 bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors duration-100">
-              <DollarSign size={12} /> Abrir caja
+          {!caja && cajaDismissed && (
+            <button onClick={() => setShowAbrirCaja(true)} className="px-3 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-600 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors duration-100">
+              <ShoppingCart size={12} /> Abrir caja
             </button>
           )}
         </div>
@@ -987,7 +987,7 @@ export default function POSPage() {
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 space-y-4">
             <div className="text-center">
               <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-3">
-                <DollarSign size={24} className="text-emerald-600" />
+                <Banknote size={24} className="text-emerald-600" />
               </div>
               <h3 className="text-lg font-bold text-stone-900">Abrir caja</h3>
               <p className="text-xs text-stone-500 mt-1">¿Con cuánto efectivo empiezas?</p>
@@ -1015,7 +1015,7 @@ export default function POSPage() {
                 }}
                 className={cx.btnPrimary + ' flex-1 flex items-center justify-center gap-1.5'}
               >
-                {savingCaja ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><DollarSign size={14} /> Abrir</>}
+                {savingCaja ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Banknote size={14} /> Abrir</>}
               </button>
             </div>
           </div>
