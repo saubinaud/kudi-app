@@ -1009,7 +1009,7 @@ export default function PLVentasPage() {
                       {(v.cliente_nombre || v.metodo_pago || v.metodo_envio) && (
                         <div className="text-xs text-stone-500 space-y-0.5 mb-2">
                           {v.cliente_nombre && <p>{v.cliente_nombre} {v.cliente_telefono ? `· ${v.cliente_telefono}` : ''}</p>}
-                          {v.metodo_pago && <p>{v.metodo_pago}</p>}
+                          {v.metodo_pago && <p className="capitalize">{{ efectivo: 'Efectivo', yape: 'Yape', transferencia: 'Transferencia', mixto: 'Pago mixto' }[v.metodo_pago] || v.metodo_pago}</p>}
                           {v.metodo_envio && <p>{v.metodo_envio}{v.costo_envio > 0 ? ` · S/${parseFloat(v.costo_envio).toFixed(2)}` : ''}</p>}
                           {v.shopify_nota && <p>{v.shopify_nota}</p>}
                         </div>
@@ -1758,9 +1758,9 @@ export default function PLVentasPage() {
               </div>
               <div className="flex gap-4 mt-3 text-xs text-white/50">
                 <span>{formatSmartDate(ventaDetalle.fecha)}</span>
-                <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/70">
-                  {ventaDetalle.tipo_venta === 'contra_entrega' ? 'Contra entrega' : 'Directo'}
-                </span>
+                {ventaDetalle.tipo_venta === 'contra_entrega' && (
+                  <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/70">Contra entrega</span>
+                )}
               </div>
             </div>
 
@@ -1805,8 +1805,16 @@ export default function PLVentasPage() {
                 )}
                 {ventaDetalle.metodo_pago && (
                   <div>
-                    <p className="text-[10px] text-stone-400 uppercase tracking-wider">Metodo de pago</p>
-                    <p className="text-sm font-medium text-stone-800 capitalize">{ventaDetalle.metodo_pago}</p>
+                    <p className="text-[10px] text-stone-400 uppercase tracking-wider">Método de pago</p>
+                    {ventaDetalle.metodo_pago === 'mixto' && ventaDetalle.pago_detalle ? (
+                      <div className="space-y-0.5">
+                        {(typeof ventaDetalle.pago_detalle === 'string' ? JSON.parse(ventaDetalle.pago_detalle) : ventaDetalle.pago_detalle).map((p, i) => (
+                          <p key={i} className="text-sm text-stone-800"><span className="capitalize font-medium">{p.metodo}</span> <span className="text-stone-500">S/ {parseFloat(p.monto).toFixed(2)}</span></p>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm font-medium text-stone-800 capitalize">{{ efectivo: 'Efectivo', yape: 'Yape', transferencia: 'Transferencia' }[ventaDetalle.metodo_pago] || ventaDetalle.metodo_pago}</p>
+                    )}
                   </div>
                 )}
                 {ventaDetalle.tipo_envio && ventaDetalle.tipo_envio !== 'sin_envio' && (

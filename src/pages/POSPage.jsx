@@ -265,7 +265,7 @@ export default function POSPage() {
     } catch {
       // Not found anywhere
     }
-    toast.info('No encontrado — ingresa los datos manualmente');
+    toast.error('No encontrado — ingresa los datos manualmente');
     setBuscandoDoc(false);
   };
 
@@ -427,7 +427,7 @@ export default function POSPage() {
       )}
 
       {/* Cart items */}
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      <div className="flex-1 overflow-y-auto px-4 py-3 min-h-[120px]">
         {cartItems.length === 0 ? (
           <div className="text-center py-12">
             <ShoppingCart size={32} className="text-stone-200 mx-auto mb-3" />
@@ -498,7 +498,7 @@ export default function POSPage() {
       {cartItems.length > 0 && (
         <div className="border-t border-stone-200 px-5 py-4">
           {showCheckout ? (
-            <div className="space-y-4">
+            <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
               {/* Back button */}
               <button onClick={() => { setShowCheckout(false); setShowClientSidebar(false); }} className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800 transition-colors duration-100 -mb-1">
                 <ArrowLeft size={12} />
@@ -544,9 +544,9 @@ export default function POSPage() {
                   {pagoPartes.map((p, idx) => (
                     <div key={idx} className="flex items-center gap-1.5">
                       <div className="flex gap-0.5">
-                        {[{ key: 'efectivo', label: 'Efec.' }, { key: 'yape', label: 'Yape' }, { key: 'transferencia', label: 'Transf.' }].map(m => (
+                        {[{ key: 'efectivo', label: 'Efectivo' }, { key: 'yape', label: 'Yape' }, { key: 'transferencia', label: 'Transf.' }].map(m => (
                           <button key={m.key} onClick={() => { const next = [...pagoPartes]; next[idx].metodo = m.key; setPagoPartes(next); }}
-                            className={`px-2 py-1 rounded text-[10px] font-medium transition-colors duration-100 ${
+                            className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors duration-100 ${
                               p.metodo === m.key ? 'bg-[#16A34A] text-white' : 'bg-white border border-stone-200 text-stone-500'
                             }`}>{m.label}</button>
                         ))}
@@ -947,21 +947,22 @@ export default function POSPage() {
                   </div>
                 </div>
 
-                {/* Found */}
+                {/* Status indicator */}
                 {clienteEncontrado && posCliente.nombre && (
                   <p className="text-xs text-emerald-600 font-medium mt-2 px-1 flex items-center gap-1">
-                    <CheckCircle size={12} /> {posCliente.nombre}
+                    <CheckCircle size={12} /> Encontrado
+                  </p>
+                )}
+                {posCliente.num_doc.length > 0 && !clienteEncontrado && !buscandoDoc &&
+                  ((posCliente.tipo_doc === 'DNI' && posCliente.num_doc.length === 8) || (posCliente.tipo_doc === 'RUC' && posCliente.num_doc.length === 11)) && (
+                  <p className="text-[11px] text-amber-600 mt-2 px-1 flex items-center gap-1">
+                    <AlertTriangle size={11} /> No encontrado — completa los datos
                   </p>
                 )}
 
-                {/* Not found — manual fields */}
-                {posCliente.num_doc.length > 0 && !clienteEncontrado && !buscandoDoc && (
-                  <div className="mt-3 space-y-2">
-                    {((posCliente.tipo_doc === 'DNI' && posCliente.num_doc.length === 8) || (posCliente.tipo_doc === 'RUC' && posCliente.num_doc.length === 11)) && (
-                      <p className="text-[11px] text-amber-600 px-1 flex items-center gap-1">
-                        <AlertTriangle size={11} /> No encontrado — ingresa los datos manualmente
-                      </p>
-                    )}
+                {/* Client fields — always visible when doc entered, pre-filled if found */}
+                {posCliente.num_doc.length > 0 && !buscandoDoc && (
+                  <div className="mt-2 space-y-2">
                     <input
                       type="text"
                       value={posCliente.nombre}
@@ -974,14 +975,14 @@ export default function POSPage() {
                       value={posCliente.email}
                       onChange={e => setPosCliente(p => ({ ...p, email: e.target.value }))}
                       className={cx.input + ' text-sm'}
-                      placeholder="Email"
+                      placeholder="Email (opcional)"
                     />
                     <input
                       type="tel"
                       value={posCliente.telefono}
                       onChange={e => setPosCliente(p => ({ ...p, telefono: e.target.value }))}
                       className={cx.input + ' text-sm'}
-                      placeholder="Teléfono"
+                      placeholder="Teléfono (opcional)"
                     />
                   </div>
                 )}
