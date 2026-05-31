@@ -382,7 +382,7 @@ export default function POSPage() {
 
   // Cart panel — reused on both desktop and mobile
   const renderCart = (isMobile = false) => (
-    <div className={cx.card + ' flex flex-col' + (!isMobile ? ' lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]' : '')}>
+    <div className={cx.card + ' flex flex-col overflow-hidden' + (!isMobile ? ' lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]' : '')}>
       {/* Cart header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
         <div className="flex items-center gap-2.5">
@@ -498,7 +498,7 @@ export default function POSPage() {
       {cartItems.length > 0 && (
         <div className="border-t border-stone-200 px-5 py-4">
           {showCheckout ? (
-            <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-[55vh] overflow-y-auto overflow-x-hidden">
               {/* Back button */}
               <button onClick={() => { setShowCheckout(false); setShowClientSidebar(false); }} className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800 transition-colors duration-100 -mb-1">
                 <ArrowLeft size={12} />
