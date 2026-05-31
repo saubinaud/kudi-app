@@ -475,21 +475,12 @@ export default function POSPage() {
                         <Plus size={12} />
                       </button>
                     </div>
-                    {/* Discount */}
+                    {/* Discount — solo monto fijo */}
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-stone-400">Desc:</span>
-                      <button
-                        onClick={() => toggleDescuentoTipo(i)}
-                        className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-bold transition-colors duration-100 ${
-                          item.descuento_tipo === 'pct' ? 'bg-[#0A2F24] text-white' : 'bg-stone-200 text-stone-500'
-                        }`}
-                        title={item.descuento_tipo === 'pct' ? 'Porcentaje' : 'Monto fijo'}
-                      >
-                        %
-                      </button>
+                      <span className="text-[10px] text-stone-400">Desc. S/</span>
                       <input
                         type="number" min="0" step="0.01"
-                        value={item.descuento_tipo === 'pct' ? (item.descuento_pct || '') : (item.descuento || '')}
+                        value={item.descuento || ''}
                         onChange={e => updateDescuento(i, e.target.value)}
                         className="w-14 text-xs border border-stone-200 rounded-lg px-2 py-1 text-right focus:outline-none focus:border-stone-400 transition-colors duration-100"
                         placeholder="0"
@@ -535,45 +526,51 @@ export default function POSPage() {
                 </div>
               </div>
 
-              {/* Pago mixto toggle */}
+              {/* Pago mixto toggle — botón claro */}
               <button
                 onClick={() => { setPagoMixto(!pagoMixto); if (!pagoMixto) setPagoPartes([{ metodo: 'efectivo', monto: '' }, { metodo: 'yape', monto: '' }]); }}
-                className={`text-[10px] font-medium ${pagoMixto ? 'text-[#16A34A]' : 'text-stone-400 hover:text-stone-600'} transition-colors duration-100`}
+                className={`w-full py-2 rounded-lg border text-xs font-medium transition-colors duration-100 ${
+                  pagoMixto
+                    ? 'border-[#16A34A] bg-emerald-50 text-[#16A34A]'
+                    : 'border-dashed border-stone-300 text-stone-400 hover:border-stone-400 hover:text-stone-600'
+                }`}
               >
-                {pagoMixto ? '✓ Pago mixto activo' : 'Pago mixto (efectivo + yape)'}
+                {pagoMixto ? '✓ Pago mixto activo — click para desactivar' : 'Dividir pago (efectivo + yape)'}
               </button>
 
               {/* Pago mixto filas */}
               {pagoMixto && (
-                <div className="space-y-2 bg-stone-50 rounded-xl p-3">
+                <div className="space-y-1.5 bg-stone-50 rounded-xl p-2.5">
                   {pagoPartes.map((p, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <select value={p.metodo} onChange={e => { const next = [...pagoPartes]; next[idx].metodo = e.target.value; setPagoPartes(next); }}
-                        className="text-xs border border-stone-200 rounded-lg px-2 py-1.5 bg-white text-stone-700 w-28">
-                        <option value="efectivo">Efectivo</option>
-                        <option value="yape">Yape</option>
-                        <option value="transferencia">Transfer.</option>
-                      </select>
+                    <div key={idx} className="flex items-center gap-1.5">
+                      <div className="flex gap-0.5">
+                        {[{ key: 'efectivo', label: 'Efec.' }, { key: 'yape', label: 'Yape' }, { key: 'transferencia', label: 'Transf.' }].map(m => (
+                          <button key={m.key} onClick={() => { const next = [...pagoPartes]; next[idx].metodo = m.key; setPagoPartes(next); }}
+                            className={`px-2 py-1 rounded text-[10px] font-medium transition-colors duration-100 ${
+                              p.metodo === m.key ? 'bg-[#16A34A] text-white' : 'bg-white border border-stone-200 text-stone-500'
+                            }`}>{m.label}</button>
+                        ))}
+                      </div>
                       <input type="number" step="0.01" min="0" value={p.monto} onChange={e => { const next = [...pagoPartes]; next[idx].monto = e.target.value; setPagoPartes(next); }}
-                        className={cx.input + ' flex-1 text-right text-sm font-semibold'} placeholder="0.00" />
+                        className="flex-1 text-xs border border-stone-200 rounded-lg px-2 py-1.5 text-right font-semibold focus:outline-none focus:border-stone-400" placeholder="0.00" />
                       {pagoPartes.length > 2 && (
                         <button onClick={() => setPagoPartes(pagoPartes.filter((_, i) => i !== idx))} className="text-stone-300 hover:text-rose-500"><X size={12} /></button>
                       )}
                     </div>
                   ))}
-                  {pagoPartes.length < 3 && (
-                    <button onClick={() => setPagoPartes([...pagoPartes, { metodo: 'transferencia', monto: '' }])}
-                      className="text-[10px] text-stone-400 hover:text-stone-600">+ Agregar método</button>
-                  )}
-                  {(() => {
-                    const totalPartes = pagoPartes.reduce((s, p) => s + (parseFloat(p.monto) || 0), 0);
-                    const restante = cartTotal - totalPartes;
-                    return restante > 0.01
-                      ? <p className="text-xs text-amber-600 font-semibold text-right">Falta: {formatCurrency(restante)}</p>
-                      : restante < -0.01
-                        ? <p className="text-xs text-emerald-600 font-semibold text-right">Vuelto: {formatCurrency(Math.abs(restante))}</p>
-                        : <p className="text-xs text-emerald-600 font-semibold text-right">Monto completo ✓</p>;
-                  })()}
+                  <div className="flex items-center justify-between pt-1">
+                    {pagoPartes.length < 3 && (
+                      <button onClick={() => setPagoPartes([...pagoPartes, { metodo: 'transferencia', monto: '' }])}
+                        className="text-[10px] text-stone-400 hover:text-stone-600">+ Otro método</button>
+                    )}
+                    {(() => {
+                      const totalPartes = pagoPartes.reduce((s, p) => s + (parseFloat(p.monto) || 0), 0);
+                      const restante = cartTotal - totalPartes;
+                      return <span className={`text-[10px] font-semibold ml-auto ${restante > 0.01 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                        {restante > 0.01 ? `Falta: ${formatCurrency(restante)}` : restante < -0.01 ? `Vuelto: ${formatCurrency(Math.abs(restante))}` : 'Completo ✓'}
+                      </span>;
+                    })()}
+                  </div>
                 </div>
               )}
 
