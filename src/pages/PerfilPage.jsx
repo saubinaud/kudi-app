@@ -434,7 +434,14 @@ export default function PerfilPage() {
                 Escanea el QR y paga <span className="font-bold text-[#16A34A]">{PLAN_PRECIO[renovarPlan || user?.plan || 'emprendedor']}</span>
               </p>
               <div className="flex justify-center">
-                <img src="/yape-qr.jpg" alt="QR Yape" className="w-44 h-44 rounded-xl border border-stone-200 object-contain" onError={e => { e.target.style.display = 'none'; }} />
+                <img
+                  src="/yape-qr.jpg" alt="QR Yape"
+                  className="w-44 h-44 rounded-xl border border-stone-200 object-contain cursor-pointer hover:shadow-lg transition-shadow duration-150"
+                  onClick={() => window.open('/yape-qr.jpg', '_blank')}
+                  title="Click para ver más grande"
+                  onError={e => { e.target.style.display = 'none'; }}
+                />
+                <p className="text-[10px] text-stone-400 mt-1 text-center">Toca la imagen para ampliar</p>
               </div>
             </div>
 
