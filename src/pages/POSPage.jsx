@@ -528,7 +528,18 @@ export default function POSPage() {
 
               {/* Pago mixto toggle — botón claro */}
               <button
-                onClick={() => { setPagoMixto(!pagoMixto); if (!pagoMixto) setPagoPartes([{ metodo: 'efectivo', monto: '' }, { metodo: 'yape', monto: '' }]); }}
+                onClick={() => {
+                  if (!pagoMixto) {
+                    // Al activar: jalar monto del pagaCon o del método actual al primer slot, calcular restante
+                    const montoEfectivo = parseFloat(pagaCon) || 0;
+                    const restante = montoEfectivo > 0 ? Math.max(0, Math.round((cartTotal - montoEfectivo) * 100) / 100) : '';
+                    setPagoPartes([
+                      { metodo: metodoPago, monto: montoEfectivo > 0 ? String(montoEfectivo) : '' },
+                      { metodo: metodoPago === 'efectivo' ? 'yape' : 'efectivo', monto: restante ? String(restante) : '' },
+                    ]);
+                  }
+                  setPagoMixto(!pagoMixto);
+                }}
                 className={`w-full py-2 rounded-lg border text-xs font-medium transition-colors duration-100 ${
                   pagoMixto
                     ? 'border-[#16A34A] bg-emerald-50 text-[#16A34A]'
