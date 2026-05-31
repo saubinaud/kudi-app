@@ -554,14 +554,11 @@ export default function POSPage() {
                 <div className="space-y-2 bg-stone-50 rounded-xl p-2.5">
                   {pagoPartes.map((p, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <span className={`text-xs font-semibold w-20 truncate ${p.metodo === 'efectivo' ? 'text-stone-800' : 'text-[#16A34A]'}`}>
-                        {{ efectivo: 'Efectivo', yape: 'Yape', transferencia: 'Transf.' }[p.metodo]}
-                      </span>
                       <select value={p.metodo} onChange={e => { const next = [...pagoPartes]; next[idx].metodo = e.target.value; setPagoPartes(next); }}
-                        className="text-xs border border-stone-200 rounded-lg px-1.5 py-2 bg-white text-stone-600 w-10 appearance-none text-center">
-                        <option value="efectivo">💵</option>
-                        <option value="yape">📱</option>
-                        <option value="transferencia">🏦</option>
+                        className="text-xs border border-stone-200 rounded-lg px-2 py-2 bg-white text-stone-700 font-medium w-24">
+                        <option value="efectivo">Efectivo</option>
+                        <option value="yape">Yape</option>
+                        <option value="transferencia">Transf.</option>
                       </select>
                       <div className="flex-1 relative">
                         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-stone-400">S/</span>
