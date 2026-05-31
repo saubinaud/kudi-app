@@ -30,16 +30,9 @@ const badgeColors = {
 };
 
 const ENTITIES = [
-  { value: '', label: 'Todas' },
+  { value: '', label: 'Todo' },
   { value: 'producto', label: 'Productos' },
   { value: 'venta', label: 'Ventas' },
-  { value: 'gasto', label: 'Gastos' },
-  { value: 'compra', label: 'Compras' },
-  { value: 'comprobante', label: 'Comprobantes' },
-  { value: 'insumo', label: 'Insumos' },
-  { value: 'movimiento', label: 'Movimientos' },
-  { value: 'arqueo', label: 'Arqueos' },
-  { value: 'transferencia', label: 'Transferencias' },
 ];
 
 const PAGE_SIZE = 50;
