@@ -276,10 +276,29 @@ export default function PerfilPage() {
                     : 'Trial vencido'}
                 </span>
               )}
+              {user?.plan && user.plan !== 'trial' && pagos.some(p => p.estado === 'aprobado') && (() => {
+                const lastApproved = pagos.find(p => p.estado === 'aprobado');
+                if (!lastApproved) return null;
+                const renewDate = new Date(lastApproved.revisado_at || lastApproved.created_at);
+                renewDate.setMonth(renewDate.getMonth() + 1);
+                const daysLeft = Math.ceil((renewDate - new Date()) / (1000 * 60 * 60 * 24));
+                return (
+                  <span className={`text-sm ${daysLeft <= 5 ? 'text-amber-600 font-semibold' : 'text-stone-500'}`}>
+                    Renovación: {renewDate.toLocaleDateString('es-PE', { day: 'numeric', month: 'long', timeZone: 'America/Lima' })}
+                    {daysLeft <= 5 && daysLeft > 0 && ` (${daysLeft} días)`}
+                    {daysLeft <= 0 && ' — Vencido'}
+                  </span>
+                );
+              })()}
             </div>
             {(user?.plan === 'trial' || !user?.plan) && (
               <p className="text-sm text-stone-500 mb-3">Activa un plan para productos ilimitados, caja, facturación y más.</p>
             )}
+            <a href={`#/onboarding?plan=${user?.plan === 'trial' || !user?.plan ? 'emprendedor' : user.plan}`}
+              className={cx.btnPrimary + ' inline-flex items-center gap-2 text-sm'}>
+              <CreditCard size={14} />
+              {user?.plan && user.plan !== 'trial' ? 'Renovar plan' : 'Activar un plan'}
+            </a>
           </div>
 
           <div className={cx.card + ' p-5'}>
@@ -291,13 +310,19 @@ export default function PerfilPage() {
             ) : (
               <div className="space-y-2">
                 {pagos.map(p => (
-                  <div key={p.id} className="flex items-center justify-between py-2.5 border-b border-stone-100 last:border-0">
-                    <div>
+                  <div key={p.id} className="flex items-center justify-between py-3 border-b border-stone-100 last:border-0">
+                    <div className="min-w-0">
                       <p className="text-sm text-stone-800 font-medium">{PLAN_LABEL[p.plan] || p.plan} · {formatCurrency(p.monto)}</p>
-                      <p className="text-[10px] text-stone-400">{new Date(p.created_at).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Lima' })}</p>
+                      <p className="text-[10px] text-stone-400">
+                        Pagado: {new Date(p.created_at).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Lima' })}
+                        {p.revisado_at && <> · Aprobado: {new Date(p.revisado_at).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', timeZone: 'America/Lima' })}</>}
+                      </p>
+                      {p.referencia_pago && (
+                        <p className="text-[10px] text-stone-500 font-mono mt-0.5">Ref: {p.referencia_pago}</p>
+                      )}
                     </div>
-                    <span className={cx.badge(p.estado === 'aprobado' ? 'bg-emerald-50 text-emerald-600' : p.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-stone-100 text-stone-500')}>
-                      {p.estado}
+                    <span className={cx.badge(p.estado === 'aprobado' ? 'bg-emerald-50 text-emerald-600' : p.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : p.estado === 'rechazado' ? 'bg-rose-50 text-rose-600' : 'bg-stone-100 text-stone-500')}>
+                      {p.estado === 'aprobado' ? 'Aprobado' : p.estado === 'pendiente' ? 'Pendiente' : p.estado === 'rechazado' ? 'Rechazado' : p.estado}
                     </span>
                   </div>
                 ))}
