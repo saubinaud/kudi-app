@@ -55,6 +55,7 @@ export default function PerfilPage() {
   const [renovarComprobante, setRenovarComprobante] = useState('');
   const [uploadingComp, setUploadingComp] = useState(false);
   const [sendingRenovar, setSendingRenovar] = useState(false);
+  const [qrZoom, setQrZoom] = useState(false);
 
   const [giros, setGiros] = useState([]);
   useEffect(() => {
@@ -403,6 +404,14 @@ export default function PerfilPage() {
       {/* ══════ Tab: Actividad ══════ */}
       {tab === 'actividad' && <ActividadPage />}
 
+      {/* Lightbox QR */}
+      {qrZoom && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setQrZoom(false)}>
+          <div className="absolute inset-0 bg-black/70" />
+          <img src="/yape-qr.jpg" alt="QR Yape" className="relative max-w-[90vw] max-h-[80vh] rounded-2xl shadow-2xl object-contain" />
+        </div>
+      )}
+
       {/* ══════ Modal: Renovar plan ══════ */}
       {showRenovar && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -433,15 +442,14 @@ export default function PerfilPage() {
               <p className="text-xs text-stone-500">
                 Escanea el QR y paga <span className="font-bold text-[#16A34A]">{PLAN_PRECIO[renovarPlan || user?.plan || 'emprendedor']}</span>
               </p>
-              <div className="flex justify-center">
+              <div className="flex flex-col items-center">
                 <img
                   src="/yape-qr.jpg" alt="QR Yape"
-                  className="w-44 h-44 rounded-xl border border-stone-200 object-contain cursor-pointer hover:shadow-lg transition-shadow duration-150"
-                  onClick={() => window.open('/yape-qr.jpg', '_blank')}
-                  title="Click para ver más grande"
+                  className="w-44 h-44 rounded-xl border border-stone-200 object-contain cursor-zoom-in hover:shadow-lg transition-shadow duration-150"
+                  onClick={() => setQrZoom(true)}
                   onError={e => { e.target.style.display = 'none'; }}
                 />
-                <p className="text-[10px] text-stone-400 mt-1 text-center">Toca la imagen para ampliar</p>
+                <p className="text-[10px] text-stone-400 mt-1">Toca para ampliar</p>
               </div>
             </div>
 
