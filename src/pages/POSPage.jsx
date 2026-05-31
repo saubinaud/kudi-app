@@ -290,6 +290,7 @@ export default function POSPage() {
         fecha: todayStr(),
         cliente_id: clienteId,
         tipo_venta: 'directo',
+        metodo_pago: metodoPago,
         items: cartItems.map(i => ({
           producto_id: i.producto_id,
           variante_id: i.variante_id || null,
