@@ -12,6 +12,7 @@ import ActividadPage from './ActividadPage';
 import EquipoPage from './EquipoPage';
 
 const PLAN_LABEL = { trial: 'Prueba gratuita', independiente: 'Independiente', emprendedor: 'Emprendedor', empresario: 'Empresario', pro: 'Pro' };
+const PLAN_PRECIO = { independiente: 'S/ 80', emprendedor: 'S/ 100', empresario: 'S/ 180' };
 const PLAN_COLORS = { trial: 'bg-amber-50 text-amber-600', independiente: 'bg-blue-50 text-blue-600', emprendedor: 'bg-indigo-50 text-indigo-600', empresario: 'bg-emerald-50 text-emerald-600', pro: 'bg-emerald-50 text-emerald-600' };
 
 const TABS = [
@@ -47,6 +48,13 @@ export default function PerfilPage() {
   // Pagos
   const [pagos, setPagos] = useState([]);
   const [loadingPagos, setLoadingPagos] = useState(false);
+
+  // Renovar
+  const [showRenovar, setShowRenovar] = useState(false);
+  const [renovarPlan, setRenovarPlan] = useState('');
+  const [renovarComprobante, setRenovarComprobante] = useState('');
+  const [uploadingComp, setUploadingComp] = useState(false);
+  const [sendingRenovar, setSendingRenovar] = useState(false);
 
   const [giros, setGiros] = useState([]);
   useEffect(() => {
@@ -294,11 +302,11 @@ export default function PerfilPage() {
             {(user?.plan === 'trial' || !user?.plan) && (
               <p className="text-sm text-stone-500 mb-3">Activa un plan para productos ilimitados, caja, facturación y más.</p>
             )}
-            <a href={`#/onboarding?plan=${user?.plan === 'trial' || !user?.plan ? 'emprendedor' : user.plan}`}
+            <button onClick={() => setShowRenovar(true)}
               className={cx.btnPrimary + ' inline-flex items-center gap-2 text-sm'}>
               <CreditCard size={14} />
               {user?.plan && user.plan !== 'trial' ? 'Renovar plan' : 'Activar un plan'}
-            </a>
+            </button>
           </div>
 
           <div className={cx.card + ' p-5'}>
@@ -394,6 +402,109 @@ export default function PerfilPage() {
 
       {/* ══════ Tab: Actividad ══════ */}
       {tab === 'actividad' && <ActividadPage />}
+
+      {/* ══════ Modal: Renovar plan ══════ */}
+      {showRenovar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowRenovar(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-stone-900">Renovar plan</h3>
+              <button onClick={() => setShowRenovar(false)} className="text-stone-400 hover:text-stone-600"><X size={18} /></button>
+            </div>
+
+            {/* Plan selector */}
+            <div>
+              <label className={cx.label}>Plan</label>
+              <CustomSelect
+                value={renovarPlan || user?.plan || 'emprendedor'}
+                onChange={v => setRenovarPlan(v)}
+                options={[
+                  { value: 'independiente', label: 'Independiente — S/ 80/mes' },
+                  { value: 'emprendedor', label: 'Emprendedor — S/ 100/mes' },
+                  { value: 'empresario', label: 'Empresario — S/ 180/mes' },
+                ]}
+              />
+            </div>
+
+            {/* QR Yape */}
+            <div className="text-center space-y-2">
+              <p className="text-sm font-semibold text-stone-800">Paga con Yape</p>
+              <p className="text-xs text-stone-500">
+                Escanea el QR y paga <span className="font-bold text-[#16A34A]">{PLAN_PRECIO[renovarPlan || user?.plan || 'emprendedor']}</span>
+              </p>
+              <div className="flex justify-center">
+                <img src="/yape-qr.jpg" alt="QR Yape" className="w-44 h-44 rounded-xl border border-stone-200 object-contain" onError={e => { e.target.style.display = 'none'; }} />
+              </div>
+            </div>
+
+            {/* Upload comprobante */}
+            <div>
+              <label className={cx.label}>Sube tu comprobante de pago</label>
+              <label className="block cursor-pointer">
+                {renovarComprobante ? (
+                  <div className="relative">
+                    <img src={renovarComprobante} className="w-full max-h-32 object-contain rounded-xl border border-emerald-300" alt="Comprobante" />
+                    <span className="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full">Subido</span>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-stone-300 rounded-xl p-4 text-center hover:border-stone-400 transition-colors duration-100">
+                    {uploadingComp ? (
+                      <div className="flex items-center justify-center gap-2 text-stone-500 text-sm">
+                        <Loader2 size={14} className="animate-spin" /> Subiendo...
+                      </div>
+                    ) : (
+                      <>
+                        <Upload size={16} className="mx-auto text-stone-400 mb-1" />
+                        <p className="text-xs text-stone-500">Click para subir foto del pago</p>
+                      </>
+                    )}
+                  </div>
+                )}
+                <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (file.size > 5 * 1024 * 1024) { toast.error('Máximo 5MB'); return; }
+                  setUploadingComp(true);
+                  try {
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    const r = await fetch(`${API_BASE}/onboarding/comprobante`, { method: 'POST', body: formData });
+                    const d = await r.json();
+                    if (d.url) setRenovarComprobante(d.url);
+                    else throw new Error('Error subiendo');
+                  } catch { toast.error('Error subiendo comprobante'); }
+                  finally { setUploadingComp(false); }
+                }} />
+              </label>
+            </div>
+
+            {/* Submit */}
+            <button
+              disabled={!renovarComprobante || sendingRenovar}
+              onClick={async () => {
+                setSendingRenovar(true);
+                try {
+                  await api.post('/auth/renovar', {
+                    plan: renovarPlan || user?.plan || 'emprendedor',
+                    comprobante_url: renovarComprobante,
+                  });
+                  toast.success('Solicitud de renovación enviada. Te notificaremos cuando sea aprobada.');
+                  setShowRenovar(false);
+                  setRenovarComprobante('');
+                  // Reload pagos
+                  api.get('/auth/mis-pagos').then(r => setPagos(r.data || [])).catch(() => {});
+                } catch (err) { toast.error(err.message || 'Error enviando renovación'); }
+                finally { setSendingRenovar(false); }
+              }}
+              className={cx.btnPrimary + ' w-full flex items-center justify-center gap-2'}
+            >
+              {sendingRenovar ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
+              Enviar comprobante de pago
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
