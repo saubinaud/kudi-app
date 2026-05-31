@@ -165,7 +165,9 @@ export default function LandingPage() {
   };
 
   const goLogin = () => navigate('/login');
-  const goRegistro = () => navigate('/onboarding');
+  const goRegistro = (planKey) => navigate(planKey ? `/onboarding?plan=${planKey}` : '/onboarding');
+  // Map landing plan names to onboarding plan keys
+  const PLAN_KEYS = { 'Emprendedor': null, 'Profesional': 'emprendedor', 'Negocio': 'empresario' };
   const scrollTo = (id) => {
     setMobileMenu(false);
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
@@ -388,7 +390,7 @@ export default function LandingPage() {
                 </div>
 
                 <button
-                  onClick={goRegistro}
+                  onClick={() => goRegistro(PLAN_KEYS[plan.name])}
                   className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-colors duration-150 active:scale-[0.97] ${
                     plan.highlighted
                       ? 'bg-[#16A34A] hover:bg-[#15803D] text-white shadow-sm'
