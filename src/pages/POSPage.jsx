@@ -546,7 +546,7 @@ export default function POSPage() {
                     : 'border-dashed border-stone-300 text-stone-400 hover:border-stone-400 hover:text-stone-600'
                 }`}
               >
-                {pagoMixto ? '✓ Pago mixto activo — click para desactivar' : 'Dividir pago (efectivo + yape)'}
+                {pagoMixto ? '✓ Pago mixto activo — click para desactivar' : `Dividir pago (${{ efectivo: 'efectivo', yape: 'yape', transferencia: 'transferencia' }[metodoPago]} + otro)`}
               </button>
 
               {/* Pago mixto filas */}
