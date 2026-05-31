@@ -20,8 +20,7 @@ const emptyRow = () => ({
   _new: true,
 });
 
-function AddPresentacionForm({ insumoId, onAdded }) {
-  const [nombre, setNombre] = useState('');
+function AddPresentacionForm({ insumoId, insumoNombre, onAdded }) {
   const [cantidad, setCantidad] = useState('');
   const [unidad, setUnidad] = useState('');
   const [precio, setPrecio] = useState('');
@@ -29,18 +28,19 @@ function AddPresentacionForm({ insumoId, onAdded }) {
   const api = useApi();
   const toast = useToast();
 
+  const autoNombre = cantidad && unidad ? `${insumoNombre} ${cantidad} ${unidad}` : '';
+
   const save = async () => {
-    if (!nombre || !cantidad) return;
+    if (!cantidad) return;
     setSaving(true);
     try {
       await api.post(`/insumos/${insumoId}/presentaciones`, {
-        nombre,
         cantidad: parseFloat(cantidad),
         unidad,
         precio: parseFloat(precio) || null,
       });
-      toast.success('Presentacion agregada');
-      setNombre(''); setCantidad(''); setUnidad(''); setPrecio('');
+      toast.success('Presentación agregada');
+      setCantidad(''); setUnidad(''); setPrecio('');
       onAdded();
     } catch (e) { toast.error(e.message); }
     finally { setSaving(false); }
@@ -48,12 +48,8 @@ function AddPresentacionForm({ insumoId, onAdded }) {
 
   return (
     <div className="mt-3 pt-3 border-t border-stone-200">
-      <p className="text-xs font-semibold text-stone-500 mb-2">Agregar presentacion</p>
-      <div className="grid grid-cols-4 gap-2">
-        <div>
-          <label className="text-[10px] text-stone-400 block mb-0.5">Nombre</label>
-          <input className={cx.input + ' text-sm'} placeholder="Ej: Saco 25kg" value={nombre} onChange={e => setNombre(e.target.value)} />
-        </div>
+      <p className="text-xs font-semibold text-stone-500 mb-2">Agregar presentación</p>
+      <div className="grid grid-cols-3 gap-2">
         <div>
           <label className="text-[10px] text-stone-400 block mb-0.5">Cantidad</label>
           <input className={cx.input + ' text-sm'} type="number" min="0.001" step="0.001" placeholder="25" value={cantidad} onChange={e => setCantidad(e.target.value)} />
@@ -72,11 +68,12 @@ function AddPresentacionForm({ insumoId, onAdded }) {
           <label className="text-[10px] text-stone-400 block mb-0.5">Precio (S/)</label>
           <div className="flex gap-1">
             <input className={cx.input + ' text-sm flex-1'} type="number" step="0.01" placeholder="75.00" value={precio} onChange={e => setPrecio(e.target.value)} />
-            <button onClick={save} disabled={saving || !nombre || !cantidad}
+            <button onClick={save} disabled={saving || !cantidad}
               className={cx.btnPrimary + ' !px-3 !py-2 text-sm'}>+</button>
           </div>
         </div>
       </div>
+      {autoNombre && <p className="text-[10px] text-stone-400 mt-1">Se creará como: <span className="font-medium text-stone-600">{autoNombre}</span></p>}
     </div>
   );
 }
@@ -318,11 +315,24 @@ export default function InsumosPage() {
                     <div className="mt-2 space-y-1">
                       {ins.presentaciones.map((p) => (
                         <div key={p.id} className="flex items-center justify-between text-xs text-stone-600 py-1">
-                          <span className="font-medium">{p.nombre}</span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={async () => {
+                                if (p.es_principal) return;
+                                try {
+                                  await api.put(`/insumos/${ins.id}/presentaciones/${p.id}`, { es_principal: true });
+                                  toast.success(`"${p.nombre}" es ahora la principal`);
+                                  loadInsumos();
+                                } catch (e) { toast.error(e.message); }
+                              }}
+                              className={`text-[9px] px-1 py-0.5 rounded ${p.es_principal ? 'text-emerald-600' : 'text-stone-300'}`}
+                            >{p.es_principal ? '★' : '☆'}</button>
+                            <span className="font-medium">{p.nombre}</span>
+                          </div>
                           <span className="text-stone-400">{p.cantidad} {p.unidad} — S/ {parseFloat(p.precio || 0).toFixed(2)}</span>
                         </div>
                       ))}
-                      <AddPresentacionForm insumoId={ins.id} onAdded={() => loadInsumos()} />
+                      <AddPresentacionForm insumoId={ins.id} insumoNombre={ins.nombre} onAdded={() => loadInsumos()} />
                     </div>
                   )}
                 </div>
@@ -436,16 +446,31 @@ export default function InsumosPage() {
                                       {p.precio_por_unidad ? `S/ ${parseFloat(p.precio_por_unidad).toFixed(3)}` : '—'}
                                     </td>
                                     <td className="py-1.5">
-                                      {p.es_principal && (
-                                        <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">Principal</span>
-                                      )}
+                                      <button
+                                        onClick={async () => {
+                                          if (p.es_principal) return;
+                                          try {
+                                            await api.put(`/insumos/${ins.id}/presentaciones/${p.id}`, { es_principal: true });
+                                            toast.success(`"${p.nombre}" es ahora la principal`);
+                                            loadInsumos();
+                                          } catch (e) { toast.error(e.message); }
+                                        }}
+                                        className={`text-[10px] px-1.5 py-0.5 rounded-full transition-colors duration-100 ${
+                                          p.es_principal
+                                            ? 'bg-emerald-100 text-emerald-700 font-semibold'
+                                            : 'bg-stone-100 text-stone-400 hover:bg-emerald-50 hover:text-emerald-600 cursor-pointer'
+                                        }`}
+                                        title={p.es_principal ? 'Variante principal' : 'Hacer principal'}
+                                      >
+                                        {p.es_principal ? '★ Principal' : '☆ Hacer principal'}
+                                      </button>
                                     </td>
                                   </tr>
                                 ))}
                               </tbody>
                             </table>
                           </div>
-                          <AddPresentacionForm insumoId={ins.id} onAdded={() => loadInsumos()} />
+                          <AddPresentacionForm insumoId={ins.id} insumoNombre={ins.nombre} onAdded={() => loadInsumos()} />
                         </div>
                       </td>
                     </tr>
