@@ -562,7 +562,7 @@ export default function POSPage() {
                   </div>
                   {cartDesglose.igv > 0 && (
                     <div className="flex justify-between text-xs">
-                      <span className="text-stone-400">IGV ({(tasaIgvPOS * 100).toFixed(0)}%)</span>
+                      <span className="text-stone-400">IGV ({parseFloat((tasaIgvPOS * 100).toFixed(1))}%)</span>
                       <span className="text-stone-600">{formatCurrency(cartDesglose.igv)}</span>
                     </div>
                   )}
@@ -606,7 +606,7 @@ export default function POSPage() {
                 )}
                 {cartDesglose.igv > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-stone-400">IGV ({(tasaIgvPOS * 100).toFixed(0)}%)</span>
+                    <span className="text-stone-400">IGV ({parseFloat((tasaIgvPOS * 100).toFixed(1))}%)</span>
                     <span className="text-stone-600">{formatCurrency(cartDesglose.igv)}</span>
                   </div>
                 )}
