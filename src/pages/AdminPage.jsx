@@ -756,9 +756,26 @@ function UsuariosTab() {
                       {u.rol === 'admin' && <span className={cx.badge('bg-violet-50 text-violet-600')}>admin</span>}
                     </div>
                     {u.plan === 'trial' && u.trial_ends_at && (
-                      <span className="text-[10px] text-stone-400">
-                        {new Date(u.trial_ends_at) > new Date() ? `Quedan ${Math.ceil((new Date(u.trial_ends_at) - new Date()) / 86400000)} días` : 'Trial vencido'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-stone-400">
+                          {new Date(u.trial_ends_at) > new Date() ? `Quedan ${Math.ceil((new Date(u.trial_ends_at) - new Date()) / 86400000)} días` : 'Trial vencido'}
+                        </span>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await api.patch(`/admin/usuarios/${u.id}/plan`, {
+                                plan: 'trial',
+                                trial_ends_at: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+                              });
+                              toast.success(`Trial de ${u.nombre} reiniciado (10 días)`);
+                              loadUsuarios();
+                            } catch (e) { toast.error(e.message || 'Error'); }
+                          }}
+                          className="text-[10px] text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          Reiniciar 10d
+                        </button>
+                      </div>
                     )}
                     {u.estado === 'pendiente' && u.onboarding_token && (
                       <button onClick={() => { navigator.clipboard.writeText(`${window.location.href.split('#')[0]}#/onboarding?token=${u.onboarding_token}`); toast.success('Link copiado'); }} className="text-[10px] text-amber-600 hover:underline flex items-center gap-0.5"><Copy size={10} /> Copiar link</button>
