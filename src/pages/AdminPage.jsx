@@ -768,7 +768,7 @@ function UsuariosTab() {
                                 trial_ends_at: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
                               });
                               toast.success(`Trial de ${u.nombre} reiniciado (10 días)`);
-                              loadUsuarios();
+                              loadUsers();
                             } catch (e) { toast.error(e.message || 'Error'); }
                           }}
                           className="text-[10px] text-blue-600 hover:text-blue-800 hover:underline"
