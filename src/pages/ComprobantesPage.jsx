@@ -219,6 +219,8 @@ export default function ComprobantesPage() {
       ubigeo: config?.ubigeo || '',
       sol_user: config?.sol_user || '',
       sol_pass: config?.sol_pass || '',
+      correlativo_boleta: config?.correlativo_boleta || 0,
+      correlativo_factura: config?.correlativo_factura || 0,
       tiene_local: config?.tiene_local !== false, // default true
       direccion_comercial: config?.direccion_comercial || '',
     });
@@ -494,6 +496,19 @@ export default function ComprobantesPage() {
                   {solValidation.message}
                 </div>
               )}
+              <div className="p-3 bg-stone-50 rounded-lg mt-2">
+                <p className="text-xs text-stone-500 mb-2">Si ya emitías boletas o facturas con otro sistema, indica tu último número emitido para continuar la numeración.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={cx.label}>Último corr. boleta</label>
+                    <input type="number" min="0" value={configForm.correlativo_boleta} onChange={e => setConfigForm(p => ({...p, correlativo_boleta: parseInt(e.target.value) || 0}))} className={cx.input} placeholder="0" />
+                  </div>
+                  <div>
+                    <label className={cx.label}>Último corr. factura</label>
+                    <input type="number" min="0" value={configForm.correlativo_factura} onChange={e => setConfigForm(p => ({...p, correlativo_factura: parseInt(e.target.value) || 0}))} className={cx.input} placeholder="0" />
+                  </div>
+                </div>
+              </div>
               <div className="flex gap-2 mt-3">
                 <button onClick={handleSaveConfig} disabled={savingConfig} className={cx.btnPrimary + ' text-sm'}>
                   {savingConfig ? 'Guardando...' : 'Guardar'}
