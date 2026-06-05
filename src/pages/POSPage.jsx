@@ -46,6 +46,7 @@ export default function POSPage() {
   const [buscandoDoc, setBuscandoDoc] = useState(false);
   const [saving, setSaving] = useState(false);
   const [metodoPago, setMetodoPago] = useState('efectivo');
+  const [sinComisionTarjeta, setSinComisionTarjeta] = useState(false);
 
   // Delivery
   const [tipoEntrega, setTipoEntrega] = useState('recojo'); // recojo | delivery
@@ -133,7 +134,7 @@ export default function POSPage() {
     return parseFloat(zona?.costo) || 0;
   }, [tipoEntrega, zonaSeleccionada, zonas]);
   const comisionPosPct = parseFloat(user?.comision_pos) || 0;
-  const comisionTarjeta = metodoPago === 'tarjeta' ? Math.round(cartSubtotal * comisionPosPct) / 100 : 0;
+  const comisionTarjeta = (metodoPago === 'tarjeta' && !sinComisionTarjeta) ? Math.round(cartSubtotal * comisionPosPct) / 100 : 0;
   const cartTotal = cartSubtotal + costoEnvio + comisionTarjeta;
 
   // Cart helpers
@@ -299,6 +300,7 @@ export default function POSPage() {
       setPosCliente({ tipo_doc: 'DNI', num_doc: '', nombre: '', email: '', telefono: '' });
       setClienteEncontrado(false);
       setMetodoPago('efectivo');
+      setSinComisionTarjeta(false);
       setTipoEntrega('recojo');
       setZonaSeleccionada(null);
       setDireccion({ departamento: '', provincia: '', distrito: '', direccion: '', referencia: '' });
@@ -481,7 +483,7 @@ export default function POSPage() {
                   {METODOS_PAGO.map(m => (
                     <button
                       key={m.key}
-                      onClick={() => setMetodoPago(m.key)}
+                      onClick={() => { setMetodoPago(m.key); if (m.key !== 'tarjeta') setSinComisionTarjeta(false); }}
                       className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg border text-xs font-medium transition-colors duration-100 ${
                         metodoPago === m.key
                           ? 'border-[#16A34A] bg-emerald-50 text-[#16A34A]'
@@ -493,6 +495,12 @@ export default function POSPage() {
                     </button>
                   ))}
                 </div>
+                {metodoPago === 'tarjeta' && (
+                  <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                    <input type="checkbox" checked={sinComisionTarjeta} onChange={e => setSinComisionTarjeta(e.target.checked)} className="w-3.5 h-3.5 rounded" />
+                    <span className="text-[11px] text-stone-500">No cobrar comisión adicional</span>
+                  </label>
+                )}
               </div>
 
               {/* Delivery / Recojo */}
