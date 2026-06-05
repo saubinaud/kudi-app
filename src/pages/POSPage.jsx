@@ -132,7 +132,9 @@ export default function POSPage() {
     const zona = zonas.find(z => z.id === zonaSeleccionada);
     return parseFloat(zona?.costo) || 0;
   }, [tipoEntrega, zonaSeleccionada, zonas]);
-  const cartTotal = cartSubtotal + costoEnvio;
+  const comisionPosPct = parseFloat(user?.comision_pos) || 0;
+  const comisionTarjeta = metodoPago === 'tarjeta' ? Math.round(cartSubtotal * comisionPosPct) / 100 : 0;
+  const cartTotal = cartSubtotal + costoEnvio + comisionTarjeta;
 
   // Cart helpers
   const updateCartQty = (index, delta) => {
@@ -335,6 +337,7 @@ export default function POSPage() {
     { key: 'efectivo', label: 'Efectivo', icon: Banknote },
     { key: 'yape', label: 'Yape', icon: Smartphone },
     { key: 'transferencia', label: 'Transfer.', icon: CreditCard },
+    ...(comisionPosPct > 0 ? [{ key: 'tarjeta', label: `Tarjeta +${comisionPosPct}%`, icon: CreditCard }] : []),
   ];
 
   // Cart panel — reused on both desktop and mobile
@@ -474,7 +477,7 @@ export default function POSPage() {
               {/* Payment method */}
               <div>
                 <label className="text-xs text-stone-500 font-medium block mb-2">Método de pago</label>
-                <div className="grid grid-cols-3 gap-1.5">
+                <div className={`grid gap-1.5 ${METODOS_PAGO.length > 3 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                   {METODOS_PAGO.map(m => (
                     <button
                       key={m.key}
@@ -570,6 +573,12 @@ export default function POSPage() {
                     <div className="flex justify-between text-xs">
                       <span className="text-stone-400">Envío</span>
                       <span className="text-stone-600">{formatCurrency(costoEnvio)}</span>
+                    </div>
+                  )}
+                  {comisionTarjeta > 0 && (
+                    <div className="flex justify-between text-xs">
+                      <span className="text-stone-400">Comisión tarjeta ({comisionPosPct}%)</span>
+                      <span className="text-stone-600">+{formatCurrency(comisionTarjeta)}</span>
                     </div>
                   )}
                 </div>
