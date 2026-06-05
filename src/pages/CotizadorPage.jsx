@@ -397,6 +397,8 @@ export default function CotizadorPage() {
     user?.tipo_negocio === 'informal' ? 0
     : user?.igv_rate != null ? parseFloat((user.igv_rate * 100).toFixed(2)) : 0
   );
+  const [incluirComision, setIncluirComision] = useState(false);
+  const comisionPosPct = parseFloat(user?.comision_pos) || 0;
   const [tipoPresentacion, setTipoPresentacion] = useState('unidad');
   const [unidadesPorProducto, setUnidadesPorProducto] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -419,7 +421,7 @@ export default function CotizadorPage() {
   const [catalogPreps, setCatalogPreps] = useState([]);
   const [catalogEmpaques, setCatalogEmpaques] = useState([]);
 
-  const costosRaw = useCalculadorCostos(preparaciones, materiales, precioFinal, igvRate, tipoPresentacion, unidadesPorProducto, precioFinalPorcion);
+  const costosRaw = useCalculadorCostos(preparaciones, materiales, precioFinal, igvRate, tipoPresentacion, unidadesPorProducto, precioFinalPorcion, incluirComision ? comisionPosPct : 0);
 
   // Pack cost: sum item costs in real-time from pendingPackItems
   const packCosto = useMemo(() => {
@@ -944,20 +946,26 @@ export default function CotizadorPage() {
   const handleMargenChange = useCallback((margenPct) => {
     const margenDec = Number(margenPct) / 100;
     const igvDec = igvRate / 100;
+    const comDec = incluirComision ? comisionPosPct / 100 : 0;
     if (costos.costoNeto > 0 && margenDec < 1) {
       const pv = costos.costoNeto / (1 - margenDec);
-      setPrecioFinal(Math.round(pv * (1 + igvDec) * 100) / 100);
+      const conIgv = pv * (1 + igvDec);
+      const conComision = comDec > 0 ? conIgv / (1 - comDec) : conIgv;
+      setPrecioFinal(Math.round(conComision * 100) / 100);
     }
-  }, [igvRate, costos.costoNeto]);
+  }, [igvRate, costos.costoNeto, incluirComision, comisionPosPct]);
 
   const handleMargenPorcionChange = useCallback((margenPct) => {
     const margenDec = Number(margenPct) / 100;
     const igvDec = igvRate / 100;
+    const comDec = incluirComision ? comisionPosPct / 100 : 0;
     if (costos.costoNetoPorcion > 0 && margenDec < 1) {
       const pv = costos.costoNetoPorcion / (1 - margenDec);
-      setPrecioFinalPorcion(Math.round(pv * (1 + igvDec) * 100) / 100);
+      const conIgv = pv * (1 + igvDec);
+      const conComision = comDec > 0 ? conIgv / (1 - comDec) : conIgv;
+      setPrecioFinalPorcion(Math.round(conComision * 100) / 100);
     }
-  }, [igvRate, costos.costoNetoPorcion]);
+  }, [igvRate, costos.costoNetoPorcion, incluirComision, comisionPosPct]);
 
   // Helper to render a list of materials (mobile cards + desktop table)
   const renderMaterialsList = (mats) => {
@@ -1747,6 +1755,23 @@ export default function CotizadorPage() {
                   </div>
                 </div>
 
+                {(comisionPosPct > 0 || user?.tipo_negocio === 'informal') && (
+                  <div className="py-3 border-b border-stone-100 space-y-2">
+                    {user?.tipo_negocio === 'informal' && (
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={igvRate > 0} onChange={e => setIgvRate(e.target.checked ? (parseFloat(user?.igv_rate * 100) || 18) : 0)} className="w-3.5 h-3.5 rounded accent-[var(--accent)]" />
+                        <span className="text-xs text-stone-500">Calcular con IGV ({parseFloat(user?.igv_rate * 100) || 18}%)</span>
+                      </label>
+                    )}
+                    {comisionPosPct > 0 && (
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={incluirComision} onChange={e => setIncluirComision(e.target.checked)} className="w-3.5 h-3.5 rounded accent-[var(--accent)]" />
+                        <span className="text-xs text-stone-500">Incluir comision tarjeta ({comisionPosPct}%)</span>
+                      </label>
+                    )}
+                  </div>
+                )}
+
                 {/* Margen slider - producto entero */}
                 <div className="py-4 border-b border-stone-100">
                   <label className={cx.label}>Margen producto entero</label>
@@ -1783,6 +1808,12 @@ export default function CotizadorPage() {
                       {user?.tipo_negocio === 'informal' ? 'No aplica' : `${formatCurrency(costos.igvMonto)} (${costos.igvRate}%)`}
                     </span>
                   </div>
+                  {costos.comisionMonto > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-stone-500">Comision tarjeta ({comisionPosPct}%)</span>
+                      <span className="text-stone-800">{formatCurrency(costos.comisionMonto)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-baseline pt-1">
                     <span className="text-stone-600 text-sm">Precio final</span>
                     <EditablePrice value={precioFinal} onChange={(v) => setPrecioFinal(Math.round(v * 100) / 100)} className="text-2xl font-bold text-stone-900" />
@@ -1835,6 +1866,23 @@ export default function CotizadorPage() {
                   </div>
                 </div>
 
+                {(comisionPosPct > 0 || user?.tipo_negocio === 'informal') && (
+                  <div className="py-3 border-b border-stone-100 space-y-2">
+                    {user?.tipo_negocio === 'informal' && (
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={igvRate > 0} onChange={e => setIgvRate(e.target.checked ? (parseFloat(user?.igv_rate * 100) || 18) : 0)} className="w-3.5 h-3.5 rounded accent-[var(--accent)]" />
+                        <span className="text-xs text-stone-500">Calcular con IGV ({parseFloat(user?.igv_rate * 100) || 18}%)</span>
+                      </label>
+                    )}
+                    {comisionPosPct > 0 && (
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={incluirComision} onChange={e => setIncluirComision(e.target.checked)} className="w-3.5 h-3.5 rounded accent-[var(--accent)]" />
+                        <span className="text-xs text-stone-500">Incluir comision tarjeta ({comisionPosPct}%)</span>
+                      </label>
+                    )}
+                  </div>
+                )}
+
                 {/* Margen slider */}
                 <div className="py-4 border-b border-stone-100">
                   <label className={cx.label}>Margen</label>
@@ -1869,6 +1917,12 @@ export default function CotizadorPage() {
                       {user?.tipo_negocio === 'informal' ? 'No aplica' : `${formatCurrency(costos.igvMonto)} (${costos.igvRate}%)`}
                     </span>
                   </div>
+                  {costos.comisionMonto > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-stone-500">Comision tarjeta ({comisionPosPct}%)</span>
+                      <span className="text-stone-800">{formatCurrency(costos.comisionMonto)}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Final price — BIG, editable */}

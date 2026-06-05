@@ -33,7 +33,7 @@ function convertirUnidad(valor, deUnidad, aUnidad) {
  * @param {number} unidadesPorProducto - porciones si es entero
  * @param {number|null} precioFinalPorcion - precio por porción (input del usuario)
  */
-export function useCalculadorCostos(preparaciones = [], materiales = [], precioFinal = 0, igvRate = 0, tipoPresentacion = 'unidad', unidadesPorProducto = 1, precioFinalPorcion = null) {
+export function useCalculadorCostos(preparaciones = [], materiales = [], precioFinal = 0, igvRate = 0, tipoPresentacion = 'unidad', unidadesPorProducto = 1, precioFinalPorcion = null, comisionPct = 0) {
   return useMemo(() => {
     // Cost for THE WHOLE PRODUCT from preparations
     const costoInsumosProducto = preparaciones.reduce((sum, prep) => {
@@ -77,7 +77,11 @@ export function useCalculadorCostos(preparaciones = [], materiales = [], precioF
 
     // PRECIO es el input del usuario — no se calcula
     const pf = Number(precioFinal) || 0;
-    const precioVentaProducto = igvDecimal > 0 && pf > 0 ? pf / (1 + igvDecimal) : pf;
+    const comDec = Number(comisionPct) / 100;
+    // Si hay comisión, descontarla del precio final para obtener el precio sin comisión
+    const pfSinComision = comDec > 0 && pf > 0 ? pf * (1 - comDec) : pf;
+    const precioVentaProducto = igvDecimal > 0 && pfSinComision > 0 ? pfSinComision / (1 + igvDecimal) : pfSinComision;
+    const comisionMonto = pf - pfSinComision;
 
     // MARGEN se DERIVA del precio (nunca es input)
     const margen = precioVentaProducto > 0 && costoNetoProducto > 0
@@ -86,7 +90,8 @@ export function useCalculadorCostos(preparaciones = [], materiales = [], precioF
 
     // Por porción
     const pfp = precioFinalPorcion != null ? Number(precioFinalPorcion) : (unidades > 1 && pf > 0 ? Math.round(pf / unidades * 100) / 100 : pf);
-    const precioVentaPorcion = igvDecimal > 0 && pfp > 0 ? pfp / (1 + igvDecimal) : pfp;
+    const pfpSinComision = comDec > 0 && pfp > 0 ? pfp * (1 - comDec) : pfp;
+    const precioVentaPorcion = igvDecimal > 0 && pfpSinComision > 0 ? pfpSinComision / (1 + igvDecimal) : pfpSinComision;
     const margenPorcion = precioVentaPorcion > 0 && costoNetoPorcion > 0
       ? (1 - costoNetoPorcion / precioVentaPorcion) * 100
       : 0;
@@ -107,8 +112,10 @@ export function useCalculadorCostos(preparaciones = [], materiales = [], precioF
       precioVentaPorcion,
       igvRate: Number(igvRate),
       igvMonto: precioVentaProducto * igvDecimal,
+      comisionMonto,
+      comisionPct: Number(comisionPct),
       precioFinal: pf,
       precioFinalPorcion: pfp,
     };
-  }, [preparaciones, materiales, precioFinal, igvRate, tipoPresentacion, unidadesPorProducto, precioFinalPorcion]);
+  }, [preparaciones, materiales, precioFinal, igvRate, tipoPresentacion, unidadesPorProducto, precioFinalPorcion, comisionPct]);
 }
