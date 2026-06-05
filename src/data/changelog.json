@@ -1,5 +1,39 @@
 [
   {
+    "version": "1.4.0",
+    "fecha": "4 junio 2026",
+    "titulo": "Cobra con tarjeta sin perder tu ganancia",
+    "descripcion": "Sabemos que aceptar tarjeta te cuesta una comisión. Ahora Kudi te ayuda: configura el porcentaje que te cobra tu POS y automáticamente se lo suma al cliente cuando paga con tarjeta. Tú no pierdes, tu cliente sabe exactamente cuánto paga.",
+    "imagen": null,
+    "secciones": [
+      {
+        "titulo": "Lo nuevo",
+        "entries": [
+          { "tipo": "feat", "texto": "Pago con tarjeta en el POS — nuevo botón que aparece cuando configuras tu comisión (ej: Tarjeta +3.5%)" },
+          { "tipo": "feat", "texto": "Comisión configurable — ve a Perfil → Ajustes → \"Comisión POS tarjeta\" y pon el porcentaje que te cobra tu operador (Izipay, Niubiz, etc.)" },
+          { "tipo": "feat", "texto": "Desglose transparente — el checkout muestra la línea \"Comisión tarjeta (3.5%)\" para que el cliente vea exactamente qué se le suma" },
+          { "tipo": "feat", "texto": "\"No cobrar comisión adicional\" — un check que aparece al seleccionar tarjeta, para cuando ya incluiste la comisión en tu precio" }
+        ]
+      },
+      {
+        "titulo": "Cómo funciona",
+        "entries": [
+          { "tipo": "improve", "texto": "1. Ve a Perfil → Ajustes y configura tu porcentaje de comisión (ej: 3.5%)" },
+          { "tipo": "improve", "texto": "2. En el POS, al cobrar verás 4 opciones: Efectivo, Yape, Transferencia y Tarjeta +3.5%" },
+          { "tipo": "improve", "texto": "3. Si el cliente paga con tarjeta, el total se ajusta automáticamente" },
+          { "tipo": "improve", "texto": "4. Si ya incluiste la comisión en el precio del producto, marca \"No cobrar comisión adicional\"" }
+        ]
+      },
+      {
+        "titulo": "Fixes",
+        "entries": [
+          { "tipo": "fix", "texto": "Corregido un error donde las boletas electrónicas se quedaban atascadas si SUNAT ya tenía el número registrado" },
+          { "tipo": "fix", "texto": "Ahora puedes configurar tu correlativo inicial de boletas y facturas si vienes de otro sistema de facturación" }
+        ]
+      }
+    ]
+  },
+  {
     "version": "1.3.0",
     "fecha": "25 mayo 2026",
     "titulo": "Tus precios, tu decisión",
