@@ -269,20 +269,17 @@ export default function PLComprasPage() {
     try {
       // Auto-create new presentations for items with _customPres
       for (const it of validItems) {
-        if (it._customPres && it.insumo_id && it._newPresQty && it._newPresUnit) {
+        if (it._customPres && it.insumo_id && it.cantidad && it.unidad) {
           try {
             const ins = insumos.find(i => i.id === it.insumo_id);
-            const presNombre = `${ins?.nombre || 'Insumo'} ${it._newPresQty} ${it._newPresUnit}`;
+            const presNombre = `${ins?.nombre || 'Insumo'} ${it.cantidad} ${it.unidad}`;
             await api.post(`/insumos/${it.insumo_id}/presentaciones`, {
               nombre: presNombre,
-              cantidad: parseFloat(it._newPresQty),
-              unidad: it._newPresUnit,
-              precio: parseFloat(it._newPresPrice || it.precio_unitario) || 0,
+              cantidad: parseFloat(it.cantidad),
+              unidad: it.unidad,
+              precio: parseFloat(it.precio_unitario) || 0,
             });
           } catch (_) { /* puede ya existir */ }
-          it.unidad = `${it._newPresQty} ${it._newPresUnit}`;
-          it.precio_unitario = parseFloat(it._newPresPrice || it.precio_unitario) || 0;
-          it.cantidad = parseFloat(it.cantidad) || 1;
         }
       }
 
@@ -901,30 +898,9 @@ export default function PLComprasPage() {
                             </select>
                           )}
                           {item._customPres && (
-                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 space-y-1.5">
-                              <p className="text-[9px] font-semibold text-amber-700 uppercase tracking-wider">Nueva presentación</p>
-                              <div className="grid grid-cols-3 gap-1.5">
-                                <div>
-                                  <label className="text-[9px] text-stone-400">Cantidad</label>
-                                  <input type="number" min="1" value={item._newPresQty || ''} onChange={e => {
-                                    const next = [...items]; next[idx] = { ...next[idx], _newPresQty: e.target.value }; setItems(next);
-                                  }} className={cx.input + ' !text-xs !py-1'} placeholder="500" />
-                                </div>
-                                <div>
-                                  <label className="text-[9px] text-stone-400">Unidad</label>
-                                  <CustomSelect compact value={item._newPresUnit || ''} onChange={v => updateItem(idx, '_newPresUnit', v)}
-                                    options={[{value:'g',label:'g'},{value:'kg',label:'kg'},{value:'ml',label:'ml'},{value:'L',label:'L'},{value:'oz',label:'oz'},{value:'uni',label:'uni'}]} />
-                                </div>
-                                <div>
-                                  <label className="text-[9px] text-stone-400">Precio S/</label>
-                                  <input type="number" min="0" step="0.01" value={item._newPresPrice || ''} onChange={e => {
-                                    const val = e.target.value;
-                                    const next = [...items]; next[idx] = { ...next[idx], _newPresPrice: val, precio_unitario: val }; setItems(next);
-                                  }} className={cx.input + ' !text-xs !py-1'} placeholder="0.00" />
-                                </div>
-                              </div>
-                              <p className="text-[9px] text-amber-600">Se registrará como nueva presentación del insumo</p>
-                            </div>
+                            <p className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+                              Los datos de cantidad, unidad y precio que ingreses abajo se guardarán como nueva presentación del insumo
+                            </p>
                           )}
                           <button
                             onClick={() => { setNewInsumoTarget(idx); setShowNewInsumo(true); }}
@@ -968,7 +944,7 @@ export default function PLComprasPage() {
                       )}
 
                       {/* Quantity + unit + price */}
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className={`grid gap-2 ${item._customPres ? 'grid-cols-3' : 'grid-cols-2'}`}>
                         <div>
                           <label className="text-[10px] text-stone-400 font-medium">Cantidad</label>
                           <input
@@ -976,11 +952,29 @@ export default function PLComprasPage() {
                             value={item.cantidad}
                             onChange={(e) => updateItem(idx, 'cantidad', e.target.value)}
                             className={cx.input}
-                            placeholder="1"
+                            placeholder={item._customPres ? '500' : '1'}
                             min="1"
-                            step="1"
+                            step={item._customPres ? 'any' : '1'}
                           />
                         </div>
+                        {item._customPres && (
+                          <div>
+                            <label className="text-[10px] text-stone-400 font-medium">Unidad</label>
+                            <CustomSelect
+                              value={item.unidad || ''}
+                              onChange={(v) => updateItem(idx, 'unidad', v)}
+                              options={[
+                                { value: 'g', label: 'g' },
+                                { value: 'kg', label: 'kg' },
+                                { value: 'ml', label: 'ml' },
+                                { value: 'L', label: 'L' },
+                                { value: 'oz', label: 'oz' },
+                                { value: 'uni', label: 'uni' },
+                              ]}
+                              compact
+                            />
+                          </div>
+                        )}
                         <div>
                           <label className="text-[10px] text-stone-400 font-medium">Precio S/</label>
                           <input
