@@ -267,6 +267,25 @@ export default function PLComprasPage() {
 
     setSaving(true);
     try {
+      // Auto-create new presentations for items with _customPres
+      for (const it of validItems) {
+        if (it._customPres && it.insumo_id && it._newPresQty && it._newPresUnit) {
+          try {
+            const ins = insumos.find(i => i.id === it.insumo_id);
+            const presNombre = `${ins?.nombre || 'Insumo'} ${it._newPresQty} ${it._newPresUnit}`;
+            await api.post(`/insumos/${it.insumo_id}/presentaciones`, {
+              nombre: presNombre,
+              cantidad: parseFloat(it._newPresQty),
+              unidad: it._newPresUnit,
+              precio: parseFloat(it._newPresPrice || it.precio_unitario) || 0,
+            });
+          } catch (_) { /* puede ya existir */ }
+          it.unidad = `${it._newPresQty} ${it._newPresUnit}`;
+          it.precio_unitario = parseFloat(it._newPresPrice || it.precio_unitario) || 0;
+          it.cantidad = parseFloat(it.cantidad) || 1;
+        }
+      }
+
       await api.post('/pl/compras', {
         fecha: form.fecha,
         proveedor: form.proveedor || null,
@@ -854,23 +873,58 @@ export default function PLComprasPage() {
                             onChange={(ins) => selectInsumo(idx, ins)}
                             placeholder="Buscar insumo..."
                           />
-                          {item._presentaciones?.length > 1 && (
+                          {item.insumo_id && (item._presentaciones?.length > 0 || item._customPres) && (
                             <select
-                              value={item._presentacion_id || ''}
+                              value={item._customPres ? 'custom' : (item._presentacion_id || '')}
                               onChange={e => {
-                                const presId = parseInt(e.target.value);
-                                const pres = item._presentaciones.find(p => p.id === presId);
-                                const ins = insumos.find(i => i.id === item.insumo_id);
-                                if (pres) applyPresentacion(idx, item.insumo_id, pres, item._presentaciones, ins);
+                                if (e.target.value === 'custom') {
+                                  setItems(prev => prev.map((it, i) => i !== idx ? it : { ...it, _customPres: true, cantidad: '1', unidad: '', precio_unitario: '', _precio_catalogo: 0 }));
+                                } else {
+                                  const presId = parseInt(e.target.value);
+                                  const pres = item._presentaciones.find(p => p.id === presId);
+                                  const ins = insumos.find(i => i.id === item.insumo_id);
+                                  if (pres) {
+                                    const next = { ...item, _customPres: false };
+                                    setItems(prev => prev.map((it, i) => i !== idx ? it : next));
+                                    applyPresentacion(idx, item.insumo_id, pres, item._presentaciones, ins);
+                                  }
+                                }
                               }}
                               className="w-full text-[11px] border border-stone-200 rounded-lg px-2 py-1.5 bg-white text-stone-700 focus:outline-none focus:border-stone-400"
                             >
-                              {item._presentaciones.map(p => (
+                              {(item._presentaciones || []).map(p => (
                                 <option key={p.id} value={p.id}>
                                   {p.nombre} — S/ {parseFloat(p.precio || 0).toFixed(2)}
                                 </option>
                               ))}
+                              <option value="custom">+ Otra presentación...</option>
                             </select>
+                          )}
+                          {item._customPres && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 space-y-1.5">
+                              <p className="text-[9px] font-semibold text-amber-700 uppercase tracking-wider">Nueva presentación</p>
+                              <div className="grid grid-cols-3 gap-1.5">
+                                <div>
+                                  <label className="text-[9px] text-stone-400">Cantidad</label>
+                                  <input type="number" min="1" value={item._newPresQty || ''} onChange={e => {
+                                    const next = [...items]; next[idx] = { ...next[idx], _newPresQty: e.target.value }; setItems(next);
+                                  }} className={cx.input + ' !text-xs !py-1'} placeholder="500" />
+                                </div>
+                                <div>
+                                  <label className="text-[9px] text-stone-400">Unidad</label>
+                                  <CustomSelect compact value={item._newPresUnit || ''} onChange={v => updateItem(idx, '_newPresUnit', v)}
+                                    options={[{value:'g',label:'g'},{value:'kg',label:'kg'},{value:'ml',label:'ml'},{value:'L',label:'L'},{value:'oz',label:'oz'},{value:'uni',label:'uni'}]} />
+                                </div>
+                                <div>
+                                  <label className="text-[9px] text-stone-400">Precio S/</label>
+                                  <input type="number" min="0" step="0.01" value={item._newPresPrice || ''} onChange={e => {
+                                    const val = e.target.value;
+                                    const next = [...items]; next[idx] = { ...next[idx], _newPresPrice: val, precio_unitario: val }; setItems(next);
+                                  }} className={cx.input + ' !text-xs !py-1'} placeholder="0.00" />
+                                </div>
+                              </div>
+                              <p className="text-[9px] text-amber-600">Se registrará como nueva presentación del insumo</p>
+                            </div>
                           )}
                           <button
                             onClick={() => { setNewInsumoTarget(idx); setShowNewInsumo(true); }}
