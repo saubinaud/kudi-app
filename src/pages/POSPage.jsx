@@ -598,13 +598,13 @@ export default function POSPage() {
                   }
                   setPagoMixto(!pagoMixto);
                 }}
-                className={`w-full py-2 rounded-lg border text-xs font-medium transition-colors duration-100 ${
+                className={`w-full py-2.5 rounded-lg border text-xs font-semibold transition-colors duration-100 ${
                   pagoMixto
-                    ? 'border-[#16A34A] bg-emerald-50 text-[#16A34A]'
+                    ? 'border-rose-300 bg-rose-50 text-rose-600 hover:bg-rose-100'
                     : 'border-dashed border-stone-300 text-stone-400 hover:border-stone-400 hover:text-stone-600'
                 }`}
               >
-                {pagoMixto ? '✓ Dividir cuenta activo — click para desactivar' : 'Dividir cuenta'}
+                {pagoMixto ? 'Cancelar división' : 'Dividir cuenta'}
               </button>
 
               {/* Pago mixto subcuentas */}
