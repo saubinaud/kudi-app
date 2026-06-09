@@ -371,7 +371,8 @@ export default function PLCashflowPage() {
   const displayMeses = selectedMonths.size > 0
     ? meses.filter(m => {
         if (!m.periodo?.fecha_inicio) return false;
-        return selectedMonths.has(new Date(m.periodo.fecha_inicio).getMonth());
+        const monthIdx = parseInt(String(m.periodo.fecha_inicio).slice(5, 7)) - 1;
+        return selectedMonths.has(monthIdx);
       })
     : meses;
   const gridCategorias = gridData?.categorias || [];

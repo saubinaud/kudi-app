@@ -63,12 +63,13 @@ export default function PeriodoSelector({ periodos = [], value, onChange, onCrea
               key={i}
               disabled={isFuture}
               onClick={() => {
-                if (periodo) {
-                  onChange({ year: selectedYear, month: i + 1 });
-                } else if (onCreatePeriodo && !isFuture) {
+                if (isFuture) return;
+                if (!periodo && onCreatePeriodo) {
                   onCreatePeriodo(selectedYear, i).then(() => {
                     onChange({ year: selectedYear, month: i + 1 });
                   });
+                } else {
+                  onChange({ year: selectedYear, month: i + 1 });
                 }
               }}
               className={`px-2 py-1 rounded text-[11px] font-medium transition-colors duration-100 ${
@@ -76,11 +77,9 @@ export default function PeriodoSelector({ periodos = [], value, onChange, onCrea
                   ? 'bg-[var(--accent)] text-white'
                   : isCurrent && !isSelected
                   ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-300'
-                  : periodo
-                  ? 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                   : isFuture
                   ? 'text-stone-300 cursor-not-allowed'
-                  : 'text-stone-400 hover:bg-stone-50 border border-dashed border-stone-200'
+                  : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
               }`}
               title={periodo ? periodo.nombre : isFuture ? '' : 'Click para crear'}
             >
