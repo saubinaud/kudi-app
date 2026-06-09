@@ -301,8 +301,8 @@ export default function PLComprasPage() {
           material_id: it.material_id || null,
           producto_id: it.producto_id || null,
           nombre_item: it.nombre_item || null,
-          cantidad: parseFloat(it.cantidad),
-          unidad: it.unidad || null,
+          cantidad: it._customPres ? 1 : parseFloat(it.cantidad),
+          unidad: it._customPres ? `${it.cantidad} ${it.unidad}` : (it.unidad || null),
           precio_unitario: parseFloat(it.precio_unitario),
         })),
       });
