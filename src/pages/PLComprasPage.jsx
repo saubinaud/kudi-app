@@ -208,23 +208,21 @@ export default function PLComprasPage() {
   };
 
   const applyPresentacion = (idx, insumoId, pres, allPres, ins) => {
-    const cantidad = pres?.cantidad || ins?.cantidad_presentacion || 1;
-    const unidad = pres?.unidad || ins?.unidad_medida || ins?.unidad || '';
-    const precioSugerido = pres?.precio
-      ? parseFloat(pres.precio) / parseFloat(pres.cantidad || 1)
-      : Number(ins?.cantidad_presentacion) > 0
-        ? Number(ins.precio_presentacion) / Number(ins.cantidad_presentacion)
-        : Number(ins?.precio_presentacion) || 0;
+    // Cantidad = 1 presentación, precio = precio total de la presentación
+    const precioTotal = pres?.precio
+      ? parseFloat(pres.precio)
+      : Number(ins?.precio_presentacion) || 0;
+    const unidad = pres?.nombre || `${ins?.nombre || ''} ${pres?.cantidad || ins?.cantidad_presentacion || ''} ${pres?.unidad || ins?.unidad_medida || ''}`.trim();
 
     setItems((prev) => prev.map((item, i) => {
       if (i !== idx) return item;
       return {
         ...item,
         insumo_id: insumoId,
-        cantidad: String(cantidad),
-        unidad,
-        precio_unitario: parseFloat(precioSugerido.toFixed(3)),
-        _precio_catalogo: precioSugerido,
+        cantidad: '1',
+        unidad: unidad,
+        precio_unitario: parseFloat(precioTotal.toFixed(2)),
+        _precio_catalogo: precioTotal,
         _presentacion_id: pres?.id || null,
         _presentaciones: allPres || [],
       };
@@ -916,7 +914,7 @@ export default function PLComprasPage() {
                       )}
 
                       {/* Quantity + unit + price */}
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         <div>
                           <label className="text-[10px] text-stone-400 font-medium">Cantidad</label>
                           <input
@@ -924,39 +922,21 @@ export default function PLComprasPage() {
                             value={item.cantidad}
                             onChange={(e) => updateItem(idx, 'cantidad', e.target.value)}
                             className={cx.input}
-                            placeholder="0"
-                            min="0"
-                            step="any"
+                            placeholder="1"
+                            min="1"
+                            step="1"
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-stone-400 font-medium">Unidad</label>
-                          <CustomSelect
-                            value={item.unidad}
-                            onChange={(v) => updateItem(idx, 'unidad', v)}
-                            options={[
-                              { value: 'uni', label: 'uni' },
-                              { value: 'g', label: 'g' },
-                              { value: 'kg', label: 'kg' },
-                              { value: 'ml', label: 'ml' },
-                              { value: 'L', label: 'L' },
-                              { value: 'oz', label: 'oz' },
-                              { value: 'cm', label: 'cm' },
-                              { value: 'mt', label: 'mt' },
-                            ]}
-                            compact
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-stone-400 font-medium">Precio unit.</label>
+                          <label className="text-[10px] text-stone-400 font-medium">Precio S/</label>
                           <input
                             type="number"
                             value={item.precio_unitario}
                             onChange={(e) => updateItem(idx, 'precio_unitario', e.target.value)}
                             className={cx.input}
-                            placeholder="0.000"
+                            placeholder="0.00"
                             min="0"
-                            step="0.001"
+                            step="0.01"
                           />
                         </div>
                       </div>
@@ -976,7 +956,7 @@ export default function PLComprasPage() {
                           </span>
                         )}
                         <span className="text-xs font-semibold text-stone-600 font-mono ml-auto">
-                          Subtotal: {itemSubtotal(item).toFixed(3)}
+                          Subtotal: S/ {itemSubtotal(item).toFixed(2)}
                         </span>
                       </div>
                     </div>
