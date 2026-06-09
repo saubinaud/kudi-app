@@ -644,20 +644,8 @@ export default function POSPage() {
                         {/* Amount input */}
                         <div className="relative">
                           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-stone-400">S/</span>
-                          <input type="number" step="0.01" min="0" value={p.monto}
-                            onChange={e => {
-                              const next = [...pagoPartes];
-                              next[idx] = { ...next[idx], monto: e.target.value };
-                              // Auto-recalcular la última subcuenta con el restante
-                              const lastIdx = next.length - 1;
-                              if (idx !== lastIdx) {
-                                const targetTotal = cartSubtotal + costoEnvio;
-                                const sumOtras = next.reduce((s, p, i) => i !== lastIdx ? s + (parseFloat(p.monto) || 0) : s, 0);
-                                const restante = Math.round((targetTotal - sumOtras) * 100) / 100;
-                                next[lastIdx] = { ...next[lastIdx], monto: restante > 0 ? String(restante) : '0' };
-                              }
-                              setPagoPartes(next);
-                            }}
+                          <input type="number" step="1" min="0" value={p.monto}
+                            onChange={e => { const next = [...pagoPartes]; next[idx] = { ...next[idx], monto: e.target.value }; setPagoPartes(next); }}
                             className="w-full text-sm border border-stone-200 rounded-lg pl-8 pr-2 py-2 text-right font-semibold focus:outline-none focus:border-stone-400"
                             placeholder="0.00" />
                         </div>
@@ -695,20 +683,59 @@ export default function POSPage() {
                     className="w-full py-1.5 border border-dashed border-stone-300 rounded-lg text-xs text-stone-400 hover:border-stone-400 hover:text-stone-600 transition-colors">
                     + Agregar subcuenta
                   </button>
-                  {/* Balance indicator */}
+                  {/* Balance indicator + Distribuir */}
                   {(() => {
                     const totalPartes = pagoPartes.reduce((s, p) => s + (parseFloat(p.monto) || 0), 0);
-                    const targetTotal = cartSubtotal + costoEnvio; // without commission — commission is added per subcuenta
-                    const restante = targetTotal - totalPartes;
+                    const targetTotal = cartSubtotal + costoEnvio;
+                    const diff = Math.round((targetTotal - totalPartes) * 100) / 100;
+                    const isComplete = Math.abs(diff) < 0.01;
                     return (
-                      <div className={`text-center py-1.5 rounded-lg text-xs font-bold ${
-                        restante > 0.01 ? 'bg-amber-50 text-amber-600' : restante < -0.01 ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'
-                      }`}>
-                        {restante > 0.01
-                          ? `Falta: ${formatCurrency(restante)} para completar`
-                          : restante < -0.01
-                            ? `Sobra: ${formatCurrency(Math.abs(restante))} — estas pagando de mas`
-                            : 'Cuenta completa'}
+                      <div className="space-y-1.5">
+                        <div className={`text-center py-1.5 rounded-lg text-xs font-bold ${
+                          diff > 0.01 ? 'bg-amber-50 text-amber-600' : diff < -0.01 ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'
+                        }`}>
+                          {diff > 0.01
+                            ? `Falta: ${formatCurrency(diff)}`
+                            : diff < -0.01
+                              ? `Sobra: ${formatCurrency(Math.abs(diff))}`
+                              : 'Cuenta completa'}
+                        </div>
+                        {!isComplete && (
+                          <button
+                            onClick={() => {
+                              const tt = targetTotal;
+                              const next = [...pagoPartes];
+                              // Mantener montos de subcuentas que tienen valor, ajustar la última vacía o la última
+                              let sumFijas = 0;
+                              let lastWithValue = -1;
+                              for (let i = 0; i < next.length; i++) {
+                                const m = parseFloat(next[i].monto) || 0;
+                                if (m > 0) { sumFijas += m; lastWithValue = i; }
+                              }
+                              // Si hay excedente, buscar la última subcuenta con monto y reducirla
+                              if (sumFijas > tt) {
+                                // Distribuir: respetar todas menos la última con monto
+                                let sumSinUltima = 0;
+                                for (let i = 0; i < next.length; i++) {
+                                  if (i !== lastWithValue) sumSinUltima += parseFloat(next[i].monto) || 0;
+                                }
+                                const ajuste = Math.round((tt - sumSinUltima) * 100) / 100;
+                                next[lastWithValue] = { ...next[lastWithValue], monto: ajuste > 0 ? String(ajuste) : '0' };
+                              } else if (sumFijas < tt) {
+                                // Falta: poner restante en la última subcuenta sin monto o en la última
+                                const emptyIdx = next.findIndex(p => !parseFloat(p.monto));
+                                const targetIdx = emptyIdx >= 0 ? emptyIdx : next.length - 1;
+                                const sumOtras = next.reduce((s, p, i) => i !== targetIdx ? s + (parseFloat(p.monto) || 0) : s, 0);
+                                const restante = Math.round((tt - sumOtras) * 100) / 100;
+                                next[targetIdx] = { ...next[targetIdx], monto: restante > 0 ? String(restante) : '0' };
+                              }
+                              setPagoPartes(next);
+                            }}
+                            className="w-full py-1.5 rounded-lg text-xs font-semibold bg-stone-800 text-white hover:bg-stone-700 transition-colors"
+                          >
+                            Distribuir correctamente
+                          </button>
+                        )}
                       </div>
                     );
                   })()}
