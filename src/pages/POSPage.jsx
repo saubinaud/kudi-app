@@ -621,14 +621,15 @@ export default function POSPage() {
                       <div key={idx} className={`rounded-xl p-3 space-y-2 transition-colors duration-100 ${p.pagada ? 'bg-emerald-50/50 border border-emerald-200' : 'bg-stone-50'}`}>
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Subcuenta {idx + 1}</span>
-                          {pagoPartes.length > 2 && (
+                          {pagoPartes.length > 2 && !p.pagada && (
                             <button onClick={() => setPagoPartes(pagoPartes.filter((_, i) => i !== idx))} className="text-stone-300 hover:text-rose-500 transition-colors"><X size={13} /></button>
                           )}
                         </div>
                         {/* 4 payment method buttons */}
-                        <div className="grid grid-cols-4 gap-1">
+                        <div className={`grid grid-cols-4 gap-1 ${p.pagada ? 'opacity-50 pointer-events-none' : ''}`}>
                           {METODOS_PAGO.map(m => (
                             <button key={m.key}
+                              disabled={p.pagada}
                               onClick={() => { const next = [...pagoPartes]; next[idx] = { ...next[idx], metodo: m.key }; setPagoPartes(next); }}
                               className={`flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-lg border text-[10px] font-medium transition-colors duration-100 ${
                                 p.metodo === m.key
@@ -641,8 +642,8 @@ export default function POSPage() {
                           ))}
                         </div>
                         {esTarjeta && (
-                          <label className="flex items-center gap-1.5 cursor-pointer">
-                            <input type="checkbox" checked={p.sinComision || false}
+                          <label className={`flex items-center gap-1.5 ${p.pagada ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
+                            <input type="checkbox" checked={p.sinComision || false} disabled={p.pagada}
                               onChange={e => { const next = [...pagoPartes]; next[idx] = { ...next[idx], sinComision: e.target.checked }; setPagoPartes(next); }}
                               className="w-3 h-3 rounded" />
                             <span className="text-[10px] text-stone-500">No cobrar comisión</span>
@@ -651,9 +652,9 @@ export default function POSPage() {
                         {/* Amount input */}
                         <div className="relative">
                           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-stone-400">S/</span>
-                          <input type="number" step="1" min="0" value={p.monto}
+                          <input type="number" step="1" min="0" value={p.monto} disabled={p.pagada}
                             onChange={e => { const next = [...pagoPartes]; next[idx] = { ...next[idx], monto: e.target.value }; setPagoPartes(next); }}
-                            className="w-full text-sm border border-stone-200 rounded-lg pl-8 pr-2 py-2 text-right font-semibold focus:outline-none focus:border-stone-400"
+                            className={`w-full text-sm border border-stone-200 rounded-lg pl-8 pr-2 py-2 text-right font-semibold focus:outline-none focus:border-stone-400 ${p.pagada ? 'bg-stone-100 text-stone-400' : ''}`}
                             placeholder="0.00" />
                         </div>
                         {/* Subtotal per subcuenta + cobrado */}
