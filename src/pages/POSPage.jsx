@@ -74,6 +74,9 @@ export default function POSPage() {
   // Post-sale success
   const [lastSaleId, setLastSaleId] = useState(null);
   const [lastSaleCode, setLastSaleCode] = useState(null);
+  const [emittingBoleta, setEmittingBoleta] = useState(false);
+  const [lastSaleItems, setLastSaleItems] = useState([]);
+  const [lastClienteId, setLastClienteId] = useState(null);
 
   // Fetch products + zonas on mount
   useEffect(() => {
@@ -207,6 +210,8 @@ export default function POSPage() {
       descuento: 0,
       descuento_tipo: 'monto',
       descuento_pct: 0,
+      stock_actual: parseFloat(product.stock_actual) || 0,
+      control_stock: product.control_stock || false,
     }]);
   };
 
@@ -235,6 +240,8 @@ export default function POSPage() {
       descuento: 0,
       descuento_tipo: 'monto',
       descuento_pct: 0,
+      stock_actual: parseFloat(variant.stock_actual ?? product.stock_actual) || 0,
+      control_stock: product.control_stock || false,
     }]);
   };
 
@@ -337,6 +344,14 @@ export default function POSPage() {
       setLastSaleCode(saleData?.codigo_pedido);
       toast.success('Venta registrada');
       if (caja) loadCaja(); // refresh counters
+      setLastSaleItems(cartItems.map(i => ({
+        producto_id: i.producto_id,
+        producto_nombre: i.nombre,
+        cantidad: i.cantidad,
+        precio_unitario: itemPrecio(i),
+        descuento: parseFloat(i.descuento) || 0,
+      })));
+      setLastClienteId(clienteId);
       setCartItems([]);
       setPosCliente({ tipo_doc: 'DNI', num_doc: '', nombre: '', email: '', telefono: '' });
       setClienteEncontrado(false);
@@ -502,6 +517,12 @@ export default function POSPage() {
                       />
                     </div>
                   </div>
+                  {item.control_stock && item.cantidad > item.stock_actual && (
+                    <div className="flex items-center gap-1 mt-1.5 text-amber-600">
+                      <AlertTriangle size={11} />
+                      <span className="text-[10px]">Stock: {item.stock_actual} — Faltan {item.cantidad - item.stock_actual}</span>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -1085,13 +1106,38 @@ export default function POSPage() {
             )}
             <div className="space-y-2">
               <button
-                onClick={() => {
-                  setLastSaleId(null);
-                  toast.success('Ve a Comprobantes para emitir');
+                disabled={emittingBoleta}
+                onClick={async () => {
+                  if (!lastSaleId || lastSaleItems.length === 0) return;
+                  setEmittingBoleta(true);
+                  try {
+                    const res = await api.post('/facturacion/emitir', {
+                      venta_id: lastSaleId,
+                      tipo: 'boleta',
+                      cliente_id: lastClienteId || null,
+                      items: lastSaleItems,
+                    });
+                    const data = res?.data || res;
+                    if (data.sunat?.success) {
+                      toast.success(`Boleta emitida: ${data.comprobante?.serie}-${data.comprobante?.correlativo}`);
+                    } else {
+                      toast.error(`SUNAT: ${data.sunat?.message || 'Error al emitir'}`);
+                    }
+                  } catch (err) {
+                    toast.error(err.message || 'Error emitiendo boleta');
+                  } finally {
+                    setEmittingBoleta(false);
+                    setLastSaleId(null);
+                  }
                 }}
                 className={cx.btnPrimary + ' w-full py-2.5 text-sm'}
               >
-                Emitir boleta
+                {emittingBoleta ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Emitiendo...
+                  </span>
+                ) : 'Emitir boleta'}
               </button>
               <button
                 onClick={() => setLastSaleId(null)}

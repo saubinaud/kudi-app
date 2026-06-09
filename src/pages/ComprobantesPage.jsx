@@ -21,13 +21,14 @@ const TIPO_DOC_OPTIONS = [
 
 const TIPO_LABELS = { '01': 'Factura', '03': 'Boleta' };
 
-const ESTADO_LABELS = { emitido: 'Aceptado SUNAT', anulado: 'Anulado', error: 'Rechazado' };
+const ESTADO_LABELS = { emitido: 'Aceptado SUNAT', anulado: 'Anulado', error: 'Rechazado', pendiente: 'Pendiente' };
 
 function estadoBadge(estado) {
   switch (estado) {
     case 'emitido': return cx.badge('bg-emerald-50 text-emerald-600');
     case 'anulado': return cx.badge('bg-stone-100 text-stone-500');
     case 'error': return cx.badge('bg-rose-50 text-rose-600');
+    case 'pendiente': return cx.badge('bg-amber-50 text-amber-600');
     default: return cx.badge('bg-stone-100 text-stone-500');
   }
 }
@@ -745,7 +746,7 @@ export default function ComprobantesPage() {
                             <Truck size={14} />
                           </button>
                         )}
-                        {c.estado === 'error' && (
+                        {(c.estado === 'error' || c.estado === 'pendiente') && (
                           <button
                             onClick={async () => {
                               try {
@@ -756,7 +757,7 @@ export default function ComprobantesPage() {
                                 loadComprobantes();
                               } catch (err) { toast.error(err.message || 'Error reintentando'); }
                             }}
-                            className={cx.btnIcon + ' hover:text-amber-600'} title="Reintentar emisión"
+                            className={cx.btnIcon + ' hover:text-amber-600'} title={c.estado === 'pendiente' ? 'Validar con SUNAT' : 'Reintentar emisión'}
                           >
                             <RotateCcw size={14} />
                           </button>
@@ -819,7 +820,7 @@ export default function ComprobantesPage() {
                         <Truck size={12} /> Envío
                       </button>
                     )}
-                    {c.estado === 'error' && (
+                    {(c.estado === 'error' || c.estado === 'pendiente') && (
                       <button
                         onClick={async () => {
                           try {
@@ -832,7 +833,7 @@ export default function ComprobantesPage() {
                         }}
                         className={cx.btnGhost + ' text-xs flex items-center gap-1 text-amber-600'}
                       >
-                        <RotateCcw size={12} /> Reintentar
+                        <RotateCcw size={12} /> {c.estado === 'pendiente' ? 'Validar' : 'Reintentar'}
                       </button>
                     )}
                     {c.estado === 'emitido' && (
