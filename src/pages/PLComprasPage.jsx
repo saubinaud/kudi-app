@@ -247,13 +247,17 @@ export default function PLComprasPage() {
   };
 
   // Computed total
+  const itemSubtotal = (item) => {
+    // Custom presentation: precio = costo total de esa compra (cantidad describe la presentación)
+    if (item._customPres) return parseFloat(item.precio_unitario) || 0;
+    // Existing presentation: cantidad = unidades compradas, precio = por unidad
+    return (parseFloat(item.precio_unitario) || 0) * (parseFloat(item.cantidad) || 0);
+  };
+
   const formTotal = useMemo(() =>
-    items.reduce((s, item) => s + ((parseFloat(item.precio_unitario) || 0) * (parseFloat(item.cantidad) || 0)), 0),
+    items.reduce((s, item) => s + itemSubtotal(item), 0),
     [items]
   );
-
-  const itemSubtotal = (item) =>
-    (parseFloat(item.precio_unitario) || 0) * (parseFloat(item.cantidad) || 0);
 
   // Save
   const saveCompra = async () => {
@@ -862,19 +866,19 @@ export default function PLComprasPage() {
 
                       {/* Item selector based on type */}
                       {item.tipo === 'insumo' && (
-                        <div className="mb-2 space-y-1">
+                        <div className="mb-2 space-y-1.5">
                           <SearchableSelect
                             options={insumos}
                             value={item.insumo_id}
                             onChange={(ins) => selectInsumo(idx, ins)}
                             placeholder="Buscar insumo..."
                           />
-                          {item.insumo_id && (item._presentaciones?.length > 0 || item._customPres) && (
+                          {item.insumo_id && (item._presentaciones?.length > 0) && (
                             <select
                               value={item._customPres ? 'custom' : (item._presentacion_id || '')}
                               onChange={e => {
                                 if (e.target.value === 'custom') {
-                                  setItems(prev => prev.map((it, i) => i !== idx ? it : { ...it, _customPres: true, cantidad: '1', unidad: '', precio_unitario: '', _precio_catalogo: 0 }));
+                                  setItems(prev => prev.map((it, i) => i !== idx ? it : { ...it, _customPres: true, cantidad: '', unidad: '', precio_unitario: '', _precio_catalogo: 0 }));
                                 } else {
                                   const presId = parseInt(e.target.value);
                                   const pres = item._presentaciones.find(p => p.id === presId);
@@ -896,17 +900,6 @@ export default function PLComprasPage() {
                               <option value="custom">+ Otra presentación...</option>
                             </select>
                           )}
-                          {item._customPres && (
-                            <p className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
-                              Los datos de cantidad, unidad y precio que ingreses abajo se guardarán como nueva presentación del insumo
-                            </p>
-                          )}
-                          <button
-                            onClick={() => { setNewInsumoTarget(idx); setShowNewInsumo(true); }}
-                            className="text-[11px] text-[var(--accent)] hover:underline transition-colors duration-100"
-                          >
-                            + Crear nuevo insumo
-                          </button>
                         </div>
                       )}
                       {item.tipo === 'material' && (
@@ -996,7 +989,7 @@ export default function PLComprasPage() {
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-stone-400 font-medium">Precio S/</label>
+                          <label className="text-[10px] text-stone-400 font-medium">{item._customPres ? 'Costo total S/' : 'Precio S/'}</label>
                           <input
                             type="number"
                             value={item.precio_unitario}
@@ -1008,6 +1001,24 @@ export default function PLComprasPage() {
                           />
                         </div>
                       </div>
+
+                      {/* Nueva presentación badge + crear insumo */}
+                      {item._customPres && item.insumo_id && (
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold bg-amber-100 text-amber-700">
+                            Nueva presentación
+                          </span>
+                          <span className="text-[9px] text-stone-400">Se guardará al registrar la compra</span>
+                        </div>
+                      )}
+                      {item.tipo === 'insumo' && !item.insumo_id && (
+                        <button
+                          onClick={() => { setNewInsumoTarget(idx); setShowNewInsumo(true); }}
+                          className="text-[11px] text-[var(--accent)] hover:underline transition-colors duration-100 mt-1"
+                        >
+                          + Crear nuevo insumo
+                        </button>
+                      )}
 
                       {/* Subtotal + variacion */}
                       <div className="flex items-center justify-between mt-2">
