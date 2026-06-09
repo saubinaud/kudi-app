@@ -49,7 +49,7 @@ export default function POSPage() {
   const [sinComisionTarjeta, setSinComisionTarjeta] = useState(false);
   const [pagaCon, setPagaCon] = useState(''); // calculadora de vuelto
   const [pagoMixto, setPagoMixto] = useState(false);
-  const [pagoPartes, setPagoPartes] = useState([{ metodo: 'efectivo', monto: '' }, { metodo: 'efectivo', monto: '' }]);
+  const [pagoPartes, setPagoPartes] = useState([{ metodo: 'efectivo', monto: '', pagada: false }, { metodo: 'efectivo', monto: '', pagada: false }]);
 
   // Arqueo de caja (non-blocking)
   const [caja, setCaja] = useState(null);
@@ -376,7 +376,7 @@ export default function POSPage() {
       setSinComisionTarjeta(false);
       setPagaCon('');
       setPagoMixto(false);
-      setPagoPartes([{ metodo: 'efectivo', monto: '' }, { metodo: 'efectivo', monto: '' }]);
+      setPagoPartes([{ metodo: 'efectivo', monto: '', pagada: false }, { metodo: 'efectivo', monto: '', pagada: false }]);
       setTipoEntrega('recojo');
       setZonaSeleccionada(null);
       setDireccion({ departamento: '', provincia: '', distrito: '', direccion: '', referencia: '' });
@@ -592,8 +592,8 @@ export default function POSPage() {
                 onClick={() => {
                   if (!pagoMixto) {
                     setPagoPartes([
-                      { metodo: 'efectivo', monto: '' },
-                      { metodo: 'efectivo', monto: '' },
+                      { metodo: 'efectivo', monto: '', pagada: false },
+                      { metodo: 'efectivo', monto: '', pagada: false },
                     ]);
                   }
                   setPagoMixto(!pagoMixto);
@@ -615,7 +615,7 @@ export default function POSPage() {
                     const montoBase = parseFloat(p.monto) || 0;
                     const comisionSub = esTarjeta ? Math.round(montoBase * comisionPosPct) / 100 : 0;
                     return (
-                      <div key={idx} className="bg-stone-50 rounded-xl p-3 space-y-2">
+                      <div key={idx} className={`rounded-xl p-3 space-y-2 transition-colors duration-100 ${p.pagada ? 'bg-emerald-50/50 border border-emerald-200' : 'bg-stone-50'}`}>
                         <div className="flex items-center justify-between">
                           <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Subcuenta {idx + 1}</span>
                           {pagoPartes.length > 2 && (
@@ -645,18 +645,32 @@ export default function POSPage() {
                             className="w-full text-sm border border-stone-200 rounded-lg pl-8 pr-2 py-2 text-right font-semibold focus:outline-none focus:border-stone-400"
                             placeholder="0.00" />
                         </div>
-                        {/* Tarjeta commission note */}
-                        {esTarjeta && montoBase > 0 && (
-                          <p className="text-[10px] text-amber-600 flex items-center gap-1">
-                            <CreditCard size={10} />
-                            Comision {comisionPosPct}%: +{formatCurrency(comisionSub)}
-                          </p>
+                        {/* Subtotal per subcuenta + cobrado */}
+                        {montoBase > 0 && (
+                          <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-stone-200">
+                            <div>
+                              {esTarjeta && comisionSub > 0 && (
+                                <p className="text-[10px] text-amber-600">+{formatCurrency(comisionSub)} comisión {comisionPosPct}%</p>
+                              )}
+                              <p className="text-xs font-bold text-stone-800">Cobrar: {formatCurrency(montoBase + comisionSub)}</p>
+                            </div>
+                            <button
+                              onClick={() => { const next = [...pagoPartes]; next[idx] = { ...next[idx], pagada: !next[idx].pagada }; setPagoPartes(next); }}
+                              className={`px-3 py-1 rounded-lg text-[11px] font-semibold transition-colors duration-100 ${
+                                p.pagada
+                                  ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+                                  : 'bg-stone-200 text-stone-500 hover:bg-stone-300'
+                              }`}
+                            >
+                              {p.pagada ? '✓ Cobrado' : 'Marcar cobrado'}
+                            </button>
+                          </div>
                         )}
                       </div>
                     );
                   })}
                   {/* Add subcuenta + totals */}
-                  <button onClick={() => setPagoPartes([...pagoPartes, { metodo: 'efectivo', monto: '' }])}
+                  <button onClick={() => setPagoPartes([...pagoPartes, { metodo: 'efectivo', monto: '', pagada: false }])}
                     className="w-full py-1.5 border border-dashed border-stone-300 rounded-lg text-xs text-stone-400 hover:border-stone-400 hover:text-stone-600 transition-colors">
                     + Agregar subcuenta
                   </button>
@@ -788,8 +802,12 @@ export default function POSPage() {
                 </div>
                 <button
                   onClick={handleCheckout}
-                  disabled={saving}
-                  className={cx.btnPrimary + ' w-full py-3.5 text-sm font-semibold'}
+                  disabled={saving || (pagoMixto && pagoPartes.some(p => (parseFloat(p.monto) || 0) > 0 && !p.pagada))}
+                  className={`w-full py-3.5 text-sm font-semibold rounded-xl transition-colors duration-100 ${
+                    pagoMixto && pagoPartes.some(p => (parseFloat(p.monto) || 0) > 0 && !p.pagada)
+                      ? 'bg-stone-300 text-stone-500 cursor-not-allowed'
+                      : cx.btnPrimary
+                  }`}
                 >
                   {saving ? (
                     <span className="flex items-center justify-center gap-2">
