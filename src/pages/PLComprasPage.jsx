@@ -644,26 +644,32 @@ export default function PLComprasPage() {
                                 : it.material_id ? materiales.find(m => m.id === it.material_id)
                                 : it.producto_id ? productos.find(p => p.id === it.producto_id) : null;
                               if (!catItem) return null;
-                              let catPrice;
-                              if (it.producto_id) {
-                                catPrice = Number(catItem.costo_neto) || 0;
-                              } else {
-                                catPrice = Number(catItem.cantidad_presentacion) > 0
-                                  ? Number(catItem.precio_presentacion) / Number(catItem.cantidad_presentacion) : 0;
+                              // Find matching presentation by price for comparison
+                              if (it.insumo_id && catItem.presentaciones?.length > 0) {
+                                const pres = catItem.presentaciones.find(p => p.es_principal) || catItem.presentaciones[0];
+                                const catPrice = parseFloat(pres.precio) || 0;
+                                if (catPrice <= 0) return null;
+                                const diff = ((parseFloat(it.precio_unitario) / catPrice) - 1) * 100;
+                                if (Math.abs(diff) < 0.5 || Math.abs(diff) > 200) return null; // >200% = different presentation
+                                return diff;
                               }
-                              if (catPrice <= 0) return null;
-                              const diff = ((parseFloat(it.precio_unitario) / catPrice) - 1) * 100;
-                              if (Math.abs(diff) < 0.5) return null;
-                              return diff;
+                              if (it.producto_id) {
+                                const catPrice = Number(catItem.costo_neto) || 0;
+                                if (catPrice <= 0) return null;
+                                const diff = ((parseFloat(it.precio_unitario) / catPrice) - 1) * 100;
+                                if (Math.abs(diff) < 0.5) return null;
+                                return diff;
+                              }
+                              return null;
                             })();
                             return (
                             <tr key={it.id} className={cx.tr}>
                               <td className={cx.td + ' font-medium text-stone-900'}>{it.item_nombre || it.nombre_item || '-'}</td>
                               <td className={cx.td + ' text-right text-stone-600'}>{parseFloat(it.cantidad)}</td>
                               <td className={cx.td + ' text-center text-stone-500'}>{it.unidad || '-'}</td>
-                              <td className={cx.td + ' text-right text-stone-600 font-mono text-xs'}>{parseFloat(it.precio_unitario).toFixed(3)}</td>
+                              <td className={cx.td + ' text-right text-stone-600 font-mono text-xs'}>{parseFloat(it.precio_unitario).toFixed(2)}</td>
                               <td className={cx.td + ' text-right'}>
-                                <span className="font-semibold text-stone-900 font-mono text-xs">{parseFloat(it.total).toFixed(3)}</span>
+                                <span className="font-semibold text-stone-900 font-mono text-xs">{parseFloat(it.total).toFixed(2)}</span>
                                 {variation !== null && (
                                   <span className={`ml-1.5 text-[10px] ${variation > 0 ? 'text-rose-500' : 'text-teal-600'}`}>
                                     {variation > 0 ? '+' : ''}{variation.toFixed(1)}%
@@ -683,6 +689,14 @@ export default function PLComprasPage() {
                           const catItem = it.insumo_id ? insumos.find(ins => ins.id === it.insumo_id)
                             : it.material_id ? materiales.find(m => m.id === it.material_id) : null;
                           if (!catItem) return null;
+                          if (it.insumo_id && catItem.presentaciones?.length > 0) {
+                            const pres = catItem.presentaciones.find(p => p.es_principal) || catItem.presentaciones[0];
+                            const catPrice = parseFloat(pres.precio) || 0;
+                            if (catPrice <= 0) return null;
+                            const diff = ((parseFloat(it.precio_unitario) / catPrice) - 1) * 100;
+                            if (Math.abs(diff) < 0.5 || Math.abs(diff) > 200) return null;
+                            return diff;
+                          }
                           const catPrice = Number(catItem.cantidad_presentacion) > 0
                             ? Number(catItem.precio_presentacion) / Number(catItem.cantidad_presentacion) : 0;
                           if (catPrice <= 0) return null;
