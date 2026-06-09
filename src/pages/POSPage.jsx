@@ -711,31 +711,26 @@ export default function POSPage() {
                         {!isComplete && (
                           <button
                             onClick={() => {
-                              const tt = targetTotal;
                               const next = [...pagoPartes];
-                              // Mantener montos de subcuentas que tienen valor, ajustar la última vacía o la última
-                              let sumFijas = 0;
-                              let lastWithValue = -1;
-                              for (let i = 0; i < next.length; i++) {
-                                const m = parseFloat(next[i].monto) || 0;
-                                if (m > 0) { sumFijas += m; lastWithValue = i; }
-                              }
-                              // Si hay excedente, buscar la última subcuenta con monto y reducirla
-                              if (sumFijas > tt) {
-                                // Distribuir: respetar todas menos la última con monto
-                                let sumSinUltima = 0;
+                              // Sumar montos de subcuentas COBRADAS (intocables)
+                              const sumCobradas = next.reduce((s, p) => p.pagada ? s + (parseFloat(p.monto) || 0) : s, 0);
+                              const restanteParaPendientes = Math.round((targetTotal - sumCobradas) * 100) / 100;
+
+                              if (restanteParaPendientes <= 0) {
+                                // Las cobradas ya cubren o exceden el total — vaciar las pendientes
                                 for (let i = 0; i < next.length; i++) {
-                                  if (i !== lastWithValue) sumSinUltima += parseFloat(next[i].monto) || 0;
+                                  if (!next[i].pagada) next[i] = { ...next[i], monto: '0' };
                                 }
-                                const ajuste = Math.round((tt - sumSinUltima) * 100) / 100;
-                                next[lastWithValue] = { ...next[lastWithValue], monto: ajuste > 0 ? String(ajuste) : '0' };
-                              } else if (sumFijas < tt) {
-                                // Falta: poner restante en la última subcuenta sin monto o en la última
-                                const emptyIdx = next.findIndex(p => !parseFloat(p.monto));
-                                const targetIdx = emptyIdx >= 0 ? emptyIdx : next.length - 1;
-                                const sumOtras = next.reduce((s, p, i) => i !== targetIdx ? s + (parseFloat(p.monto) || 0) : s, 0);
-                                const restante = Math.round((tt - sumOtras) * 100) / 100;
-                                next[targetIdx] = { ...next[targetIdx], monto: restante > 0 ? String(restante) : '0' };
+                              } else {
+                                // Distribuir el restante entre las pendientes
+                                const pendientes = next.map((p, i) => ({ idx: i, monto: parseFloat(p.monto) || 0 })).filter((_, i) => !next[i].pagada);
+                                if (pendientes.length === 0) { setPagoPartes(next); return; }
+
+                                // Pendientes con monto fijo (>0) y la última pendiente para ajustar
+                                const lastPendIdx = pendientes[pendientes.length - 1].idx;
+                                const sumPendFijas = pendientes.reduce((s, p) => p.idx !== lastPendIdx ? s + p.monto : s, 0);
+                                const ajuste = Math.round((restanteParaPendientes - sumPendFijas) * 100) / 100;
+                                next[lastPendIdx] = { ...next[lastPendIdx], monto: ajuste > 0 ? String(ajuste) : '0' };
                               }
                               setPagoPartes(next);
                             }}
