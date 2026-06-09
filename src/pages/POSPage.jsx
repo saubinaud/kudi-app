@@ -591,9 +591,13 @@ export default function POSPage() {
               <button
                 onClick={() => {
                   if (!pagoMixto) {
+                    const targetTotal = cartSubtotal + costoEnvio;
+                    const montoIngresado = parseFloat(pagaCon) || 0;
+                    const monto1 = montoIngresado > 0 ? Math.min(montoIngresado, targetTotal) : '';
+                    const restante = monto1 !== '' ? Math.round((targetTotal - monto1) * 100) / 100 : '';
                     setPagoPartes([
-                      { metodo: 'efectivo', monto: '', pagada: false },
-                      { metodo: 'efectivo', monto: '', pagada: false },
+                      { metodo: metodoPago, monto: monto1 !== '' ? String(monto1) : '', pagada: false },
+                      { metodo: 'efectivo', monto: restante > 0 ? String(restante) : '', pagada: false },
                     ]);
                   }
                   setPagoMixto(!pagoMixto);
@@ -641,7 +645,19 @@ export default function POSPage() {
                         <div className="relative">
                           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-stone-400">S/</span>
                           <input type="number" step="0.01" min="0" value={p.monto}
-                            onChange={e => { const next = [...pagoPartes]; next[idx] = { ...next[idx], monto: e.target.value }; setPagoPartes(next); }}
+                            onChange={e => {
+                              const next = [...pagoPartes];
+                              next[idx] = { ...next[idx], monto: e.target.value };
+                              // Auto-recalcular la última subcuenta con el restante
+                              const lastIdx = next.length - 1;
+                              if (idx !== lastIdx) {
+                                const targetTotal = cartSubtotal + costoEnvio;
+                                const sumOtras = next.reduce((s, p, i) => i !== lastIdx ? s + (parseFloat(p.monto) || 0) : s, 0);
+                                const restante = Math.round((targetTotal - sumOtras) * 100) / 100;
+                                next[lastIdx] = { ...next[lastIdx], monto: restante > 0 ? String(restante) : '0' };
+                              }
+                              setPagoPartes(next);
+                            }}
                             className="w-full text-sm border border-stone-200 rounded-lg pl-8 pr-2 py-2 text-right font-semibold focus:outline-none focus:border-stone-400"
                             placeholder="0.00" />
                         </div>
@@ -670,7 +686,12 @@ export default function POSPage() {
                     );
                   })}
                   {/* Add subcuenta + totals */}
-                  <button onClick={() => setPagoPartes([...pagoPartes, { metodo: 'efectivo', monto: '', pagada: false }])}
+                  <button onClick={() => {
+                    const targetTotal = cartSubtotal + costoEnvio;
+                    const sumExistente = pagoPartes.reduce((s, p) => s + (parseFloat(p.monto) || 0), 0);
+                    const restante = Math.round((targetTotal - sumExistente) * 100) / 100;
+                    setPagoPartes([...pagoPartes, { metodo: 'efectivo', monto: restante > 0 ? String(restante) : '', pagada: false }]);
+                  }}
                     className="w-full py-1.5 border border-dashed border-stone-300 rounded-lg text-xs text-stone-400 hover:border-stone-400 hover:text-stone-600 transition-colors">
                     + Agregar subcuenta
                   </button>
