@@ -1,5 +1,52 @@
 [
   {
+    "version": "1.5.0",
+    "fecha": "auto",
+    "titulo": "Vende más rápido, controla mejor",
+    "descripcion": "El POS ahora es más inteligente: te avisa si no tienes stock, emite boletas con un solo toque y puedes escribir la cantidad directamente. Además, los canales como Rappi ya no tocan tus precios subsidiados.",
+    "imagen": null,
+    "secciones": [
+      {
+        "titulo": "Punto de venta",
+        "entries": [
+          { "tipo": "feat", "texto": "Emite boleta directo desde el POS — al terminar una venta, el botón \"Emitir boleta\" ahora la emite a SUNAT al instante" },
+          { "tipo": "feat", "texto": "Alerta de stock — si vendes más de lo que tienes, aparece un aviso ambar con cuánto te falta (no bloquea la venta)" },
+          { "tipo": "feat", "texto": "Escribe la cantidad — ya no tienes que dar + muchas veces, ahora puedes escribir \"10\" directamente en el carrito" }
+        ]
+      },
+      {
+        "titulo": "Facturación",
+        "entries": [
+          { "tipo": "feat", "texto": "Validar comprobantes pendientes — si un comprobante se quedó como \"Pendiente\", ahora puedes revalidarlo contra SUNAT con un botón" },
+          { "tipo": "improve", "texto": "IGV por producto en boletas — cada item se emite con su propia tasa de IGV (gravado o exonerado), ya no se aplica una tasa global" },
+          { "tipo": "fix", "texto": "La comisión de tarjeta ahora se guarda en la venta para que tus reportes cuadren" }
+        ]
+      },
+      {
+        "titulo": "Canales de venta",
+        "entries": [
+          { "tipo": "fix", "texto": "Al cambiar la comisión de un canal (ej: Rappi 30% → 25%), los productos con precio subsidiado o markup manual ya no se sobreescriben" },
+          { "tipo": "improve", "texto": "Los badges de subsidio y cobro extra muestran el monto y porcentaje exacto de diferencia" }
+        ]
+      },
+      {
+        "titulo": "Compras y pedidos",
+        "entries": [
+          { "tipo": "feat", "texto": "Código de comprobante en compras — al seleccionar Boleta, Factura o Ticket, aparece un campo para escribir el número del documento" },
+          { "tipo": "feat", "texto": "Conteo por estado en pedidos — cada tab muestra cuántos pedidos hay: Pendiente (3), Listo (5), etc." },
+          { "tipo": "fix", "texto": "Crear proveedor al registrar compra ya no da error 500" }
+        ]
+      },
+      {
+        "titulo": "Registro",
+        "entries": [
+          { "tipo": "improve", "texto": "Rubros enfocados en recetas — al registrarte, solo ves negocios que necesitan costear: panaderías, dark kitchens, cafeterías, catering, y más" },
+          { "tipo": "improve", "texto": "El rubro que eliges al inicio ya no se pide dos veces — se replica automáticamente al segundo formulario" }
+        ]
+      }
+    ]
+  },
+  {
     "version": "1.4.0",
     "fecha": "4 junio 2026",
     "titulo": "Cobra con tarjeta sin perder tu ganancia",

@@ -1,5 +1,11 @@
 import { useEffect } from 'react';
-import changelog from '../data/changelog.json';
+import changelogRaw from '../data/changelog.json';
+
+const changelog = changelogRaw.map(entry =>
+  entry.fecha === 'auto'
+    ? { ...entry, fecha: new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Lima' }) }
+    : entry
+);
 
 const DOT_COLORS = {
   feat: 'bg-[#16A34A]',

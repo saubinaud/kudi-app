@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import changelog from '../data/changelog.json';
+import changelogRaw from '../data/changelog.json';
+
+// Si la fecha dice "auto", reemplazar con la fecha actual en formato legible
+const changelog = changelogRaw.map(entry =>
+  entry.fecha === 'auto'
+    ? { ...entry, fecha: new Date().toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Lima' }) }
+    : entry
+);
 
 export default function UpdateBanner() {
   const [hasNew, setHasNew] = useState(false);
