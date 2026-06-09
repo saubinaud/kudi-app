@@ -55,12 +55,20 @@ export default function OnboardingPage() {
       .then((data) => { if (data.success) setPaises(data.data); })
       .catch(() => {});
     setGiros([
-      { value: 2, label: 'Restaurante / Cocina' },
       { value: 1, label: 'Panadería y Pastelería' },
-      { value: 8, label: 'Cafetería' },
+      { value: 2, label: 'Restaurante / Dark Kitchen' },
+      { value: 8, label: 'Cafetería de Especialidad' },
       { value: 3, label: 'Catering y Eventos' },
       { value: 4, label: 'Food Truck / Comida rápida' },
       { value: 5, label: 'Heladería' },
+      { value: 6, label: 'Chocolatería / Confitería' },
+      { value: 7, label: 'Cervecería Artesanal' },
+      { value: 9, label: 'Jugos y Bebidas' },
+      { value: 10, label: 'Procesadora de Alimentos' },
+      { value: 20, label: 'Mermeladas y Conservas' },
+      { value: 21, label: 'Salsas y Aderezos' },
+      { value: 22, label: 'Café y Cacao' },
+      { value: 28, label: 'Alimento para Mascotas' },
       { value: 29, label: 'Otro' },
     ]);
   }, []);
@@ -78,6 +86,10 @@ export default function OnboardingPage() {
       .then((data) => {
         setValid(true);
         setInviteData(data);
+        const giroFromToken = data?.data?.giro_negocio_id || data?.giro_negocio_id;
+        if (giroFromToken) {
+          setForm(prev => ({ ...prev, giro_negocio_id: giroFromToken }));
+        }
       })
       .catch(() => setValid(false))
       .finally(() => setValidating(false));
