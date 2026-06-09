@@ -551,7 +551,7 @@ export default function POSPage() {
       {cartItems.length > 0 && (
         <div className="border-t border-stone-200 px-5 py-4">
           {showCheckout ? (
-            <div className="space-y-3 max-h-[55vh] overflow-y-auto overflow-x-hidden">
+            <div className="space-y-4 max-h-[55vh] overflow-y-auto overflow-x-hidden">
               {/* Back button */}
               <button onClick={() => { setShowCheckout(false); setShowClientSidebar(false); }} className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800 transition-colors duration-100 -mb-1">
                 <ArrowLeft size={12} />
@@ -694,6 +694,8 @@ export default function POSPage() {
                 </div>
               )}
 
+              <hr className="border-stone-100" />
+
               {/* Calculadora de vuelto (solo efectivo, no mixto) */}
               {metodoPago === 'efectivo' && !pagoMixto && (
                 <div className="flex items-center gap-2">
@@ -746,6 +748,8 @@ export default function POSPage() {
                   </div>
                 )}
               </div>
+
+              <hr className="border-stone-100" />
 
               {/* Client + address compact button */}
               <button
