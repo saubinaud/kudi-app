@@ -44,7 +44,7 @@ function currentMonthPeriod() {
   return { nombre: `${MESES[m]} ${y}`, fecha_inicio: inicio, fecha_fin: fin };
 }
 
-const EMPTY_ITEM = { tipo: 'insumo', insumo_id: null, material_id: null, producto_id: null, nombre_item: '', cantidad: '', unidad: '', precio_unitario: '', _precio_catalogo: 0 };
+const EMPTY_ITEM = { tipo: 'insumo', insumo_id: null, material_id: null, producto_id: null, nombre_item: '', cantidad: '', unidad: '', precio_unitario: '', _precio_catalogo: 0, _presentacion_id: null, _presentaciones: [] };
 
 const EMPTY_PROVEEDOR = { nombre: '', ruc: '', telefono: '', email: '' };
 const EMPTY_INSUMO = { nombre: '', cantidad_presentacion: '', unidad_medida: 'g', precio_presentacion: '' };
@@ -202,26 +202,31 @@ export default function PLComprasPage() {
   };
 
   const selectInsumo = (idx, ins) => {
-    // Find principal presentacion if available
-    const principal = (ins.presentaciones || []).find(p => p.es_principal) || ins.presentaciones?.[0];
+    const pres = ins.presentaciones || [];
+    const principal = pres.find(p => p.es_principal) || pres[0];
+    applyPresentacion(idx, ins.id, principal, pres, ins);
+  };
 
-    const cantidad = principal?.cantidad || ins.cantidad_presentacion || 1;
-    const unidad = principal?.unidad || ins.unidad_medida || ins.unidad || '';
-    const precioSugerido = principal?.precio
-      ? parseFloat(principal.precio) / parseFloat(principal.cantidad || 1)
-      : Number(ins.cantidad_presentacion) > 0
+  const applyPresentacion = (idx, insumoId, pres, allPres, ins) => {
+    const cantidad = pres?.cantidad || ins?.cantidad_presentacion || 1;
+    const unidad = pres?.unidad || ins?.unidad_medida || ins?.unidad || '';
+    const precioSugerido = pres?.precio
+      ? parseFloat(pres.precio) / parseFloat(pres.cantidad || 1)
+      : Number(ins?.cantidad_presentacion) > 0
         ? Number(ins.precio_presentacion) / Number(ins.cantidad_presentacion)
-        : Number(ins.precio_presentacion) || 0;
+        : Number(ins?.precio_presentacion) || 0;
 
     setItems((prev) => prev.map((item, i) => {
       if (i !== idx) return item;
       return {
         ...item,
-        insumo_id: ins.id,
+        insumo_id: insumoId,
         cantidad: String(cantidad),
         unidad,
         precio_unitario: parseFloat(precioSugerido.toFixed(3)),
         _precio_catalogo: precioSugerido,
+        _presentacion_id: pres?.id || null,
+        _presentaciones: allPres || [],
       };
     }));
   };
@@ -851,6 +856,24 @@ export default function PLComprasPage() {
                             onChange={(ins) => selectInsumo(idx, ins)}
                             placeholder="Buscar insumo..."
                           />
+                          {item._presentaciones?.length > 1 && (
+                            <select
+                              value={item._presentacion_id || ''}
+                              onChange={e => {
+                                const presId = parseInt(e.target.value);
+                                const pres = item._presentaciones.find(p => p.id === presId);
+                                const ins = insumos.find(i => i.id === item.insumo_id);
+                                if (pres) applyPresentacion(idx, item.insumo_id, pres, item._presentaciones, ins);
+                              }}
+                              className="w-full text-[11px] border border-stone-200 rounded-lg px-2 py-1.5 bg-white text-stone-700 focus:outline-none focus:border-stone-400"
+                            >
+                              {item._presentaciones.map(p => (
+                                <option key={p.id} value={p.id}>
+                                  {p.nombre} — S/ {parseFloat(p.precio || 0).toFixed(2)}
+                                </option>
+                              ))}
+                            </select>
+                          )}
                           <button
                             onClick={() => { setNewInsumoTarget(idx); setShowNewInsumo(true); }}
                             className="text-[11px] text-[var(--accent)] hover:underline transition-colors duration-100"
