@@ -1022,7 +1022,7 @@ export default function PLComprasPage() {
 
                       {/* Subtotal + variacion */}
                       <div className="flex items-center justify-between mt-2">
-                        {item._precio_catalogo > 0 && parseFloat(item.precio_unitario) > 0 && (
+                        {item._precio_catalogo > 0 && parseFloat(item.precio_unitario) > 0 && !item._customPres && (
                           <span className={`text-[10px] font-medium ${
                             parseFloat(item.precio_unitario) > item._precio_catalogo ? 'text-rose-500' :
                             parseFloat(item.precio_unitario) < item._precio_catalogo ? 'text-teal-600' : 'text-stone-400'
