@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
@@ -81,7 +81,7 @@ export default function PedidosPage() {
   // Load data
   const loadPedidos = async () => {
     try {
-      const qs = filtroEstado ? `?estado=${filtroEstado}` : '';
+      const qs = '';
       const [pedidosRes, resumenRes] = await Promise.all([
         api.get(`/pedidos${qs}`),
         api.get('/pedidos/pendientes'),
@@ -108,9 +108,14 @@ export default function PedidosPage() {
     });
   }, []); // eslint-disable-line
 
+  const pedidosFiltrados = useMemo(() => {
+    if (!filtroEstado) return pedidos;
+    return pedidos.filter(p => p.estado === filtroEstado);
+  }, [pedidos, filtroEstado]);
+
   useEffect(() => {
     loadPedidos();
-  }, [filtroEstado]); // eslint-disable-line
+  }, []); // eslint-disable-line
 
   // Update estado
   const handleUpdateEstado = async (id, estado) => {
@@ -223,14 +228,17 @@ export default function PedidosPage() {
             { value: 'listo', label: 'Listo' },
             { value: 'entregado', label: 'Entregado' },
             { value: 'pagado', label: 'Pagado' },
-          ].map(t => (
-            <button key={t.value} onClick={() => setFiltroEstado(t.value)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-                filtroEstado === t.value ? 'bg-[#0A2F24] text-white' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
-              }`}>
-              {t.label}
-            </button>
-          ))}
+          ].map(t => {
+            const count = t.value === '' ? pedidos.length : pedidos.filter(p => p.estado === t.value).length;
+            return (
+              <button key={t.value} onClick={() => setFiltroEstado(t.value)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                  filtroEstado === t.value ? 'bg-[#0A2F24] text-white' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+                }`}>
+                {t.label} ({count})
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -262,7 +270,7 @@ export default function PedidosPage() {
       )}
 
       {/* Orders list */}
-      {pedidos.length === 0 ? (
+      {pedidosFiltrados.length === 0 ? (
         <div className={cx.card + ' p-12 text-center'}>
           <ClipboardList size={40} className="text-stone-300 mx-auto mb-4" />
           <p className="text-stone-400 text-sm">No hay pedidos {filtroEstado ? 'con este filtro' : 'registrados'}</p>
@@ -286,7 +294,7 @@ export default function PedidosPage() {
                 </tr>
               </thead>
               <tbody>
-                {pedidos.map(p => (
+                {pedidosFiltrados.map(p => (
                   <tr key={p.id} className={cx.tr}>
                     <td className={cx.td + ' text-stone-400 font-mono text-xs'}>{p.id}</td>
                     <td className={cx.td + ' font-medium text-stone-900'}>{p.descripcion}</td>
@@ -347,7 +355,7 @@ export default function PedidosPage() {
 
           {/* Mobile cards */}
           <div className="lg:hidden space-y-3">
-            {pedidos.map(p => {
+            {pedidosFiltrados.map(p => {
               const isExpanded = expanded[p.id];
               const pctPaid = parseFloat(p.monto_total) > 0
                 ? Math.min((parseFloat(p.monto_pagado) / parseFloat(p.monto_total)) * 100, 100)
