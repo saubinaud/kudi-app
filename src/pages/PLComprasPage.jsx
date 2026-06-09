@@ -208,23 +208,22 @@ export default function PLComprasPage() {
   };
 
   const applyPresentacion = (idx, insumoId, pres, allPres, ins) => {
-    // Cantidad = 1 presentación, precio = precio total de la presentación
-    const precioTotal = pres?.precio
-      ? parseFloat(pres.precio)
-      : Number(ins?.precio_presentacion) || 0;
-    const unidad = pres?.nombre || `${ins?.nombre || ''} ${pres?.cantidad || ins?.cantidad_presentacion || ''} ${pres?.unidad || ins?.unidad_medida || ''}`.trim();
+    const cantidad = pres?.cantidad || ins?.cantidad_presentacion || 1;
+    const unidad = pres?.unidad || ins?.unidad_medida || 'uni';
+    const precioTotal = pres?.precio ? parseFloat(pres.precio) : Number(ins?.precio_presentacion) || 0;
 
     setItems((prev) => prev.map((item, i) => {
       if (i !== idx) return item;
       return {
         ...item,
         insumo_id: insumoId,
-        cantidad: '1',
-        unidad: unidad,
+        cantidad: String(cantidad),
+        unidad,
         precio_unitario: parseFloat(precioTotal.toFixed(2)),
         _precio_catalogo: precioTotal,
         _presentacion_id: pres?.id || null,
         _presentaciones: allPres || [],
+        _customPres: false,
       };
     }));
   };
@@ -944,37 +943,58 @@ export default function PLComprasPage() {
                       )}
 
                       {/* Quantity + unit + price */}
-                      <div className={`grid gap-2 ${item._customPres ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                      <div className="grid grid-cols-3 gap-2">
                         <div>
                           <label className="text-[10px] text-stone-400 font-medium">Cantidad</label>
                           <input
                             type="number"
                             value={item.cantidad}
-                            onChange={(e) => updateItem(idx, 'cantidad', e.target.value)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const next = [...items];
+                              next[idx] = { ...next[idx], cantidad: val };
+                              // Detectar si cambió vs presentación seleccionada
+                              if (item.insumo_id && item._presentacion_id && !item._customPres) {
+                                const pres = (item._presentaciones || []).find(p => p.id === item._presentacion_id);
+                                if (pres && parseFloat(val) !== parseFloat(pres.cantidad)) {
+                                  next[idx]._customPres = true;
+                                }
+                              }
+                              setItems(next);
+                            }}
                             className={cx.input}
-                            placeholder={item._customPres ? '500' : '1'}
+                            placeholder="1"
                             min="1"
-                            step={item._customPres ? 'any' : '1'}
+                            step="any"
                           />
                         </div>
-                        {item._customPres && (
-                          <div>
-                            <label className="text-[10px] text-stone-400 font-medium">Unidad</label>
-                            <CustomSelect
-                              value={item.unidad || ''}
-                              onChange={(v) => updateItem(idx, 'unidad', v)}
-                              options={[
-                                { value: 'g', label: 'g' },
-                                { value: 'kg', label: 'kg' },
-                                { value: 'ml', label: 'ml' },
-                                { value: 'L', label: 'L' },
-                                { value: 'oz', label: 'oz' },
-                                { value: 'uni', label: 'uni' },
-                              ]}
-                              compact
-                            />
-                          </div>
-                        )}
+                        <div>
+                          <label className="text-[10px] text-stone-400 font-medium">Unidad</label>
+                          <CustomSelect
+                            value={item.unidad || ''}
+                            onChange={(v) => {
+                              const next = [...items];
+                              next[idx] = { ...next[idx], unidad: v };
+                              // Detectar si cambió vs presentación seleccionada
+                              if (item.insumo_id && item._presentacion_id && !item._customPres) {
+                                const pres = (item._presentaciones || []).find(p => p.id === item._presentacion_id);
+                                if (pres && v !== pres.unidad) {
+                                  next[idx]._customPres = true;
+                                }
+                              }
+                              setItems(next);
+                            }}
+                            options={[
+                              { value: 'g', label: 'g' },
+                              { value: 'kg', label: 'kg' },
+                              { value: 'ml', label: 'ml' },
+                              { value: 'L', label: 'L' },
+                              { value: 'oz', label: 'oz' },
+                              { value: 'uni', label: 'uni' },
+                            ]}
+                            compact
+                          />
+                        </div>
                         <div>
                           <label className="text-[10px] text-stone-400 font-medium">Precio S/</label>
                           <input
