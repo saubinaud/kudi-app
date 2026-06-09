@@ -104,7 +104,7 @@ export default function PLComprasPage() {
   const [savingProducto, setSavingProducto] = useState(false);
 
   // Modal form
-  const [form, setForm] = useState({ fecha: todayStr(), proveedor: '', proveedor_id: '', nota: '', cuenta_id: '', tipo_comprobante: '', linea_negocio_id: null, descripcion: '' });
+  const [form, setForm] = useState({ fecha: todayStr(), proveedor: '', proveedor_id: '', nota: '', cuenta_id: '', tipo_comprobante: '', codigo_comprobante: '', linea_negocio_id: null, descripcion: '' });
   const [items, setItems] = useState([{ ...EMPTY_ITEM }]);
   const [cuentas, setCuentas] = useState([]);
 
@@ -172,7 +172,7 @@ export default function PLComprasPage() {
 
   // Modal helpers
   const openNewCompra = () => {
-    setForm({ fecha: todayStr(), proveedor: '', proveedor_id: '', nota: '', cuenta_id: '', tipo_comprobante: '', linea_negocio_id: null, descripcion: '' });
+    setForm({ fecha: todayStr(), proveedor: '', proveedor_id: '', nota: '', cuenta_id: '', tipo_comprobante: '', codigo_comprobante: '', linea_negocio_id: null, descripcion: '' });
     setItems([{ ...EMPTY_ITEM }]);
     setModalOpen(true);
   };
@@ -271,6 +271,7 @@ export default function PLComprasPage() {
         nota: form.nota || null,
         cuenta_id: form.cuenta_id || null,
         tipo_comprobante: form.tipo_comprobante || null,
+        codigo_comprobante: form.codigo_comprobante || null,
         linea_negocio_id: form.linea_negocio_id || null,
         descripcion: form.descripcion || null,
         items: validItems.map((it) => ({
@@ -699,7 +700,7 @@ export default function PLComprasPage() {
                       <div className="flex items-center gap-2 mt-2 pl-7">
                         {compra.tipo_comprobante && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-stone-100 text-stone-600 capitalize">
-                            {compra.tipo_comprobante}
+                            {compra.tipo_comprobante}{compra.codigo_comprobante ? ` ${compra.codigo_comprobante}` : ''}
                           </span>
                         )}
                         {compra.linea_nombre && (
@@ -785,6 +786,18 @@ export default function PLComprasPage() {
                     placeholder="Tipo..."
                   />
                 </div>
+                {form.tipo_comprobante && (
+                  <div>
+                    <label className={cx.label}>Nro. comprobante</label>
+                    <input
+                      type="text"
+                      value={form.codigo_comprobante || ''}
+                      onChange={(e) => setForm((f) => ({ ...f, codigo_comprobante: e.target.value }))}
+                      className={cx.input}
+                      placeholder="Ej: 001-00012345"
+                    />
+                  </div>
+                )}
                 {lineas.length > 0 && (
                   <div>
                     <label className={cx.label}>Línea de negocio</label>

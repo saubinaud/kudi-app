@@ -476,7 +476,16 @@ export default function POSPage() {
                       <button onClick={() => updateCartQty(i, -1)} className="w-7 h-7 flex items-center justify-center text-stone-500 hover:text-stone-800 transition-colors duration-100 rounded-l-lg hover:bg-stone-50">
                         <Minus size={12} />
                       </button>
-                      <span className="text-sm font-bold w-7 text-center text-stone-800">{item.cantidad}</span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={item.cantidad}
+                        onChange={e => {
+                          const val = parseInt(e.target.value) || 1;
+                          setCartItems(prev => { const next = [...prev]; next[i] = { ...next[i], cantidad: Math.max(1, val) }; return next; });
+                        }}
+                        className="text-sm font-bold w-9 text-center text-stone-800 border-0 outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
                       <button onClick={() => updateCartQty(i, 1)} className="w-7 h-7 flex items-center justify-center text-stone-500 hover:text-stone-800 transition-colors duration-100 rounded-r-lg hover:bg-stone-50">
                         <Plus size={12} />
                       </button>
