@@ -49,7 +49,7 @@ export default function POSPage() {
   const [sinComisionTarjeta, setSinComisionTarjeta] = useState(false);
   const [pagaCon, setPagaCon] = useState(''); // calculadora de vuelto
   const [pagoMixto, setPagoMixto] = useState(false);
-  const [pagoPartes, setPagoPartes] = useState([{ metodo: 'efectivo', monto: '' }, { metodo: 'yape', monto: '' }]);
+  const [pagoPartes, setPagoPartes] = useState([{ metodo: 'efectivo', monto: '' }, { metodo: 'efectivo', monto: '' }]);
 
   // Arqueo de caja (non-blocking)
   const [caja, setCaja] = useState(null);
@@ -154,7 +154,20 @@ export default function POSPage() {
     return parseFloat(zona?.costo) || 0;
   }, [tipoEntrega, zonaSeleccionada, zonas]);
   const comisionPosPct = parseFloat(user?.comision_pos) || 0;
-  const comisionTarjeta = (metodoPago === 'tarjeta' && !sinComisionTarjeta) ? Math.round(cartSubtotal * comisionPosPct) / 100 : 0;
+  // Commission: per-subcuenta if mixto, global if single payment
+  const comisionTarjeta = useMemo(() => {
+    if (pagoMixto) {
+      // Sum commission only for subcuentas paying with tarjeta
+      return pagoPartes.reduce((sum, p) => {
+        if (p.metodo === 'tarjeta') {
+          const base = parseFloat(p.monto) || 0;
+          return sum + Math.round(base * comisionPosPct) / 100;
+        }
+        return sum;
+      }, 0);
+    }
+    return (metodoPago === 'tarjeta' && !sinComisionTarjeta) ? Math.round(cartSubtotal * comisionPosPct) / 100 : 0;
+  }, [pagoMixto, pagoPartes, metodoPago, sinComisionTarjeta, cartSubtotal, comisionPosPct]);
   const cartTotal = cartSubtotal + costoEnvio + comisionTarjeta;
 
   // Cart helpers
@@ -315,7 +328,11 @@ export default function POSPage() {
         const partes = pagoPartes.filter(p => parseFloat(p.monto) > 0);
         if (partes.length > 0) {
           metodoPagoFinal = 'mixto';
-          pagoDetalle = partes.map(p => ({ metodo: p.metodo, monto: parseFloat(p.monto) }));
+          pagoDetalle = partes.map(p => {
+            const base = parseFloat(p.monto);
+            const comision = p.metodo === 'tarjeta' ? Math.round(base * comisionPosPct) / 100 : 0;
+            return { metodo: p.metodo, monto: base, comision_tarjeta: comision };
+          });
         }
       }
 
@@ -359,7 +376,7 @@ export default function POSPage() {
       setSinComisionTarjeta(false);
       setPagaCon('');
       setPagoMixto(false);
-      setPagoPartes([{ metodo: 'efectivo', monto: '' }, { metodo: 'yape', monto: '' }]);
+      setPagoPartes([{ metodo: 'efectivo', monto: '' }, { metodo: 'efectivo', monto: '' }]);
       setTipoEntrega('recojo');
       setZonaSeleccionada(null);
       setDireccion({ departamento: '', provincia: '', distrito: '', direccion: '', referencia: '' });
@@ -541,43 +558,42 @@ export default function POSPage() {
                 Volver al carrito
               </button>
 
-              {/* Payment method */}
-              <div>
-                <label className="text-xs text-stone-500 font-medium block mb-2">Método de pago</label>
-                <div className={`grid gap-1.5 ${METODOS_PAGO.length > 3 ? 'grid-cols-2' : 'grid-cols-3'}`}>
-                  {METODOS_PAGO.map(m => (
-                    <button
-                      key={m.key}
-                      onClick={() => { setMetodoPago(m.key); if (m.key !== 'tarjeta') setSinComisionTarjeta(false); }}
-                      className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg border text-xs font-medium transition-colors duration-100 ${
-                        metodoPago === m.key
-                          ? 'border-[#16A34A] bg-emerald-50 text-[#16A34A]'
-                          : 'border-stone-200 text-stone-500 hover:border-stone-300 hover:bg-stone-50'
-                      }`}
-                    >
-                      <m.icon size={16} />
-                      {m.label}
-                    </button>
-                  ))}
+              {/* Payment method — hidden when pago mixto active */}
+              {!pagoMixto && (
+                <div>
+                  <label className="text-xs text-stone-500 font-medium block mb-2">Método de pago</label>
+                  <div className={`grid gap-1.5 ${METODOS_PAGO.length > 3 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                    {METODOS_PAGO.map(m => (
+                      <button
+                        key={m.key}
+                        onClick={() => { setMetodoPago(m.key); if (m.key !== 'tarjeta') setSinComisionTarjeta(false); }}
+                        className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-lg border text-xs font-medium transition-colors duration-100 ${
+                          metodoPago === m.key
+                            ? 'border-[#16A34A] bg-emerald-50 text-[#16A34A]'
+                            : 'border-stone-200 text-stone-500 hover:border-stone-300 hover:bg-stone-50'
+                        }`}
+                      >
+                        <m.icon size={16} />
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                  {metodoPago === 'tarjeta' && (
+                    <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                      <input type="checkbox" checked={sinComisionTarjeta} onChange={e => setSinComisionTarjeta(e.target.checked)} className="w-3.5 h-3.5 rounded" />
+                      <span className="text-[11px] text-stone-500">No cobrar comisión adicional</span>
+                    </label>
+                  )}
                 </div>
-                {metodoPago === 'tarjeta' && (
-                  <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                    <input type="checkbox" checked={sinComisionTarjeta} onChange={e => setSinComisionTarjeta(e.target.checked)} className="w-3.5 h-3.5 rounded" />
-                    <span className="text-[11px] text-stone-500">No cobrar comisión adicional</span>
-                  </label>
-                )}
-              </div>
+              )}
 
               {/* Pago mixto toggle — botón claro */}
               <button
                 onClick={() => {
                   if (!pagoMixto) {
-                    // Al activar: jalar monto del pagaCon o del método actual al primer slot, calcular restante
-                    const montoEfectivo = parseFloat(pagaCon) || 0;
-                    const restante = montoEfectivo > 0 ? Math.max(0, Math.round((cartTotal - montoEfectivo) * 100) / 100) : '';
                     setPagoPartes([
-                      { metodo: metodoPago, monto: montoEfectivo > 0 ? String(montoEfectivo) : '' },
-                      { metodo: metodoPago === 'efectivo' ? 'yape' : 'efectivo', monto: restante ? String(restante) : '' },
+                      { metodo: 'efectivo', monto: '' },
+                      { metodo: 'efectivo', monto: '' },
                     ]);
                   }
                   setPagoMixto(!pagoMixto);
@@ -588,44 +604,79 @@ export default function POSPage() {
                     : 'border-dashed border-stone-300 text-stone-400 hover:border-stone-400 hover:text-stone-600'
                 }`}
               >
-                {pagoMixto ? '✓ Pago mixto activo — click para desactivar' : `Dividir pago (${{ efectivo: 'efectivo', yape: 'yape', transferencia: 'transferencia' }[metodoPago]} + otro)`}
+                {pagoMixto ? '✓ Dividir cuenta activo — click para desactivar' : 'Dividir cuenta'}
               </button>
 
-              {/* Pago mixto filas */}
+              {/* Pago mixto subcuentas */}
               {pagoMixto && (
-                <div className="space-y-2 bg-stone-50 rounded-xl p-2.5">
-                  {pagoPartes.map((p, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <CustomSelect
-                        compact
-                        value={p.metodo}
-                        onChange={v => { const next = [...pagoPartes]; next[idx].metodo = v; setPagoPartes(next); }}
-                        options={[{ value: 'efectivo', label: 'Efectivo' }, { value: 'yape', label: 'Yape' }, { value: 'transferencia', label: 'Transf.' }]}
-                        className="w-24"
-                      />
-                      <div className="flex-1 relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-stone-400">S/</span>
-                        <input type="number" step="0.01" min="0" value={p.monto} onChange={e => { const next = [...pagoPartes]; next[idx].monto = e.target.value; setPagoPartes(next); }}
-                          className="w-full text-sm border border-stone-200 rounded-lg pl-7 pr-2 py-2 text-right font-semibold focus:outline-none focus:border-stone-400" placeholder="0.00" />
+                <div className="space-y-3">
+                  {pagoPartes.map((p, idx) => {
+                    const esTarjeta = p.metodo === 'tarjeta';
+                    const montoBase = parseFloat(p.monto) || 0;
+                    const comisionSub = esTarjeta ? Math.round(montoBase * comisionPosPct) / 100 : 0;
+                    return (
+                      <div key={idx} className="bg-stone-50 rounded-xl p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">Subcuenta {idx + 1}</span>
+                          {pagoPartes.length > 2 && (
+                            <button onClick={() => setPagoPartes(pagoPartes.filter((_, i) => i !== idx))} className="text-stone-300 hover:text-rose-500 transition-colors"><X size={13} /></button>
+                          )}
+                        </div>
+                        {/* 4 payment method buttons */}
+                        <div className="grid grid-cols-4 gap-1">
+                          {METODOS_PAGO.map(m => (
+                            <button key={m.key}
+                              onClick={() => { const next = [...pagoPartes]; next[idx] = { ...next[idx], metodo: m.key }; setPagoPartes(next); }}
+                              className={`flex flex-col items-center gap-0.5 py-1.5 px-1 rounded-lg border text-[10px] font-medium transition-colors duration-100 ${
+                                p.metodo === m.key
+                                  ? 'border-[#16A34A] bg-emerald-50 text-[#16A34A]'
+                                  : 'border-stone-200 text-stone-400 hover:border-stone-300'
+                              }`}>
+                              <m.icon size={13} />
+                              {m.key === 'tarjeta' ? `Tarj.` : m.label}
+                            </button>
+                          ))}
+                        </div>
+                        {/* Amount input */}
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-stone-400">S/</span>
+                          <input type="number" step="0.01" min="0" value={p.monto}
+                            onChange={e => { const next = [...pagoPartes]; next[idx] = { ...next[idx], monto: e.target.value }; setPagoPartes(next); }}
+                            className="w-full text-sm border border-stone-200 rounded-lg pl-8 pr-2 py-2 text-right font-semibold focus:outline-none focus:border-stone-400"
+                            placeholder="0.00" />
+                        </div>
+                        {/* Tarjeta commission note */}
+                        {esTarjeta && montoBase > 0 && (
+                          <p className="text-[10px] text-amber-600 flex items-center gap-1">
+                            <CreditCard size={10} />
+                            Comision {comisionPosPct}%: +{formatCurrency(comisionSub)}
+                          </p>
+                        )}
                       </div>
-                      {pagoPartes.length > 2 && (
-                        <button onClick={() => setPagoPartes(pagoPartes.filter((_, i) => i !== idx))} className="text-stone-300 hover:text-rose-500"><X size={14} /></button>
-                      )}
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between pt-1 border-t border-stone-200">
-                    {pagoPartes.length < 3 ? (
-                      <button onClick={() => setPagoPartes([...pagoPartes, { metodo: 'transferencia', monto: '' }])}
-                        className="text-xs text-stone-400 hover:text-stone-600">+ Otro</button>
-                    ) : <span />}
-                    {(() => {
-                      const totalPartes = pagoPartes.reduce((s, p) => s + (parseFloat(p.monto) || 0), 0);
-                      const restante = cartTotal - totalPartes;
-                      return <span className={`text-xs font-bold ${restante > 0.01 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                        {restante > 0.01 ? `Falta: ${formatCurrency(restante)}` : restante < -0.01 ? `Vuelto: ${formatCurrency(Math.abs(restante))}` : '✓ Completo'}
-                      </span>;
-                    })()}
-                  </div>
+                    );
+                  })}
+                  {/* Add subcuenta + totals */}
+                  <button onClick={() => setPagoPartes([...pagoPartes, { metodo: 'efectivo', monto: '' }])}
+                    className="w-full py-1.5 border border-dashed border-stone-300 rounded-lg text-xs text-stone-400 hover:border-stone-400 hover:text-stone-600 transition-colors">
+                    + Agregar subcuenta
+                  </button>
+                  {/* Balance indicator */}
+                  {(() => {
+                    const totalPartes = pagoPartes.reduce((s, p) => s + (parseFloat(p.monto) || 0), 0);
+                    const targetTotal = cartSubtotal + costoEnvio; // without commission — commission is added per subcuenta
+                    const restante = targetTotal - totalPartes;
+                    return (
+                      <div className={`text-center py-1.5 rounded-lg text-xs font-bold ${
+                        restante > 0.01 ? 'bg-amber-50 text-amber-600' : restante < -0.01 ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600'
+                      }`}>
+                        {restante > 0.01
+                          ? `Falta: ${formatCurrency(restante)} para completar`
+                          : restante < -0.01
+                            ? `Sobra: ${formatCurrency(Math.abs(restante))} — estas pagando de mas`
+                            : 'Cuenta completa'}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
