@@ -411,6 +411,7 @@ export default function Layout() {
   );
 
   const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  const isUat = window.location.hostname.includes('uat.');
 
   return (
     <div className="min-h-screen bg-[#F4F6F5] flex">
@@ -418,6 +419,11 @@ export default function Layout() {
       {isDev && (
         <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-amber-950 text-center text-[11px] font-bold py-0.5 tracking-wider">
           DESARROLLO — Los datos son una copia de producci&oacute;n
+        </div>
+      )}
+      {isUat && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-sky-500 text-white text-center text-[11px] font-bold py-0.5 tracking-wider">
+          UAT — Entorno de pruebas
         </div>
       )}
       {/* Desktop sidebar */}
@@ -448,7 +454,7 @@ export default function Layout() {
       )}
 
       {/* Main content — independent scroll */}
-      <div className={`flex-1 ${collapsed ? 'lg:ml-[68px]' : 'lg:ml-52'} transition-[width,margin] duration-150 lg:h-screen lg:overflow-y-auto ${isDev ? 'pt-5' : ''}`}>
+      <div className={`flex-1 ${collapsed ? 'lg:ml-[68px]' : 'lg:ml-52'} transition-[width,margin] duration-150 lg:h-screen lg:overflow-y-auto ${isDev || isUat ? 'pt-5' : ''}`}>
         {/* Mobile header */}
         <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#0A2F24] sticky top-0 z-20">
           <button onClick={() => setOpen(true)} className="p-2 text-white/60 hover:text-white">
