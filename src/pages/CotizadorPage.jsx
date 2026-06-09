@@ -438,11 +438,16 @@ export default function CotizadorPage() {
   const costos = usarFallback ? (() => {
     const costo = fallbackCosto;
     const igvDec = Number(igvRate) / 100;
+    const comDec = incluirComision ? Number(comisionPosPct) / 100 : 0;
     const empaqueTotal = costosRaw.costoEmpaqueEntero || 0;
     const costoNeto = costo + empaqueTotal;
-    const pv = igvDec > 0 && precioFinal > 0 ? precioFinal / (1 + igvDec) : precioFinal;
+    const pf = Number(precioFinal) || 0;
+    const pfSinComision = comDec > 0 && pf > 0 ? pf * (1 - comDec) : pf;
+    const pv = igvDec > 0 && pfSinComision > 0 ? pfSinComision / (1 + igvDec) : pfSinComision;
+    const comisionMonto = pf - pfSinComision;
+    const igvMonto = pfSinComision - pv;
     const m = pv > 0 && costoNeto > 0 ? (1 - costoNeto / pv) * 100 : 0;
-    return { ...costosRaw, costoInsumos: costo, costoInsumosProducto: costo, costoNeto, precioVenta: pv, igvMonto: precioFinal - pv, precioFinal, margen: m };
+    return { ...costosRaw, costoInsumos: costo, costoInsumosProducto: costo, costoNeto, precioVenta: pv, igvMonto, comisionMonto, comisionPct: Number(comisionPosPct), precioFinal: pf, margen: m };
   })() : costosRaw;
 
   const enrichedInsumos = useMemo(() => {

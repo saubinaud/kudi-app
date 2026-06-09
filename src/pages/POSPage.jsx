@@ -318,6 +318,7 @@ export default function POSPage() {
         tipo_venta: 'directo',
         metodo_pago: metodoPagoFinal,
         pago_detalle: pagoDetalle,
+        comision_tarjeta: comisionTarjeta,
         items: cartItems.map(i => ({
           producto_id: i.producto_id,
           variante_id: i.variante_id || null,
