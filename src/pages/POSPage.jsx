@@ -157,9 +157,8 @@ export default function POSPage() {
   // Commission: per-subcuenta if mixto, global if single payment
   const comisionTarjeta = useMemo(() => {
     if (pagoMixto) {
-      // Sum commission only for subcuentas paying with tarjeta
       return pagoPartes.reduce((sum, p) => {
-        if (p.metodo === 'tarjeta') {
+        if (p.metodo === 'tarjeta' && !p.sinComision) {
           const base = parseFloat(p.monto) || 0;
           return sum + Math.round(base * comisionPosPct) / 100;
         }
@@ -330,7 +329,7 @@ export default function POSPage() {
           metodoPagoFinal = 'mixto';
           pagoDetalle = partes.map(p => {
             const base = parseFloat(p.monto);
-            const comision = p.metodo === 'tarjeta' ? Math.round(base * comisionPosPct) / 100 : 0;
+            const comision = (p.metodo === 'tarjeta' && !p.sinComision) ? Math.round(base * comisionPosPct) / 100 : 0;
             return { metodo: p.metodo, monto: base, comision_tarjeta: comision };
           });
         }
@@ -617,7 +616,7 @@ export default function POSPage() {
                   {pagoPartes.map((p, idx) => {
                     const esTarjeta = p.metodo === 'tarjeta';
                     const montoBase = parseFloat(p.monto) || 0;
-                    const comisionSub = esTarjeta ? Math.round(montoBase * comisionPosPct) / 100 : 0;
+                    const comisionSub = (esTarjeta && !p.sinComision) ? Math.round(montoBase * comisionPosPct) / 100 : 0;
                     return (
                       <div key={idx} className={`rounded-xl p-3 space-y-2 transition-colors duration-100 ${p.pagada ? 'bg-emerald-50/50 border border-emerald-200' : 'bg-stone-50'}`}>
                         <div className="flex items-center justify-between">
@@ -641,6 +640,14 @@ export default function POSPage() {
                             </button>
                           ))}
                         </div>
+                        {esTarjeta && (
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <input type="checkbox" checked={p.sinComision || false}
+                              onChange={e => { const next = [...pagoPartes]; next[idx] = { ...next[idx], sinComision: e.target.checked }; setPagoPartes(next); }}
+                              className="w-3 h-3 rounded" />
+                            <span className="text-[10px] text-stone-500">No cobrar comisión</span>
+                          </label>
+                        )}
                         {/* Amount input */}
                         <div className="relative">
                           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-stone-400">S/</span>
