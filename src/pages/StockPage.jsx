@@ -212,12 +212,15 @@ export default function StockPage() {
     const costoUnitario = Math.round((costoTotal / cantidad) * 100) / 100;
     setSavingNuevo(true);
     try {
-      // 1. Create product
+      // 1. Create product with auto-calculated price (50% margin)
+      const precioVenta = Math.round(costoUnitario / (1 - 0.5) * 100) / 100;
       const prodRes = await api.post('/productos', {
         nombre: npNombre.trim(),
         tipo_producto: 'no_transformable',
-        costo_neto: costoUnitario,
+        costoNeto: costoUnitario,
+        precioFinal: precioVenta,
         margen: 50,
+        disponible_venta: true,
       });
       const newProd = prodRes?.data || prodRes;
       const productoId = newProd?.id;
