@@ -445,40 +445,18 @@ export default function InsumosPage() {
                                       {p.precio_por_unidad ? `S/ ${parseFloat(p.precio_por_unidad).toFixed(3)}` : '—'}
                                     </td>
                                     <td className="py-1.5">
-                                      <button
-                                        onClick={async () => {
-                                          if (p.es_principal) return;
-                                          try {
-                                            await api.put(`/insumos/${ins.id}/presentaciones/${p.id}`, { es_principal: true });
-                                            toast.success(`"${p.nombre}" es ahora la principal`);
-                                            loadInsumos();
-                                          } catch (e) { toast.error(e.message); }
-                                        }}
-                                        className={`text-[10px] px-1.5 py-0.5 rounded-full transition-colors duration-100 ${
-                                          p.es_principal
-                                            ? 'bg-emerald-100 text-emerald-700 font-semibold'
-                                            : 'bg-stone-100 text-stone-400 hover:bg-emerald-50 hover:text-emerald-600 cursor-pointer'
-                                        }`}
-                                        title={p.es_principal ? 'Variante principal' : 'Hacer principal'}
-                                      >
-                                        {p.es_principal ? '★ Principal' : '☆ Hacer principal'}
-                                      </button>
-                                      {!p.es_principal && (
-                                        <button
-                                          onClick={async () => {
-                                            if (!confirm(`¿Eliminar presentación "${p.nombre}"?`)) return;
-                                            try {
-                                              await api.del(`/insumos/${ins.id}/presentaciones/${p.id}`);
-                                              toast.success('Presentación eliminada');
-                                              loadInsumos();
-                                            } catch (e) { toast.error(e.message); }
-                                          }}
-                                          className="text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-400 hover:bg-rose-50 hover:text-rose-500 transition-colors"
-                                          title="Eliminar presentación"
-                                        >
-                                          ✕
-                                        </button>
-                                      )}
+                                      <div className="flex items-center gap-1">
+                                        {p.es_principal ? (
+                                          <span className="text-[10px] text-emerald-600" title="Principal">★</span>
+                                        ) : (
+                                          <>
+                                            <button onClick={async () => { try { await api.put(`/insumos/${ins.id}/presentaciones/${p.id}`, { es_principal: true }); toast.success('Principal actualizado'); loadInsumos(); } catch (e) { toast.error(e.message); } }}
+                                              className="text-stone-300 hover:text-emerald-500 transition-colors" title="Hacer principal">☆</button>
+                                            <button onClick={async () => { if (!confirm(`¿Eliminar "${p.nombre}"?`)) return; try { await api.del(`/insumos/${ins.id}/presentaciones/${p.id}`); toast.success('Eliminada'); loadInsumos(); } catch (e) { toast.error(e.message); } }}
+                                              className="text-stone-300 hover:text-rose-500 transition-colors" title="Eliminar">✕</button>
+                                          </>
+                                        )}
+                                      </div>
                                     </td>
                                   </tr>
                                 ))}
