@@ -449,11 +449,14 @@ export default function PLComprasPage() {
     const costoUnitario = Math.round((costoTotal / cantidad) * 100) / 100;
     setSavingProducto(true);
     try {
+      const precioVenta = Math.round(costoUnitario / (1 - 0.5) * 100) / 100;
       const res = await api.post('/productos', {
         nombre: newProductoData.nombre.trim(),
         tipo_producto: 'no_transformable',
-        costo_neto: costoUnitario,
+        costoNeto: costoUnitario,
+        precioFinal: precioVenta,
         margen: 50,
+        disponible_venta: true,
       });
       const nuevo = res.data;
       setProductos((prev) => [...prev, nuevo]);
