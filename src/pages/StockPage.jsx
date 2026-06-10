@@ -213,10 +213,12 @@ export default function StockPage() {
     const costoUnitario = Math.round((costoTotal / cantidad) * 100) / 100;
     setSavingNuevo(true);
     try {
-      // 1. Create product with auto-calculated price (50% margin + IGV)
-      const igvRate = parseFloat(user?.igv_rate) || 0;
+      // 1. Create product with auto-calculated price (50% margin)
+      // Informal: precio NO incluye IGV, so precioFinal = precioVenta
+      const esInformal = user?.tipo_negocio === 'informal';
+      const igvRate = esInformal ? 0 : (parseFloat(user?.igv_rate) || 0);
       const precioVenta = Math.round(costoUnitario / (1 - 0.5) * 100) / 100;
-      const precioFinal = Math.round(precioVenta * (1 + igvRate) * 100) / 100;
+      const precioFinal = igvRate > 0 ? Math.round(precioVenta * (1 + igvRate) * 100) / 100 : precioVenta;
       const prodRes = await api.post('/productos', {
         nombre: npNombre.trim(),
         tipo_producto: 'no_transformable',
@@ -978,7 +980,7 @@ export default function StockPage() {
                   </div>
                   {sidebarProduct?.costo_neto > 0 && sidebarPrecioVenta > 0 && (() => {
                     const pf = parseFloat(sidebarPrecioVenta);
-                    const igvR = parseFloat(sidebarProduct.igv_rate || user?.igv_rate) || 0;
+                    const igvR = parseFloat(sidebarProduct.igv_rate) || 0;
                     const pv = igvR > 0 ? pf / (1 + igvR) : pf;
                     const costo = parseFloat(sidebarProduct.costo_neto);
                     const margen = Math.round((1 - costo / pv) * 100);
