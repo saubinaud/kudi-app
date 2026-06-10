@@ -445,15 +445,15 @@ export default function InsumosPage() {
                                       {p.precio_por_unidad ? `S/ ${parseFloat(p.precio_por_unidad).toFixed(3)}` : '—'}
                                     </td>
                                     <td className="py-1.5">
-                                      <div className="flex items-center gap-1">
+                                      <div className="flex items-center gap-2">
                                         {p.es_principal ? (
-                                          <span className="text-[10px] text-emerald-600" title="Principal">★</span>
+                                          <span className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 text-sm" title="Principal">★</span>
                                         ) : (
                                           <>
                                             <button onClick={async () => { try { await api.put(`/insumos/${ins.id}/presentaciones/${p.id}`, { es_principal: true }); toast.success('Principal actualizado'); loadInsumos(); } catch (e) { toast.error(e.message); } }}
-                                              className="text-stone-300 hover:text-emerald-500 transition-colors" title="Hacer principal">☆</button>
+                                              className="w-7 h-7 rounded-lg bg-stone-50 flex items-center justify-center text-stone-300 hover:bg-emerald-50 hover:text-emerald-500 transition-colors text-sm" title="Hacer principal">☆</button>
                                             <button onClick={async () => { if (!confirm(`¿Eliminar "${p.nombre}"?`)) return; try { await api.del(`/insumos/${ins.id}/presentaciones/${p.id}`); toast.success('Eliminada'); loadInsumos(); } catch (e) { toast.error(e.message); } }}
-                                              className="text-stone-300 hover:text-rose-500 transition-colors" title="Eliminar">✕</button>
+                                              className="w-7 h-7 rounded-lg bg-stone-50 flex items-center justify-center text-stone-300 hover:bg-rose-50 hover:text-rose-500 transition-colors text-xs" title="Eliminar">✕</button>
                                           </>
                                         )}
                                       </div>
