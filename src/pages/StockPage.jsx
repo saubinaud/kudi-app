@@ -276,14 +276,11 @@ export default function StockPage() {
         nombre: sidebarNombre.trim() || sidebarProduct.nombre,
         imagen_url: sidebarImagenUrl || null,
         disponible_venta: sidebarDisponibleVenta,
+        costoNeto: parseFloat(sidebarProduct.costo_neto) || 0,
       };
       if (sidebarPrecioVenta && parseFloat(sidebarPrecioVenta) > 0) {
         const pf = parseFloat(sidebarPrecioVenta);
-        const igvRate = parseFloat(sidebarProduct.igv_rate || user?.igv_rate) || 0;
-        const pv = igvRate > 0 ? pf / (1 + igvRate) : pf;
-        const costo = parseFloat(sidebarProduct.costo_neto) || 0;
-        updateData.precio_final = pf;
-        if (costo > 0) updateData.margen = 1 - (costo / pv);
+        updateData.precioFinal = pf;
       }
       await api.put(`/productos/${sidebarProduct.id}`, updateData);
       toast.success('Producto actualizado');
