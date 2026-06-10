@@ -206,7 +206,7 @@ export default function POSPage() {
       if (cartaPrecio) {
         const cp = parseFloat(cartaPrecio.precio) || precioBase;
         precioConIgv = esInformal ? Math.ceil(cp * (1 + tasaIgv) * 10) / 10 : cp;
-        precioSinIgv = esInformal ? cp : (tasaIgv > 0 ? Math.round(cp / (1 + tasaIgv)) : cp);
+        precioSinIgv = esInformal ? cp : (tasaIgv > 0 ? Math.round(cp / (1 + tasaIgv) * 100) / 100 : cp);
       }
     }
     setCartItems(prev => [...prev, {
