@@ -208,6 +208,8 @@ export default function PLComprasPage() {
   };
 
   const applyPresentacion = (idx, insumoId, pres, allPres, ins) => {
+    const cantidad = pres?.cantidad || ins?.cantidad_presentacion || 1;
+    const unidad = pres?.unidad || ins?.unidad_medida || 'uni';
     const precioTotal = pres?.precio ? parseFloat(pres.precio) : Number(ins?.precio_presentacion) || 0;
 
     setItems((prev) => prev.map((item, i) => {
@@ -215,13 +217,14 @@ export default function PLComprasPage() {
       return {
         ...item,
         insumo_id: insumoId,
-        cantidad: '1',
-        unidad: pres?.unidad || ins?.unidad_medida || 'uni',
+        cantidad: String(cantidad),
+        unidad,
         precio_unitario: parseFloat(precioTotal.toFixed(2)),
         _precio_catalogo: precioTotal,
         _presentacion_id: pres?.id || null,
         _presentaciones: allPres || [],
         _customPres: false,
+        _isPresentacion: true,
       };
     }));
   };
@@ -247,8 +250,8 @@ export default function PLComprasPage() {
   // Computed total
   const itemSubtotal = (item) => {
     // Custom presentation: precio = costo total de esa compra (cantidad describe la presentación)
-    if (item._customPres) return parseFloat(item.precio_unitario) || 0;
-    // Existing presentation: cantidad = unidades compradas, precio = por unidad
+    if (item._customPres || item._isPresentacion) return parseFloat(item.precio_unitario) || 0;
+    // Manual items: cantidad × precio
     return (parseFloat(item.precio_unitario) || 0) * (parseFloat(item.cantidad) || 0);
   };
 
@@ -299,8 +302,8 @@ export default function PLComprasPage() {
           material_id: it.material_id || null,
           producto_id: it.producto_id || null,
           nombre_item: it.nombre_item || null,
-          cantidad: it._customPres ? 1 : parseFloat(it.cantidad),
-          unidad: it._customPres ? `${it.cantidad} ${it.unidad}` : (it.unidad || null),
+          cantidad: (it._customPres || it._isPresentacion) ? 1 : parseFloat(it.cantidad),
+          unidad: it._customPres ? `${it.cantidad} ${it.unidad}` : (it._isPresentacion ? `${it.cantidad} ${it.unidad}` : (it.unidad || null)),
           precio_unitario: parseFloat(it.precio_unitario),
         })),
       });
