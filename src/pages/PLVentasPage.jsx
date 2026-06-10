@@ -798,9 +798,11 @@ export default function PLVentasPage() {
               { value: 'listo_envio', label: 'Listo p/envio' },
               { value: 'enviado', label: 'Enviado' },
               { value: 'entregado', label: 'Entregado' },
-            ].map(t => (
+            ].map(t => {
+              const cnt = t.value === 'todos' ? ventasBySeccion.length : ventasBySeccion.filter(v => (v.estado_entrega || 'pendiente') === t.value).length;
+              return (
               <button key={t.value} onClick={() => setEstadoFilter(t.value)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors duration-100 ${
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors duration-100 flex items-center gap-1.5 ${
                   estadoFilter === t.value
                     ? t.value === 'pendiente' ? 'bg-stone-700 text-white'
                     : t.value === 'preparando' ? 'bg-blue-600 text-white'
@@ -811,8 +813,14 @@ export default function PLVentasPage() {
                     : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
                 }`}>
                 {t.label}
+                {cnt > 0 && (
+                  <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold ${
+                    estadoFilter === t.value ? 'bg-white/25 text-white' : 'bg-stone-200 text-stone-600'
+                  }`}>{cnt}</span>
+                )}
               </button>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
