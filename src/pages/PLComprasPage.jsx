@@ -302,9 +302,11 @@ export default function PLComprasPage() {
           material_id: it.material_id || null,
           producto_id: it.producto_id || null,
           nombre_item: it.nombre_item || null,
-          cantidad: (it._customPres || it._isPresentacion) ? 1 : parseFloat(it.cantidad),
-          unidad: it._customPres ? `${it.cantidad} ${it.unidad}` : (it._isPresentacion ? `${it.cantidad} ${it.unidad}` : (it.unidad || null)),
-          precio_unitario: parseFloat(it.precio_unitario),
+          cantidad: parseFloat(it.cantidad),
+          unidad: it.unidad || null,
+          precio_unitario: (it._isPresentacion || it._customPres)
+            ? parseFloat(it.precio_unitario) / parseFloat(it.cantidad || 1)
+            : parseFloat(it.precio_unitario),
         })),
       });
       toast.success('Compra registrada');
