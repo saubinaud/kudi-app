@@ -1,47 +1,87 @@
 [
   {
-    "version": "1.5.0",
+    "version": "2.0.0",
     "fecha": "auto",
-    "titulo": "Vende más rápido, controla mejor",
-    "descripcion": "El POS ahora es más inteligente: te avisa si no tienes stock, emite boletas con un solo toque y puedes escribir la cantidad directamente. Además, los canales como Rappi ya no tocan tus precios subsidiados.",
+    "titulo": "Kudi 2.0 — Todo conectado",
+    "descripcion": "La actualización más grande de Kudi. Rediseñamos el POS con división de cuentas inteligente, conectamos las compras con el cotizador para que tus costos se actualicen solos, y corregimos más de 20 errores que afectaban tu día a día. Tu precio de venta nunca cambia — solo tu margen se ajusta automáticamente.",
     "imagen": null,
     "secciones": [
       {
-        "titulo": "Punto de venta",
+        "titulo": "Caja y pagos",
         "entries": [
-          { "tipo": "feat", "texto": "Emite boleta directo desde el POS — al terminar una venta, el botón \"Emitir boleta\" ahora la emite a SUNAT al instante" },
-          { "tipo": "feat", "texto": "Alerta de stock — si vendes más de lo que tienes, aparece un aviso ambar con cuánto te falta (no bloquea la venta)" },
-          { "tipo": "feat", "texto": "Escribe la cantidad — ya no tienes que dar + muchas veces, ahora puedes escribir \"10\" directamente en el carrito" }
+          { "tipo": "feat", "texto": "Dividir cuenta en subcuentas — cada una con su propio método de pago (efectivo, yape, transferencia o tarjeta). La comisión de tarjeta se aplica solo a la subcuenta que paga con tarjeta, no al total" },
+          { "tipo": "feat", "texto": "Flujo de cobro por subcuenta — botón \"Marcar cobrado\" que bloquea la subcuenta (método, monto, comisión). El botón \"Confirmar venta\" se activa solo cuando todas están cobradas" },
+          { "tipo": "feat", "texto": "Botón \"Distribuir correctamente\" — cuando la suma de subcuentas no cuadra, un click distribuye el restante respetando las subcuentas ya cobradas" },
+          { "tipo": "feat", "texto": "Herencia de datos al dividir — si ya seleccionaste tarjeta y escribiste un monto, al activar \"Dividir cuenta\" se jala automáticamente a la primera subcuenta" },
+          { "tipo": "feat", "texto": "Checkbox \"No cobrar comisión\" por subcuenta — disponible en cada subcuenta que use tarjeta, no solo en pago único" },
+          { "tipo": "feat", "texto": "Cantidad editable — escribe directamente \"10\" en el carrito en vez de presionar + diez veces" },
+          { "tipo": "feat", "texto": "Emitir boleta directo desde el POS — al terminar una venta, el botón \"Emitir boleta\" la envía a SUNAT al instante" },
+          { "tipo": "feat", "texto": "Alerta de stock — si vendes más de lo que tienes en inventario, aparece un aviso ámbar con cuánto te falta. No bloquea la venta" }
         ]
       },
       {
-        "titulo": "Facturación",
+        "titulo": "Compras inteligentes",
         "entries": [
-          { "tipo": "feat", "texto": "Validar comprobantes pendientes — si un comprobante se quedó como \"Pendiente\", ahora puedes revalidarlo contra SUNAT con un botón" },
-          { "tipo": "improve", "texto": "IGV por producto en boletas — cada item se emite con su propia tasa de IGV (gravado o exonerado), ya no se aplica una tasa global" },
-          { "tipo": "fix", "texto": "La comisión de tarjeta ahora se guarda en la venta para que tus reportes cuadren" }
+          { "tipo": "feat", "texto": "Selector de presentación al comprar — al elegir un insumo, aparece un dropdown con todas sus presentaciones (ej: Aceite 1L, Aceite 500ml) y el precio se ajusta automáticamente" },
+          { "tipo": "feat", "texto": "Crear presentación sobre la marcha — si cambias la cantidad o unidad, el sistema detecta que es una nueva presentación y la registra en el insumo al guardar la compra. Sin pasos extra" },
+          { "tipo": "feat", "texto": "Compras actualizan costos — al registrar una compra, el precio del insumo se actualiza con el promedio ponderado (WAC) y todos los productos que lo usan recalculan su costo y margen. Tu precio de venta nunca cambia" },
+          { "tipo": "feat", "texto": "Buscador de proveedores — escribe el nombre o RUC y encuentra tu proveedor al instante, sin scrollear" },
+          { "tipo": "feat", "texto": "Serie y correlativo — al seleccionar tipo de comprobante, aparecen campos separados para serie (E001) y correlativo (00012345)" },
+          { "tipo": "fix", "texto": "Crear proveedor ya no da error 500 — la columna faltante en la base de datos fue corregida" }
+        ]
+      },
+      {
+        "titulo": "Inventario",
+        "entries": [
+          { "tipo": "feat", "texto": "Precio de venta desde inventario — al activar \"Disponible para venta directa\", aparece un campo de precio con cálculo de margen en tiempo real" },
+          { "tipo": "improve", "texto": "Los productos de inventario ya no se activan para venta automáticamente — tú decides cuándo activarlos desde el switch en inventario" },
+          { "tipo": "fix", "texto": "Presentaciones de insumos renombradas — las que decían \"Principal\" ahora muestran su nombre correcto (ej: \"Harina 500 g\")" }
+        ]
+      },
+      {
+        "titulo": "Cotizador y costos",
+        "entries": [
+          { "tipo": "fix", "texto": "IGV se calcula correctamente en todo el sistema — el precio de venta ahora se redondea a 2 decimales (antes se redondeaba a entero, perdiendo centavos). Corregido en cotizador, productos, packs y POS" },
+          { "tipo": "fix", "texto": "IGV consistente entre vistas — inventario, cotizador y dashboard ahora muestran el mismo margen porque todos usan el IGV de la empresa, no del usuario" },
+          { "tipo": "fix", "texto": "Comisión + IGV en cotizador — packs y productos sin receta ahora calculan correctamente el desglose cuando ambos toggles están activos" },
+          { "tipo": "improve", "texto": "IGV por producto en boletas SUNAT — cada item se emite con su propia tasa de IGV (gravado o exonerado)" }
         ]
       },
       {
         "titulo": "Canales de venta",
         "entries": [
-          { "tipo": "fix", "texto": "Al cambiar la comisión de un canal (ej: Rappi 30% → 25%), los productos con precio subsidiado o markup manual ya no se sobreescriben" },
-          { "tipo": "improve", "texto": "Los badges de subsidio y cobro extra muestran el monto y porcentaje exacto de diferencia" }
+          { "tipo": "feat", "texto": "Botón \"Aplicar\" precio sugerido — un click para aceptar el precio calculado según la comisión del canal" },
+          { "tipo": "feat", "texto": "Margen visible por producto — badge de color que muestra el margen real (verde ≥30%, ámbar ≥10%, rojo <10%)" },
+          { "tipo": "feat", "texto": "Margen en tiempo real al editar — al cambiar el precio de un producto, ves al instante cómo cambia tu margen" },
+          { "tipo": "fix", "texto": "Precios subsidiados se preservan — al cambiar la comisión de un canal, los productos con precio manual no se sobreescriben" },
+          { "tipo": "improve", "texto": "\"Calculado\" ahora se llama \"Sugerido\" — lenguaje más claro para el usuario" }
         ]
       },
       {
-        "titulo": "Compras y pedidos",
+        "titulo": "Órdenes y pedidos",
         "entries": [
-          { "tipo": "feat", "texto": "Código de comprobante en compras — al seleccionar Boleta, Factura o Ticket, aparece un campo para escribir el número del documento" },
-          { "tipo": "feat", "texto": "Conteo por estado en pedidos — cada tab muestra cuántos pedidos hay: Pendiente (3), Listo (5), etc." },
-          { "tipo": "fix", "texto": "Crear proveedor al registrar compra ya no da error 500" }
+          { "tipo": "feat", "texto": "Conteo por estado en órdenes — cada tab muestra un badge circular con la cantidad de órdenes en ese estado (Pendiente 2, Preparando 1, etc.)" },
+          { "tipo": "feat", "texto": "Los conteos cambian según el filtro padre — si seleccionas \"Directo\", solo cuentas órdenes directas" },
+          { "tipo": "fix", "texto": "Dropdown de estado ya no se recorta — ahora usa posicionamiento fijo que no se oculta detrás de la tabla" },
+          { "tipo": "feat", "texto": "Validar comprobantes pendientes — botón para re-enviar a SUNAT comprobantes que quedaron en estado \"Pendiente\"" }
         ]
       },
       {
-        "titulo": "Registro",
+        "titulo": "Finanzas",
         "entries": [
-          { "tipo": "improve", "texto": "Rubros enfocados en recetas — al registrarte, solo ves negocios que necesitan costear: panaderías, dark kitchens, cafeterías, catering, y más" },
-          { "tipo": "improve", "texto": "El rubro que eliges al inicio ya no se pide dos veces — se replica automáticamente al segundo formulario" }
+          { "tipo": "fix", "texto": "Flujo de caja muestra todos los meses — los periodos se crean automáticamente (antes solo aparecían los meses que tenían periodo manual)" },
+          { "tipo": "fix", "texto": "Mes correcto en flujo de caja — corregido el desfase de zona horaria que mostraba datos de un mes diferente al seleccionado" },
+          { "tipo": "fix", "texto": "Navegación en estado de resultados — ahora puedes volver al mes actual después de navegar a otros meses" },
+          { "tipo": "fix", "texto": "Comisión de tarjeta se guarda en la venta — tus reportes financieros ahora incluyen el monto exacto cobrado por comisión" }
+        ]
+      },
+      {
+        "titulo": "Registro y experiencia",
+        "entries": [
+          { "tipo": "improve", "texto": "Rubros enfocados en negocios con recetas — panaderías, dark kitchens, cafeterías, catering, heladerías y más" },
+          { "tipo": "improve", "texto": "El rubro se replica automáticamente al segundo formulario de registro" },
+          { "tipo": "feat", "texto": "Cintillo UAT — banner azul visible para diferenciar el entorno de pruebas del de producción" },
+          { "tipo": "improve", "texto": "Mejor espaciado en el checkout del POS — separadores visuales entre secciones para mayor claridad" }
         ]
       }
     ]
