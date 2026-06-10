@@ -551,54 +551,84 @@ export default function CanalesPage() {
                   <div className={cx.card + ' divide-y divide-stone-100'}>
                     {prodsEnCanal.map(p => {
                       const precio = parseFloat(preciosCanal[p.id]) || 0;
-                      const calculado = comision < 100 ? parseFloat(p.precio_final) / (1 - comision / 100) : parseFloat(p.precio_final);
-                      const subsidiando = precio > 0 && precio < calculado * 0.99;
-                      const cobraMas = precio > calculado * 1.01;
-                      const diffMonto = Math.abs(Math.round((precio - calculado) * 100) / 100);
-                      const diffPct = calculado > 0 ? Math.abs(Math.round(((precio - calculado) / calculado) * 10000) / 100) : 0;
+                      const sugerido = comision < 100 ? Math.round(parseFloat(p.precio_final) / (1 - comision / 100) * 100) / 100 : parseFloat(p.precio_final);
+                      const costoNeto = parseFloat(p.costo_neto) || 0;
+                      const subsidiando = precio > 0 && precio < sugerido * 0.99;
+                      const cobraMas = precio > sugerido * 1.01;
+                      const diffMonto = Math.abs(Math.round((precio - sugerido) * 100) / 100);
+                      const diffPct = sugerido > 0 ? Math.abs(Math.round(((precio - sugerido) / sugerido) * 10000) / 100) : 0;
+                      const margenCanal = precio > 0 && costoNeto > 0 ? Math.round((1 - costoNeto / precio) * 100) : null;
 
                       return (
-                        <div key={p.id} className="flex items-center gap-3 px-4 py-3">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-stone-800 truncate">{p.nombre}</p>
-                            <p className="text-[10px] text-stone-400">
-                              Tienda: {formatCurrency(p.precio_final)} · Calculado: {formatCurrency(Math.round(calculado * 100) / 100)}
-                            </p>
+                        <div key={p.id} className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-stone-800 truncate">{p.nombre}</p>
+                              <p className="text-[10px] text-stone-400">
+                                Tienda: {formatCurrency(p.precio_final)} · Sugerido: {formatCurrency(sugerido)}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {editingRow === p.id ? (
+                                <div className="flex items-center gap-1">
+                                  <input type="number" className={cx.input + ' !py-1 !px-2 w-24 text-sm'}
+                                    value={editPrice} onChange={e => setEditPrice(e.target.value)} autoFocus />
+                                  <button onClick={() => { updatePrecioCanal(p.id, editPrice); setEditingRow(null); }}
+                                    className="text-emerald-600 text-xs font-semibold">OK</button>
+                                  <button onClick={() => setEditingRow(null)}
+                                    className="text-stone-400 text-xs">X</button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1.5">
+                                  {precio !== sugerido && Math.abs(precio - sugerido) > 0.01 && (
+                                    <button
+                                      onClick={() => { updatePrecioCanal(p.id, sugerido); }}
+                                      className="text-[9px] text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.5 rounded font-semibold transition-colors"
+                                      title={`Aplicar precio sugerido: ${formatCurrency(sugerido)}`}
+                                    >
+                                      Aplicar
+                                    </button>
+                                  )}
+                                  <span className={`text-sm font-medium ${subsidiando ? 'text-amber-700' : 'text-stone-800'}`}>
+                                    {formatCurrency(precio)}
+                                  </span>
+                                  <button onClick={() => { setEditingRow(p.id); setEditPrice(String(precio)); }}
+                                    className="text-stone-400 hover:text-stone-600 transition-colors duration-100">
+                                    <Pencil size={14} />
+                                  </button>
+                                </div>
+                              )}
+                              <button onClick={() => toggleProductoEnCanal(p.id, false)} className={cx.btnDanger + ' p-1'} title="Remover">
+                                <X size={12} />
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          {/* Badges: subsidio/markup + margen */}
+                          <div className="flex items-center gap-2 mt-1 pl-0">
                             {subsidiando && (
-                              <span className="text-[9px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded" title={`Subsidias ${formatCurrency(diffMonto)} (${diffPct}%)`}>
-                                Subsidio -{formatCurrency(diffMonto)} ({diffPct}%)
+                              <span className="text-[9px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                                Subsidias {formatCurrency(diffMonto)} ({diffPct}%)
                               </span>
                             )}
                             {cobraMas && (
-                              <span className="text-[9px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded" title={`Cobras ${formatCurrency(diffMonto)} más que el cálculo`}>
-                                +{formatCurrency(diffMonto)} ({diffPct}%)
+                              <span className="text-[9px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                                +{formatCurrency(diffMonto)} sobre sugerido
                               </span>
                             )}
-                            {editingRow === p.id ? (
-                              <div className="flex items-center gap-1">
-                                <input type="number" className={cx.input + ' !py-1 !px-2 w-24 text-sm'}
-                                  value={editPrice} onChange={e => setEditPrice(e.target.value)} />
-                                <button onClick={() => { updatePrecioCanal(p.id, editPrice); setEditingRow(null); }}
-                                  className="text-emerald-600 text-xs font-medium">OK</button>
-                                <button onClick={() => setEditingRow(null)}
-                                  className="text-stone-400 text-xs">X</button>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <span className={`text-sm font-medium ${subsidiando ? 'text-amber-700' : 'text-stone-800'}`}>
-                                  S/ {parseFloat(precio).toFixed(2)}
-                                </span>
-                                <button onClick={() => { setEditingRow(p.id); setEditPrice(String(precio)); }}
-                                  className="text-stone-400 hover:text-stone-600 transition-colors duration-100">
-                                  <Pencil size={14} />
-                                </button>
-                              </div>
+                            {margenCanal !== null && (
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded ${
+                                margenCanal >= 30 ? 'text-emerald-600 bg-emerald-50' :
+                                margenCanal >= 10 ? 'text-amber-600 bg-amber-50' :
+                                'text-rose-600 bg-rose-50'
+                              }`}>
+                                Margen: {margenCanal}%
+                              </span>
                             )}
-                            <button onClick={() => toggleProductoEnCanal(p.id, false)} className={cx.btnDanger + ' p-1'} title="Remover">
-                              <X size={12} />
-                            </button>
+                            {editingRow === p.id && parseFloat(editPrice) > 0 && costoNeto > 0 && (
+                              <span className="text-[9px] text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded font-semibold">
+                                Nuevo margen: {Math.round((1 - costoNeto / parseFloat(editPrice)) * 100)}%
+                              </span>
+                            )}
                           </div>
                         </div>
                       );
