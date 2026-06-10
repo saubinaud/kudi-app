@@ -208,8 +208,6 @@ export default function PLComprasPage() {
   };
 
   const applyPresentacion = (idx, insumoId, pres, allPres, ins) => {
-    const cantidad = pres?.cantidad || ins?.cantidad_presentacion || 1;
-    const unidad = pres?.unidad || ins?.unidad_medida || 'uni';
     const precioTotal = pres?.precio ? parseFloat(pres.precio) : Number(ins?.precio_presentacion) || 0;
 
     setItems((prev) => prev.map((item, i) => {
@@ -217,8 +215,8 @@ export default function PLComprasPage() {
       return {
         ...item,
         insumo_id: insumoId,
-        cantidad: String(cantidad),
-        unidad,
+        cantidad: '1',
+        unidad: pres?.unidad || ins?.unidad_medida || 'uni',
         precio_unitario: parseFloat(precioTotal.toFixed(2)),
         _precio_catalogo: precioTotal,
         _presentacion_id: pres?.id || null,
