@@ -84,6 +84,7 @@ export default function StockPage() {
   const [sidebarNombre, setSidebarNombre] = useState('');
   const [sidebarImagenUrl, setSidebarImagenUrl] = useState('');
   const [sidebarDisponibleVenta, setSidebarDisponibleVenta] = useState(false);
+  const [sidebarPrecioVenta, setSidebarPrecioVenta] = useState('');
   const [savingSidebar, setSavingSidebar] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -254,6 +255,7 @@ export default function StockPage() {
     setSidebarNombre(prod.nombre);
     setSidebarImagenUrl(prod.imagen_url || '');
     setSidebarDisponibleVenta(!!prod.disponible_venta);
+    setSidebarPrecioVenta(prod.precio_final ? String(parseFloat(prod.precio_final)) : '');
     // Load movements for this product
     if (!movimientos[prod.id]) {
       setLoadingMov(p => ({ ...p, [prod.id]: true }));
@@ -268,11 +270,17 @@ export default function StockPage() {
     if (!sidebarProduct) return;
     setSavingSidebar(true);
     try {
-      await api.put(`/productos/${sidebarProduct.id}`, {
+      const updateData = {
         nombre: sidebarNombre.trim() || sidebarProduct.nombre,
         imagen_url: sidebarImagenUrl || null,
         disponible_venta: sidebarDisponibleVenta,
-      });
+      };
+      if (sidebarPrecioVenta && parseFloat(sidebarPrecioVenta) > 0) {
+        updateData.precio_final = parseFloat(sidebarPrecioVenta);
+        const costo = parseFloat(sidebarProduct.costo_neto) || 0;
+        if (costo > 0) updateData.margen = 1 - (costo / parseFloat(sidebarPrecioVenta));
+      }
+      await api.put(`/productos/${sidebarProduct.id}`, updateData);
       toast.success('Producto actualizado');
       setSidebarProduct(null);
       setMovimientos({});
@@ -952,6 +960,30 @@ export default function StockPage() {
                   }`} />
                 </button>
               </div>
+
+              {/* Precio de venta — visible cuando venta directa activa */}
+              {sidebarDisponibleVenta && (
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-[10px] text-stone-400 font-medium">Precio de venta S/</label>
+                    <input
+                      type="number" min="0" step="0.01"
+                      value={sidebarPrecioVenta}
+                      onChange={e => setSidebarPrecioVenta(e.target.value)}
+                      className="w-full text-sm border border-stone-200 rounded-lg px-3 py-2 font-semibold focus:outline-none focus:border-stone-400"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  {sidebarProduct?.costo_neto > 0 && sidebarPrecioVenta > 0 && (
+                    <div className="flex items-center justify-between text-[11px] px-1">
+                      <span className="text-stone-400">Costo: S/ {parseFloat(sidebarProduct.costo_neto).toFixed(2)}</span>
+                      <span className={`font-semibold ${parseFloat(sidebarPrecioVenta) > parseFloat(sidebarProduct.costo_neto) ? 'text-emerald-600' : 'text-rose-500'}`}>
+                        Margen: {Math.round((1 - parseFloat(sidebarProduct.costo_neto) / parseFloat(sidebarPrecioVenta)) * 100)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Movimientos */}
               <div>
