@@ -463,6 +463,22 @@ export default function InsumosPage() {
                                       >
                                         {p.es_principal ? '★ Principal' : '☆ Hacer principal'}
                                       </button>
+                                      {!p.es_principal && (
+                                        <button
+                                          onClick={async () => {
+                                            if (!confirm(`¿Eliminar presentación "${p.nombre}"?`)) return;
+                                            try {
+                                              await api.del(`/insumos/${ins.id}/presentaciones/${p.id}`);
+                                              toast.success('Presentación eliminada');
+                                              loadInsumos();
+                                            } catch (e) { toast.error(e.message); }
+                                          }}
+                                          className="text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-400 hover:bg-rose-50 hover:text-rose-500 transition-colors"
+                                          title="Eliminar presentación"
+                                        >
+                                          ✕
+                                        </button>
+                                      )}
                                     </td>
                                   </tr>
                                 ))}
