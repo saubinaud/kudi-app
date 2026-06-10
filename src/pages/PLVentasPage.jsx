@@ -14,13 +14,15 @@ import {
   Ban,
 } from 'lucide-react';
 
-// Badge-style dropdown (replaces native <select> for status fields)
+// Badge-style dropdown — uses fixed positioning to escape overflow:hidden
 function StatusBadge({ value, options, onChange, colorMap = {} }) {
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
   const ref = useRef(null);
+  const btnRef = useRef(null);
   useEffect(() => {
     if (!open) return;
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target) && !btnRef.current?.contains(e.target)) setOpen(false); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
@@ -28,17 +30,27 @@ function StatusBadge({ value, options, onChange, colorMap = {} }) {
   const selected = options.find(o => o.value === value) || options[0];
   const colors = colorMap[value] || 'bg-stone-100 text-stone-500';
 
+  const handleOpen = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + 4, left: rect.left + rect.width / 2 });
+    }
+    setOpen(!open);
+  };
+
   return (
-    <div ref={ref} className="relative inline-block">
+    <div className="relative inline-block">
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={handleOpen}
         className={`text-[10px] px-2 py-0.5 rounded-full cursor-pointer font-medium whitespace-nowrap transition-colors duration-100 ${colors}`}
       >
         {selected.label}
       </button>
       {open && (
-        <div className="absolute z-[9999] mt-1 left-1/2 -translate-x-1/2 bg-white border border-stone-200 rounded-lg shadow-lg overflow-hidden min-w-[120px]">
+        <div ref={ref} className="fixed z-[9999] bg-white border border-stone-200 rounded-lg shadow-lg min-w-[130px]"
+          style={{ top: pos.top, left: pos.left, transform: 'translateX(-50%)' }}>
           <div className="py-1">
             {options.map(o => (
               <button
