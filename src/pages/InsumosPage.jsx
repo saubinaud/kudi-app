@@ -5,7 +5,7 @@ import { cx } from '../styles/tokens';
 import { formatCurrency, formatDate } from '../utils/format';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CustomSelect from '../components/CustomSelect';
-import { Plus, Save, X, Trash2, Pencil, Search, TrendingUp, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Save, X, Trash2, Pencil, Search, TrendingUp, ChevronDown, ChevronRight, Pin } from 'lucide-react';
 import { useTerminos } from '../context/TerminosContext';
 
 const UNIDADES = ['g', 'kg', 'ml', 'L', 'uni', 'oz'];
@@ -447,13 +447,19 @@ export default function InsumosPage() {
                                     <td className="py-1.5">
                                       <div className="flex items-center gap-2">
                                         {p.es_principal ? (
-                                          <span className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 text-sm" title="Principal">★</span>
+                                          <span className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600" title="Principal">
+                                            <Pin size={14} />
+                                          </span>
                                         ) : (
                                           <>
                                             <button onClick={async () => { try { await api.put(`/insumos/${ins.id}/presentaciones/${p.id}`, { es_principal: true }); toast.success('Principal actualizado'); loadInsumos(); } catch (e) { toast.error(e.message); } }}
-                                              className="w-7 h-7 rounded-lg bg-stone-50 flex items-center justify-center text-stone-300 hover:bg-emerald-50 hover:text-emerald-500 transition-colors text-sm" title="Hacer principal">☆</button>
+                                              className="w-7 h-7 rounded-lg bg-stone-50 flex items-center justify-center text-stone-300 hover:bg-emerald-50 hover:text-emerald-500 transition-colors" title="Hacer principal">
+                                              <Pin size={14} />
+                                            </button>
                                             <button onClick={async () => { if (!confirm(`¿Eliminar "${p.nombre}"?`)) return; try { await api.del(`/insumos/${ins.id}/presentaciones/${p.id}`); toast.success('Eliminada'); loadInsumos(); } catch (e) { toast.error(e.message); } }}
-                                              className="w-7 h-7 rounded-lg bg-stone-50 flex items-center justify-center text-stone-300 hover:bg-rose-50 hover:text-rose-500 transition-colors text-xs" title="Eliminar">✕</button>
+                                              className="w-7 h-7 rounded-lg bg-stone-50 flex items-center justify-center text-stone-300 hover:bg-rose-50 hover:text-rose-500 transition-colors" title="Eliminar">
+                                              <Trash2 size={13} />
+                                            </button>
                                           </>
                                         )}
                                       </div>
