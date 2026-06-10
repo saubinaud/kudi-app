@@ -814,8 +814,10 @@ export default function PLVentasPage() {
                 }`}>
                 {t.label}
                 {cnt > 0 && (
-                  <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold ${
-                    estadoFilter === t.value ? 'bg-white/25 text-white' : 'bg-stone-200 text-stone-600'
+                  <span className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${
+                    estadoFilter === t.value
+                      ? t.value === 'todos' ? 'bg-stone-500 text-white' : 'bg-white/30 text-white'
+                      : 'bg-stone-300 text-stone-700'
                   }`}>{cnt}</span>
                 )}
               </button>
