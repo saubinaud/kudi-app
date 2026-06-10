@@ -213,15 +213,17 @@ export default function StockPage() {
     const costoUnitario = Math.round((costoTotal / cantidad) * 100) / 100;
     setSavingNuevo(true);
     try {
-      // 1. Create product with auto-calculated price (50% margin)
+      // 1. Create product with auto-calculated price (50% margin + IGV)
+      const igvRate = parseFloat(user?.igv_rate) || 0;
       const precioVenta = Math.round(costoUnitario / (1 - 0.5) * 100) / 100;
+      const precioFinal = Math.round(precioVenta * (1 + igvRate) * 100) / 100;
       const prodRes = await api.post('/productos', {
         nombre: npNombre.trim(),
         tipo_producto: 'no_transformable',
         costoNeto: costoUnitario,
-        precioFinal: precioVenta,
+        precioFinal: precioFinal,
         margen: 50,
-        disponible_venta: true,
+        disponible_venta: false,
       });
       const newProd = prodRes?.data || prodRes;
       const productoId = newProd?.id;
@@ -276,9 +278,12 @@ export default function StockPage() {
         disponible_venta: sidebarDisponibleVenta,
       };
       if (sidebarPrecioVenta && parseFloat(sidebarPrecioVenta) > 0) {
-        updateData.precio_final = parseFloat(sidebarPrecioVenta);
+        const pf = parseFloat(sidebarPrecioVenta);
+        const igvRate = parseFloat(sidebarProduct.igv_rate || user?.igv_rate) || 0;
+        const pv = igvRate > 0 ? pf / (1 + igvRate) : pf;
         const costo = parseFloat(sidebarProduct.costo_neto) || 0;
-        if (costo > 0) updateData.margen = 1 - (costo / parseFloat(sidebarPrecioVenta));
+        updateData.precio_final = pf;
+        if (costo > 0) updateData.margen = 1 - (costo / pv);
       }
       await api.put(`/productos/${sidebarProduct.id}`, updateData);
       toast.success('Producto actualizado');
@@ -974,14 +979,21 @@ export default function StockPage() {
                       placeholder="0.00"
                     />
                   </div>
-                  {sidebarProduct?.costo_neto > 0 && sidebarPrecioVenta > 0 && (
-                    <div className="flex items-center justify-between text-[11px] px-1">
-                      <span className="text-stone-400">Costo: S/ {parseFloat(sidebarProduct.costo_neto).toFixed(2)}</span>
-                      <span className={`font-semibold ${parseFloat(sidebarPrecioVenta) > parseFloat(sidebarProduct.costo_neto) ? 'text-emerald-600' : 'text-rose-500'}`}>
-                        Margen: {Math.round((1 - parseFloat(sidebarProduct.costo_neto) / parseFloat(sidebarPrecioVenta)) * 100)}%
-                      </span>
-                    </div>
-                  )}
+                  {sidebarProduct?.costo_neto > 0 && sidebarPrecioVenta > 0 && (() => {
+                    const pf = parseFloat(sidebarPrecioVenta);
+                    const igvR = parseFloat(sidebarProduct.igv_rate || user?.igv_rate) || 0;
+                    const pv = igvR > 0 ? pf / (1 + igvR) : pf;
+                    const costo = parseFloat(sidebarProduct.costo_neto);
+                    const margen = Math.round((1 - costo / pv) * 100);
+                    return (
+                      <div className="flex items-center justify-between text-[11px] px-1">
+                        <span className="text-stone-400">Costo: S/ {costo.toFixed(2)}{igvR > 0 ? ` · IGV ${(igvR * 100).toFixed(1)}%` : ''}</span>
+                        <span className={`font-semibold ${margen > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                          Margen: {margen}%
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 

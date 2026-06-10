@@ -456,7 +456,6 @@ export default function PLComprasPage() {
         costoNeto: costoUnitario,
         precioFinal: precioVenta,
         margen: 50,
-        disponible_venta: true,
       });
       const nuevo = res.data;
       setProductos((prev) => [...prev, nuevo]);
