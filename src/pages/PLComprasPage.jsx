@@ -104,7 +104,7 @@ export default function PLComprasPage() {
   const [savingProducto, setSavingProducto] = useState(false);
 
   // Modal form
-  const [form, setForm] = useState({ fecha: todayStr(), proveedor: '', proveedor_id: '', nota: '', cuenta_id: '', tipo_comprobante: '', codigo_comprobante: '', linea_negocio_id: null, descripcion: '' });
+  const [form, setForm] = useState({ fecha: todayStr(), proveedor: '', proveedor_id: '', nota: '', cuenta_id: '', tipo_comprobante: '', serie_comprobante: '', correlativo_comprobante: '', linea_negocio_id: null, descripcion: '' });
   const [items, setItems] = useState([{ ...EMPTY_ITEM }]);
   const [cuentas, setCuentas] = useState([]);
 
@@ -172,7 +172,7 @@ export default function PLComprasPage() {
 
   // Modal helpers
   const openNewCompra = () => {
-    setForm({ fecha: todayStr(), proveedor: '', proveedor_id: '', nota: '', cuenta_id: '', tipo_comprobante: '', codigo_comprobante: '', linea_negocio_id: null, descripcion: '' });
+    setForm({ fecha: todayStr(), proveedor: '', proveedor_id: '', nota: '', cuenta_id: '', tipo_comprobante: '', serie_comprobante: '', correlativo_comprobante: '', linea_negocio_id: null, descripcion: '' });
     setItems([{ ...EMPTY_ITEM }]);
     setModalOpen(true);
   };
@@ -293,7 +293,7 @@ export default function PLComprasPage() {
         nota: form.nota || null,
         cuenta_id: form.cuenta_id || null,
         tipo_comprobante: form.tipo_comprobante || null,
-        codigo_comprobante: form.codigo_comprobante || null,
+        codigo_comprobante: [form.serie_comprobante, form.correlativo_comprobante].filter(Boolean).join('-') || null,
         linea_negocio_id: form.linea_negocio_id || null,
         descripcion: form.descripcion || null,
         items: validItems.map((it) => ({
@@ -783,23 +783,21 @@ export default function PLComprasPage() {
                 </div>
                 <div>
                   <label className={cx.label}>Proveedor</label>
-                  <CustomSelect
-                    options={[
-                      { value: '', label: 'Sin especificar' },
-                      { value: '__nuevo__', label: '+ Crear proveedor' },
-                      ...proveedores.map(p => ({ value: p.id, label: p.nombre })),
-                    ]}
+                  <SearchableSelect
+                    options={proveedores.map(p => ({ ...p, nombre: p.ruc ? `${p.nombre} (${p.ruc})` : p.nombre, _nombre: p.nombre }))}
                     value={form.proveedor_id}
-                    onChange={(v) => {
-                      if (v === '__nuevo__') {
-                        setShowNewProveedor(true);
-                        return;
-                      }
-                      const prov = proveedores.find(p => p.id === v);
-                      setForm((f) => ({ ...f, proveedor_id: v, proveedor: prov?.nombre || '' }));
+                    onChange={(prov) => {
+                      setForm((f) => ({ ...f, proveedor_id: prov.id, proveedor: prov._nombre || prov.nombre }));
                     }}
-                    placeholder="Seleccionar proveedor"
+                    placeholder="Buscar proveedor..."
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewProveedor(true)}
+                    className="text-[11px] text-[var(--accent)] hover:underline transition-colors duration-100 mt-1"
+                  >
+                    + Crear proveedor
+                  </button>
                 </div>
                 {cuentas.length > 0 && (
                 <div>
@@ -826,15 +824,29 @@ export default function PLComprasPage() {
                   />
                 </div>
                 {form.tipo_comprobante && (
-                  <div>
-                    <label className={cx.label}>Nro. comprobante</label>
-                    <input
-                      type="text"
-                      value={form.codigo_comprobante || ''}
-                      onChange={(e) => setForm((f) => ({ ...f, codigo_comprobante: e.target.value }))}
-                      className={cx.input}
-                      placeholder="Ej: 001-00012345"
-                    />
+                  <div className="col-span-2 grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] text-stone-400 font-medium">Serie</label>
+                      <input
+                        type="text"
+                        value={form.serie_comprobante || ''}
+                        onChange={(e) => setForm((f) => ({ ...f, serie_comprobante: e.target.value.toUpperCase() }))}
+                        className={cx.input}
+                        placeholder="E001"
+                        maxLength={10}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-stone-400 font-medium">Correlativo</label>
+                      <input
+                        type="text"
+                        value={form.correlativo_comprobante || ''}
+                        onChange={(e) => setForm((f) => ({ ...f, correlativo_comprobante: e.target.value }))}
+                        className={cx.input}
+                        placeholder="00012345"
+                        maxLength={20}
+                      />
+                    </div>
                   </div>
                 )}
                 {lineas.length > 0 && (
