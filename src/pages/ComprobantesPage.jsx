@@ -60,6 +60,20 @@ export default function ComprobantesPage() {
   const [uploadingCert, setUploadingCert] = useState(false);
   const [buscandoRuc, setBuscandoRuc] = useState(false);
 
+  // Venta detail sidebar
+  const [ventaDetalle, setVentaDetalle] = useState(null);
+  const [loadingVenta, setLoadingVenta] = useState(false);
+
+  const openVentaDetalle = async (ventaId) => {
+    if (!ventaId) return;
+    setLoadingVenta(true);
+    try {
+      const res = await api.get(`/pl/ventas/${ventaId}/detalle`);
+      setVentaDetalle(res.data || res);
+    } catch { toast.error('Error cargando venta'); }
+    finally { setLoadingVenta(false); }
+  };
+
   // Printer config state
   const [printerConfig, setPrinterConfig] = useState({ printer_ip: '', printer_port: 9100, printer_enabled: false });
 
@@ -693,6 +707,7 @@ export default function ComprobantesPage() {
               <thead>
                 <tr className="border-b border-stone-100">
                   <th className={cx.th}>Serie-Correlativo</th>
+                  <th className={cx.th}>Orden</th>
                   <th className={cx.th}>Tipo</th>
                   <th className={cx.th}>Producto</th>
                   <th className={cx.th}>Cliente</th>
@@ -707,6 +722,14 @@ export default function ComprobantesPage() {
                   <tr key={c.id} className={cx.tr}>
                     <td className={cx.td + ' font-mono text-sm font-medium text-stone-900'}>
                       {c.serie}-{c.correlativo}
+                    </td>
+                    <td className={cx.td}>
+                      {c.nro_pedido ? (
+                        <button onClick={() => openVentaDetalle(c.venta_id)}
+                          className="text-xs font-mono font-semibold text-[#16A34A] hover:underline cursor-pointer">
+                          {c.nro_pedido}
+                        </button>
+                      ) : <span className="text-stone-300 text-xs">—</span>}
                     </td>
                     <td className={cx.td + ' text-stone-600'}>{TIPO_LABELS[c.tipo_doc] || c.tipo_doc}</td>
                     <td className={cx.td + ' text-stone-600 text-xs'}>{c.producto_nombre || '-'}</td>
@@ -786,6 +809,12 @@ export default function ComprobantesPage() {
                     </p>
                     <p className="text-xs text-stone-500 mt-0.5">
                       {TIPO_LABELS[c.tipo_doc] || c.tipo_doc} &middot; {formatDate(c.fecha_emision || c.created_at)}
+                      {c.nro_pedido && (
+                        <button onClick={() => openVentaDetalle(c.venta_id)}
+                          className="ml-2 font-mono font-semibold text-[#16A34A] hover:underline">
+                          {c.nro_pedido}
+                        </button>
+                      )}
                     </p>
                   </div>
                   <span className={estadoBadge(c.estado)}>{ESTADO_LABELS[c.estado] || c.estado}</span>
@@ -886,6 +915,62 @@ export default function ComprobantesPage() {
         onConfirm={(pw) => uploadCertWithPassword(pw)}
         onCancel={() => { setCertPasswordPrompt(false); setCertFile(null); }}
       />
+      {/* Venta detail sidebar */}
+      {(ventaDetalle || loadingVenta) && (
+        <div className="fixed inset-0 z-[60] flex">
+          <div className="flex-1 bg-black/20" onClick={() => setVentaDetalle(null)} />
+          <div className="w-full sm:w-96 bg-white h-full shadow-xl flex flex-col overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
+              <h3 className="font-bold text-stone-900 text-sm">Detalle de venta</h3>
+              <button onClick={() => setVentaDetalle(null)} className="text-stone-400 hover:text-stone-600">
+                <Ban size={16} />
+              </button>
+            </div>
+            {loadingVenta ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="w-6 h-6 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
+              </div>
+            ) : ventaDetalle && (
+              <div className="px-5 py-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold font-mono text-[#16A34A]">{ventaDetalle.nro_pedido}</span>
+                  <span className="text-xs text-stone-400">{formatDate(ventaDetalle.fecha)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="bg-stone-50 rounded-lg p-3">
+                    <p className="text-[10px] text-stone-400 uppercase">Total</p>
+                    <p className="font-bold text-stone-900">{formatCurrency(ventaDetalle.total)}</p>
+                  </div>
+                  <div className="bg-stone-50 rounded-lg p-3">
+                    <p className="text-[10px] text-stone-400 uppercase">Método</p>
+                    <p className="font-medium text-stone-700 capitalize">{ventaDetalle.metodo_pago || 'efectivo'}</p>
+                  </div>
+                </div>
+                {ventaDetalle.cliente_nombre && (
+                  <div className="text-sm">
+                    <p className="text-[10px] text-stone-400 uppercase">Cliente</p>
+                    <p className="text-stone-700">{ventaDetalle.cliente_nombre}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Items</p>
+                  <div className="space-y-1.5">
+                    {(ventaDetalle.items || []).map((item, i) => (
+                      <div key={i} className="flex justify-between items-center bg-stone-50 rounded-lg px-3 py-2">
+                        <div>
+                          <p className="text-sm text-stone-800">{item.producto_nombre || item.nombre || 'Producto'}</p>
+                          <p className="text-[10px] text-stone-400">{item.cantidad} x {formatCurrency(item.precio_unitario)}</p>
+                        </div>
+                        <span className="text-sm font-semibold text-stone-900">{formatCurrency(item.subtotal || (item.cantidad * item.precio_unitario))}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
