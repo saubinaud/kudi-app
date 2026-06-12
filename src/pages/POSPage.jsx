@@ -988,21 +988,36 @@ export default function POSPage() {
         <div className="flex flex-col lg:flex-row gap-4 pb-20 lg:pb-0">
           {/* LEFT: Product Grid */}
           <div className="flex-1">
-            {/* Canal tabs */}
-            {canales.length > 0 && (
-              <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
-                <button onClick={() => setSelectedCanal(null)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors duration-100 ${
-                    !selectedCanal ? 'bg-[#0A2F24] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                  }`}>Tienda</button>
-                {canales.map(c => (
-                  <button key={c.id} onClick={() => { setSelectedCanal(c.id); setSelectedCarta(null); }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors duration-100 ${
-                      selectedCanal === c.id ? 'bg-[#0A2F24] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                    }`}>{c.nombre} {c.comision_pct > 0 ? `${c.comision_pct}%` : ''}</button>
-                ))}
-              </div>
-            )}
+            {/* Canal tabs — segmented control with sliding pill */}
+            {canales.length > 0 && (() => {
+              const canalOptions = [{ id: null, label: 'Tienda' }, ...canales.map(c => ({ id: c.id, label: `${c.nombre}${c.comision_pct > 0 ? ` ${c.comision_pct}%` : ''}` }))];
+              const activeIdx = canalOptions.findIndex(o => o.id === selectedCanal);
+              return (
+                <div className="relative inline-flex bg-stone-100 rounded-xl p-1 mb-3">
+                  {/* Sliding pill */}
+                  <div
+                    className="absolute top-1 bottom-1 rounded-lg bg-[#0A2F24] shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                    style={{
+                      width: `calc(${100 / canalOptions.length}% - 0px)`,
+                      left: `calc(${(activeIdx >= 0 ? activeIdx : 0) * (100 / canalOptions.length)}% + 0px)`,
+                    }}
+                  />
+                  {/* Buttons */}
+                  {canalOptions.map((o, i) => (
+                    <button
+                      key={o.id ?? 'tienda'}
+                      onClick={() => { setSelectedCanal(o.id); if (o.id) setSelectedCarta(null); }}
+                      className={`relative z-10 px-4 py-1.5 text-xs font-medium whitespace-nowrap transition-colors duration-200 ${
+                        i === activeIdx ? 'text-white' : 'text-stone-500 hover:text-stone-700'
+                      }`}
+                      style={{ width: `${100 / canalOptions.length}%` }}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* Carta tabs */}
             {!selectedCanal && cartas.length > 0 && (
