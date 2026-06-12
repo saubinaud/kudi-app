@@ -16,7 +16,18 @@
           { "tipo": "feat", "texto": "Checkbox \"No cobrar comisión\" por subcuenta — disponible en cada subcuenta que use tarjeta, no solo en pago único" },
           { "tipo": "feat", "texto": "Cantidad editable — escribe directamente \"10\" en el carrito en vez de presionar + diez veces" },
           { "tipo": "feat", "texto": "Emitir boleta directo desde el POS — al terminar una venta, el botón \"Emitir boleta\" la envía a SUNAT al instante" },
-          { "tipo": "feat", "texto": "Alerta de stock — si vendes más de lo que tienes en inventario, aparece un aviso ámbar con cuánto te falta. No bloquea la venta" }
+          { "tipo": "feat", "texto": "Alerta de stock — si vendes más de lo que tienes en inventario, aparece un aviso ámbar con cuánto te falta. No bloquea la venta" },
+          { "tipo": "feat", "texto": "Vender por canal — tabs [Tienda] [Rappi] [PedidosYa] en el POS. Al seleccionar un canal, solo ves los productos de ese canal con los precios ya ajustados por comisión" },
+          { "tipo": "feat", "texto": "Comisión por canal se registra automáticamente — al vender por Rappi, Kudi calcula cuánto se queda el canal y lo guarda en la venta" }
+        ]
+      },
+      {
+        "titulo": "Estado de resultados",
+        "entries": [
+          { "tipo": "fix", "texto": "IGV ahora se calcula correctamente sobre las ventas, no sobre la ganancia. Si vendes S/100 con 18% IGV, Kudi separa S/15.25 como IGV por pagar" },
+          { "tipo": "feat", "texto": "Comisiones de tarjeta aparecen como línea separada en el P&L — ya no están escondidas dentro de 'Ventas brutas'" },
+          { "tipo": "feat", "texto": "Comisiones de canales (Rappi, PedidosYa) aparecen como deducción — ves exactamente cuánto se lleva cada plataforma" },
+          { "tipo": "improve", "texto": "Ingresos netos = Ventas brutas - IGV - Comisiones tarjeta - Comisiones canales - Descuentos. Ahora refleja lo que realmente recibes" }
         ]
       },
       {
