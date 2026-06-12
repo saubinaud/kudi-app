@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -985,24 +986,30 @@ export default function POSPage() {
         <div className="flex flex-col lg:flex-row gap-4 pb-20 lg:pb-0">
           {/* LEFT: Product Grid */}
           <div className="flex-1">
-            {/* Canal tabs — segmented control with sliding pill */}
+            {/* Canal tabs — segmented control with framer-motion */}
             {canales.length > 0 && (() => {
               const opts = [{ id: null, label: 'Tienda' }, ...canales.map(c => ({ id: c.id, label: c.nombre + (c.comision_pct > 0 ? ` ${c.comision_pct}%` : '') }))];
-              const idx = Math.max(0, opts.findIndex(o => o.id === selectedCanal));
               return (
-                <div className="relative inline-flex bg-stone-200/60 rounded-lg p-[3px] mb-4">
-                  <div
-                    className="absolute top-[3px] bottom-[3px] rounded-md bg-[#0A2F24] shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
-                    style={{ width: `calc(${100 / opts.length}% - 2px)`, left: `calc(${idx * (100 / opts.length)}% + 1px)` }}
-                  />
-                  {opts.map((o, i) => (
-                    <button key={o.id ?? '_t'} onClick={() => { setSelectedCanal(o.id); if (o.id) setSelectedCarta(null); }}
-                      className={`relative z-10 px-4 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors duration-200 ${
-                        i === idx ? 'text-white' : 'text-stone-500 hover:text-stone-700'
-                      }`} style={{ minWidth: `${100 / opts.length}%` }}>
-                      {o.label}
-                    </button>
-                  ))}
+                <div className="inline-flex bg-stone-200/70 rounded-lg p-1 mb-4">
+                  {opts.map(o => {
+                    const isActive = o.id === selectedCanal;
+                    return (
+                      <button key={o.id ?? '_t'} onClick={() => { setSelectedCanal(o.id); if (o.id) setSelectedCarta(null); }}
+                        className="relative z-10 px-5 py-[7px] text-xs font-medium whitespace-nowrap"
+                      >
+                        {isActive && (
+                          <motion.div
+                            layoutId="canal-pill"
+                            className="absolute inset-0 bg-[#0A2F24] rounded-md shadow-sm"
+                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                          />
+                        )}
+                        <span className={`relative z-10 transition-colors duration-150 ${isActive ? 'text-white' : 'text-stone-500 hover:text-stone-700'}`}>
+                          {o.label}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               );
             })()}
