@@ -10,6 +10,7 @@ import { formatCurrency } from '../utils/format';
 import { API_BASE } from '../config/api';
 import SearchableSelect from '../components/SearchableSelect';
 import CustomSelect from '../components/CustomSelect';
+import SegmentedControl from '../components/SegmentedControl';
 import { PromptDialog } from '../components/ConfirmDialog';
 import {
   Plus,
@@ -282,23 +283,17 @@ function PackItemsEditor({ productoId, onItemsChange }) {
 
       {/* Tabs + product grid */}
       <div>
-        <div className="flex items-center gap-1 border-b border-stone-200 mb-3">
-          <button
-            onClick={() => { setPackTab('listos'); setPackSearch(''); }}
-            className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors duration-100 ${
-              packTab === 'listos' ? 'border-[#16A34A] text-[#16A34A]' : 'border-transparent text-stone-400 hover:text-stone-600'
-            }`}
-          >
-            Productos listos ({productosListos.length})
-          </button>
-          <button
-            onClick={() => { setPackTab('inventario'); setPackSearch(''); }}
-            className={`px-4 py-2 text-xs font-semibold border-b-2 transition-colors duration-100 ${
-              packTab === 'inventario' ? 'border-[#16A34A] text-[#16A34A]' : 'border-transparent text-stone-400 hover:text-stone-600'
-            }`}
-          >
-            De inventario ({productosInventario.length})
-          </button>
+        <div className="mb-3">
+          <SegmentedControl
+            options={[
+              { key: 'listos', label: `Productos listos (${productosListos.length})` },
+              { key: 'inventario', label: `De inventario (${productosInventario.length})` },
+            ]}
+            value={packTab}
+            onChange={(key) => { setPackTab(key); setPackSearch(''); }}
+            layoutId="pack-tab"
+            size="sm"
+          />
         </div>
 
         {/* Search */}

@@ -7,6 +7,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import {
   Plus, X, Trash2, Pencil, Truck, MapPin, Check, CheckCheck, Package,
 } from 'lucide-react';
+import SegmentedControl from '../components/SegmentedControl';
 
 export default function CanalesPage() {
   const api = useApi();
@@ -336,44 +337,17 @@ export default function CanalesPage() {
       </div>
 
       {/* Tab pills */}
-      <div className="flex gap-1 flex-wrap mb-4">
-        <button
-          onClick={() => setActiveTab('directa')}
-          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
-            activeTab === 'directa'
-              ? 'bg-[#0A2F24] text-white'
-              : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
-          }`}
-        >
-          Venta Directa
-        </button>
-
-        {canales.map(c => (
-          <button
-            key={c.id}
-            onClick={() => setActiveTab(String(c.id))}
-            className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
-              activeTab === String(c.id)
-                ? 'bg-[#0A2F24] text-white'
-                : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
-            }`}
-          >
-            {c.nombre}
-            <span className="opacity-60 ml-1">{c.comision_pct}%</span>
-          </button>
-        ))}
-
-        <button
-          onClick={() => setActiveTab('zonas')}
-          className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors ${
-            activeTab === 'zonas'
-              ? 'bg-[#0A2F24] text-white'
-              : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
-          }`}
-        >
-          Zonas de envío
-        </button>
-
+      <div className="flex items-center gap-2 flex-wrap mb-4">
+        <SegmentedControl
+          options={[
+            { key: 'directa', label: 'Venta Directa' },
+            ...canales.map(c => ({ key: String(c.id), label: `${c.nombre} ${c.comision_pct}%` })),
+            { key: 'zonas', label: 'Zonas de envío' },
+          ]}
+          value={activeTab}
+          onChange={setActiveTab}
+          layoutId="canales-tab"
+        />
         <button
           onClick={() => setShowCreate(true)}
           className="px-3 py-2 text-xs font-semibold rounded-lg bg-[var(--accent)] text-white hover:opacity-90 flex items-center gap-1"

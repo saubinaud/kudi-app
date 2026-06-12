@@ -9,6 +9,7 @@ import {
   Plus, Wallet, BarChart3, ClipboardCheck, ChevronLeft, ChevronRight,
   Trash2, Pencil, X, Save, AlertTriangle, ArrowUpRight,
 } from 'lucide-react';
+import SegmentedControl from '../components/SegmentedControl';
 
 // ── Helper components ────────────────────────────────────────
 
@@ -400,19 +401,18 @@ export default function PLCashflowPage() {
   return (
     <div className="max-w-7xl mx-auto">
       {/* Tab navigation */}
-      <div className="flex gap-1 p-1 bg-stone-100 rounded-lg w-fit mb-4">
-        {[
-          { key: 'flujo', label: 'Flujo de Caja', icon: BarChart3 },
-          { key: 'arqueo', label: 'Arqueo', icon: ClipboardCheck },
-          { key: 'cuentas', label: 'Cuentas', icon: Wallet },
-        ].map(t => (
-          <button key={t.key} onClick={() => { setTab(t.key); if (t.key === 'arqueo') loadArqueo(arqueoFecha); }}
-            className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
-              tab === t.key ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-700'
-            }`}>
-            <t.icon size={14} />{t.label}
-          </button>
-        ))}
+      <div className="mb-4">
+        <SegmentedControl
+          options={[
+            { key: 'flujo', label: 'Flujo de Caja', icon: BarChart3 },
+            { key: 'arqueo', label: 'Arqueo', icon: ClipboardCheck },
+            { key: 'cuentas', label: 'Cuentas', icon: Wallet },
+          ]}
+          value={tab}
+          onChange={(key) => { setTab(key); if (key === 'arqueo') loadArqueo(arqueoFecha); }}
+          layoutId="cashflow-tab"
+          variant="light"
+        />
       </div>
 
       {/* ═══════════════════ TAB 1: FLUJO DE CAJA ═══════════════════ */}

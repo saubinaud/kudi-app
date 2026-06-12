@@ -24,6 +24,7 @@ import {
   Grid3X3,
   LayoutList,
 } from 'lucide-react';
+import SegmentedControl from '../components/SegmentedControl';
 
 function StatusBadge({ stock, minimo }) {
   if (stock === 0) {
@@ -367,22 +368,16 @@ export default function StockPage() {
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold text-stone-900">Inventario</h1>
-          <div className="flex gap-0.5 bg-stone-100 rounded-lg p-0.5">
-            <button
-              onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-md transition-colors duration-100 ${viewMode === 'table' ? 'bg-white shadow-sm text-[#16A34A]' : 'text-stone-400 hover:text-stone-600'}`}
-              title="Vista lista"
-            >
-              <LayoutList size={16} />
-            </button>
-            <button
-              onClick={() => setViewMode('gallery')}
-              className={`p-1.5 rounded-md transition-colors duration-100 ${viewMode === 'gallery' ? 'bg-white shadow-sm text-[#16A34A]' : 'text-stone-400 hover:text-stone-600'}`}
-              title="Vista galería"
-            >
-              <Grid3X3 size={16} />
-            </button>
-          </div>
+          <SegmentedControl
+            options={[
+              { key: 'table', label: '', icon: LayoutList },
+              { key: 'gallery', label: '', icon: Grid3X3 },
+            ]}
+            value={viewMode}
+            onChange={setViewMode}
+            layoutId="stock-view"
+            size="sm"
+          />
         </div>
         <div className="flex gap-2">
           <button

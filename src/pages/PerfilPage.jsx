@@ -10,6 +10,7 @@ import { PAISES, getPaisByCode } from '../config/paises';
 import { API_BASE } from '../config/api';
 import ActividadPage from './ActividadPage';
 import EquipoPage from './EquipoPage';
+import SegmentedControl from '../components/SegmentedControl';
 
 const PLAN_LABEL = { trial: 'Prueba gratuita', independiente: 'Independiente', emprendedor: 'Emprendedor', empresario: 'Empresario', pro: 'Pro' };
 const PLAN_PRECIO = { independiente: 'S/ 80', emprendedor: 'S/ 100', empresario: 'S/ 180' };
@@ -174,16 +175,8 @@ export default function PerfilPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1.5 mb-6 overflow-x-auto pb-1">
-        {TABS.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold transition-colors whitespace-nowrap ${
-              tab === t.key ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
-            }`}>
-            <t.icon size={14} />
-            {t.label}
-          </button>
-        ))}
+      <div className="mb-6 overflow-x-auto pb-1">
+        <SegmentedControl options={TABS.map(t => ({ key: t.key, label: t.label, icon: t.icon }))} value={tab} onChange={setTab} layoutId="perfil-tab" size="sm" />
       </div>
 
       {/* ══════ Tab: Mi negocio ══════ */}

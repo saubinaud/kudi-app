@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
 import CustomSelect from '../components/CustomSelect';
+import SegmentedControl from '../components/SegmentedControl';
 import UbigeoSelect from '../components/UbigeoSelect';
 import { X, Package, CheckCircle, Minus, Plus, ShoppingCart, Banknote, CreditCard, Smartphone, ArrowLeft, Trash2, MapPin, Store, Truck as TruckIcon, User, ChevronRight, AlertTriangle, Lock, DollarSign, Clock } from 'lucide-react';
 
@@ -1054,17 +1055,15 @@ export default function POSPage() {
 
             {/* Carta tabs */}
             {!selectedCanal && cartas.length > 0 && (
-              <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
-                <button onClick={() => setSelectedCarta(null)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors duration-100 ${
-                    !selectedCarta ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                  }`}>Todos</button>
-                {cartas.map(c => (
-                  <button key={c.id} onClick={() => setSelectedCarta(c.id)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors duration-100 ${
-                      selectedCarta === c.id ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                    }`}>{c.nombre}</button>
-                ))}
+              <div className="mb-3 overflow-x-auto pb-1">
+                <SegmentedControl
+                  options={[{ key: null, label: 'Todos' }, ...cartas.map(c => ({ key: c.id, label: c.nombre }))]}
+                  value={selectedCarta}
+                  onChange={setSelectedCarta}
+                  layoutId="pos-carta"
+                  size="sm"
+                  variant="light"
+                />
               </div>
             )}
 

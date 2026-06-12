@@ -7,6 +7,7 @@ import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency, formatPercent, formatDate, precioComercial } from '../utils/format';
 import ConfirmDialog, { PromptDialog } from '../components/ConfirmDialog';
+import SegmentedControl from '../components/SegmentedControl';
 import {
   Plus,
   Pencil,
@@ -376,20 +377,16 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
         <h1 className="text-xl font-bold text-stone-900">Mis {t.productos.toLowerCase()}</h1>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <button
-            onClick={() => setViewMode('gallery')}
-            className={`${cx.btnIcon} ${viewMode === 'gallery' ? 'text-[var(--accent)]' : ''}`}
-            title="Vista galeria"
-          >
-            <Grid3X3 size={18} />
-          </button>
-          <button
-            onClick={() => setViewMode('table')}
-            className={`${cx.btnIcon} ${viewMode === 'table' ? 'text-[var(--accent)]' : ''}`}
-            title="Vista lista"
-          >
-            <LayoutList size={18} />
-          </button>
+          <SegmentedControl
+            options={[
+              { key: 'gallery', label: 'Galería', icon: Grid3X3 },
+              { key: 'table', label: 'Lista', icon: LayoutList },
+            ]}
+            value={viewMode}
+            onChange={setViewMode}
+            layoutId="dash-view"
+            size="sm"
+          />
           <button
             onClick={() => {
               const next = mobileColumns === 2 ? 1 : 2;
