@@ -990,7 +990,7 @@ export default function POSPage() {
             {canales.length > 0 && (() => {
               const opts = [{ id: null, label: 'Tienda' }, ...canales.map(c => ({ id: c.id, label: c.nombre + (c.comision_pct > 0 ? ` ${c.comision_pct}%` : '') }))];
               return (
-                <div className="inline-flex bg-stone-200/70 rounded-lg p-1 mb-4">
+                <div className="inline-flex bg-stone-200/70 rounded-full p-1 mb-4">
                   {opts.map(o => {
                     const isActive = o.id === selectedCanal;
                     return (
@@ -1000,7 +1000,7 @@ export default function POSPage() {
                         {isActive && (
                           <motion.div
                             layoutId="canal-pill"
-                            className="absolute inset-0 bg-[#0A2F24] rounded-md shadow-sm"
+                            className="absolute inset-0 bg-[#0A2F24] rounded-full shadow-sm"
                             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                           />
                         )}
