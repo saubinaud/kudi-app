@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -8,6 +7,7 @@ import { formatCurrency } from '../utils/format';
 import { formatDate } from '../utils/format';
 import SearchableSelect from '../components/SearchableSelect';
 import { API_BASE } from '../config/api';
+import SegmentedControl from '../components/SegmentedControl';
 import {
   Package,
   AlertTriangle,
@@ -24,7 +24,6 @@ import {
   Grid3X3,
   LayoutList,
 } from 'lucide-react';
-import SegmentedControl from '../components/SegmentedControl';
 
 function StatusBadge({ stock, minimo }) {
   if (stock === 0) {
@@ -369,14 +368,8 @@ export default function StockPage() {
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-bold text-stone-900">Inventario</h1>
           <SegmentedControl
-            options={[
-              { key: 'table', label: '', icon: LayoutList },
-              { key: 'gallery', label: '', icon: Grid3X3 },
-            ]}
-            value={viewMode}
-            onChange={setViewMode}
-            layoutId="stock-view"
-            size="sm"
+            options={[{ key: 'table', label: '', icon: LayoutList }, { key: 'gallery', label: '', icon: Grid3X3 }]}
+            value={viewMode} onChange={setViewMode} layoutId="stock-view" size="sm"
           />
         </div>
         <div className="flex gap-2">
@@ -551,11 +544,9 @@ export default function StockPage() {
                           </div>
                         </td>
                       </tr>
-                      <AnimatePresence>
                       {isExpanded && (
                         <tr>
                           <td colSpan={productos.some(p => p.committed > 0 || p.incoming > 0) ? 8 : 6} className="bg-stone-50 px-6 py-4">
-                            <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.12 }}>
                             {loadingMov[prod.id] ? (
                               <div className={cx.skeleton + ' h-16 w-full'} />
                             ) : (movimientos[prod.id] || []).length === 0 ? (
@@ -590,11 +581,9 @@ export default function StockPage() {
                                 </tbody>
                               </table></div>
                             )}
-                            </motion.div>
                           </td>
                         </tr>
                       )}
-                      </AnimatePresence>
                     </tbody>
                   );
                 })}
@@ -647,9 +636,8 @@ export default function StockPage() {
                       )}
                     </div>
                   </div>
-                  <AnimatePresence>
                   {isExpanded && (
-                    <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.12 }} className="bg-stone-50 px-4 py-3 space-y-2">
+                    <div className="bg-stone-50 px-4 py-3 space-y-2">
                       {loadingMov[prod.id] ? (
                         <div className={cx.skeleton + ' h-12 w-full'} />
                       ) : (movimientos[prod.id] || []).length === 0 ? (
@@ -670,9 +658,8 @@ export default function StockPage() {
                           </div>
                         ))
                       )}
-                    </motion.div>
+                    </div>
                   )}
-                  </AnimatePresence>
                 </div>
               );
             })}
@@ -683,11 +670,10 @@ export default function StockPage() {
       )}
 
       {/* Entrada modal */}
-      <AnimatePresence>
       {showEntrada && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowEntrada(false)} />
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.15 }} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-sm p-4 sm:p-6">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowEntrada(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-sm p-4 sm:p-6">
             <h3 className="text-lg font-bold text-stone-900 mb-4">Nueva entrada de stock</h3>
             <div className="space-y-4">
               <div>
@@ -749,17 +735,15 @@ export default function StockPage() {
                 )}
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
-      </AnimatePresence>
 
       {/* Ajuste modal */}
-      <AnimatePresence>
       {ajusteProducto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setAjusteProducto(null)} />
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.15 }} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-sm p-4 sm:p-6">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setAjusteProducto(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-sm p-4 sm:p-6">
             <h3 className="text-lg font-bold text-stone-900 mb-1">Ajuste de stock</h3>
             <p className="text-sm text-stone-500 mb-4">{ajusteProducto.nombre}</p>
             <div className="space-y-4">
@@ -802,17 +786,15 @@ export default function StockPage() {
                 )}
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
-      </AnimatePresence>
 
       {/* Nuevo producto modal */}
-      <AnimatePresence>
       {showNuevoProducto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowNuevoProducto(false)} />
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.15 }} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-sm p-4 sm:p-6">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowNuevoProducto(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-sm p-4 sm:p-6">
             <h3 className="text-lg font-bold text-stone-900 mb-1">Ingresar producto al inventario</h3>
             <p className="text-xs text-stone-400 mb-4">Para productos que ya tienes y compraste antes de usar Kudi.</p>
             <div className="space-y-4">
@@ -878,17 +860,15 @@ export default function StockPage() {
                 )}
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
-      </AnimatePresence>
 
       {/* Sidebar edición producto no transformable */}
-      <AnimatePresence>
       {sidebarProduct && (
         <div className="fixed inset-0 z-[60] flex">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="flex-1 bg-black/20" onClick={() => setSidebarProduct(null)} />
-          <motion.div initial={{ x: 300 }} animate={{ x: 0 }} exit={{ x: 300 }} transition={{ duration: 0.2 }} className="w-full sm:w-96 bg-white h-full shadow-xl overflow-y-auto flex flex-col">
+          <div className="flex-1 bg-black/20" onClick={() => setSidebarProduct(null)} />
+          <div className="w-full sm:w-96 bg-white h-full shadow-xl overflow-y-auto flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-5 border-b border-stone-100">
               <h3 className="text-lg font-semibold text-stone-900">Detalle de producto</h3>
@@ -1059,10 +1039,9 @@ export default function StockPage() {
                 </button>
               )}
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
-      </AnimatePresence>
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE } from '../config/api';
@@ -629,9 +628,8 @@ export default function PLComprasPage() {
                 </div>
 
                 {/* Expanded: items table */}
-                <AnimatePresence>
                 {isExpanded && compra.items && (
-                  <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.12 }} className="px-5 pb-4">
+                  <div className="px-5 pb-4">
                     {/* Desktop */}
                     <div className="hidden sm:block">
                       <table className="w-full">
@@ -753,9 +751,8 @@ export default function PLComprasPage() {
                         )}
                       </div>
                     )}
-                  </motion.div>
+                  </div>
                 )}
-                </AnimatePresence>
               </div>
             );
           })}
@@ -763,11 +760,10 @@ export default function PLComprasPage() {
       )}
 
       {/* Nueva compra modal */}
-      <AnimatePresence>
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.15 }} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-w-[95vw] max-h-[85vh] overflow-y-auto">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-w-[95vw] max-h-[85vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-stone-900">Nueva compra</h3>
@@ -1112,17 +1108,15 @@ export default function PLComprasPage() {
                 </button>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
-      </AnimatePresence>
 
       {/* Side panel: nuevo proveedor */}
-      <AnimatePresence>
       {showNewProveedor && (
         <div className="fixed inset-0 z-[60] flex">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="flex-1 bg-black/20" onClick={() => setShowNewProveedor(false)} />
-          <motion.div initial={{ x: 300 }} animate={{ x: 0 }} exit={{ x: 300 }} transition={{ duration: 0.2 }} className="w-96 bg-white h-full shadow-xl p-6 overflow-y-auto flex flex-col">
+          <div className="flex-1 bg-black/20" onClick={() => setShowNewProveedor(false)} />
+          <div className="w-96 bg-white h-full shadow-xl p-6 overflow-y-auto flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-stone-900">Nuevo proveedor</h3>
               <button onClick={() => setShowNewProveedor(false)} className={cx.btnIcon}><X size={18} /></button>
@@ -1183,17 +1177,15 @@ export default function PLComprasPage() {
                 Cancelar
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
-      </AnimatePresence>
 
       {/* Side panel: nuevo insumo */}
-      <AnimatePresence>
       {showNewInsumo && (
         <div className="fixed inset-0 z-[60] flex">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="flex-1 bg-black/20" onClick={() => setShowNewInsumo(false)} />
-          <motion.div initial={{ x: 300 }} animate={{ x: 0 }} exit={{ x: 300 }} transition={{ duration: 0.2 }} className="w-96 bg-white h-full shadow-xl p-6 overflow-y-auto flex flex-col">
+          <div className="flex-1 bg-black/20" onClick={() => setShowNewInsumo(false)} />
+          <div className="w-96 bg-white h-full shadow-xl p-6 overflow-y-auto flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-stone-900">Nuevo insumo</h3>
               <button onClick={() => setShowNewInsumo(false)} className={cx.btnIcon}><X size={18} /></button>
@@ -1257,17 +1249,15 @@ export default function PLComprasPage() {
                 Cancelar
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
-      </AnimatePresence>
 
       {/* Side panel: nuevo material */}
-      <AnimatePresence>
       {showNewMaterial && (
         <div className="fixed inset-0 z-[60] flex">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="flex-1 bg-black/20" onClick={() => setShowNewMaterial(false)} />
-          <motion.div initial={{ x: 300 }} animate={{ x: 0 }} exit={{ x: 300 }} transition={{ duration: 0.2 }} className="w-96 bg-white h-full shadow-xl p-6 overflow-y-auto flex flex-col">
+          <div className="flex-1 bg-black/20" onClick={() => setShowNewMaterial(false)} />
+          <div className="w-96 bg-white h-full shadow-xl p-6 overflow-y-auto flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-stone-900">Nuevo material</h3>
               <button onClick={() => setShowNewMaterial(false)} className={cx.btnIcon}><X size={18} /></button>
@@ -1331,17 +1321,15 @@ export default function PLComprasPage() {
                 Cancelar
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
-      </AnimatePresence>
 
       {/* Side panel: nuevo producto */}
-      <AnimatePresence>
       {showNewProducto && (
         <div className="fixed inset-0 z-[60] flex">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="flex-1 bg-black/20" onClick={() => setShowNewProducto(false)} />
-          <motion.div initial={{ x: 300 }} animate={{ x: 0 }} exit={{ x: 300 }} transition={{ duration: 0.2 }} className="w-96 bg-white h-full shadow-xl p-6 overflow-y-auto flex flex-col">
+          <div className="flex-1 bg-black/20" onClick={() => setShowNewProducto(false)} />
+          <div className="w-96 bg-white h-full shadow-xl p-6 overflow-y-auto flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-stone-900">Nuevo producto</h3>
               <button onClick={() => setShowNewProducto(false)} className={cx.btnIcon}><X size={18} /></button>
@@ -1406,10 +1394,9 @@ export default function PLComprasPage() {
                 Cancelar
               </button>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
-      </AnimatePresence>
 
       {/* Confirm delete */}
       <ConfirmDialog
