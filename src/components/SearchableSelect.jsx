@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cx } from '../styles/tokens';
 import { ChevronDown } from 'lucide-react';
 
@@ -34,42 +35,50 @@ export default function SearchableSelect({ options = [], value, onChange, placeh
         <ChevronDown size={14} className="text-stone-400" />
       </button>
 
-      {open && (
-        <div className="absolute z-[60] mt-2 left-0 w-full min-w-0 bg-white border border-stone-100 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] overflow-hidden">
-          <div className="p-2">
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar..."
-              className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-stone-800 text-sm placeholder:text-stone-400 focus:outline-none focus:border-[var(--accent)]"
-              autoFocus
-            />
-          </div>
-          <div className="max-h-48 overflow-y-auto">
-            {filtered.length === 0 ? (
-              <div className="px-3 py-2 text-sm text-stone-400">Sin resultados</div>
-            ) : (
-              filtered.map((o) => (
-                <button
-                  key={o[valueKey]}
-                  type="button"
-                  onClick={() => {
-                    onChange(o);
-                    setOpen(false);
-                    setSearch('');
-                  }}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-stone-100 transition-colors ${
-                    o[valueKey] === value ? 'text-[var(--accent)]' : 'text-stone-800'
-                  }`}
-                >
-                  {o[displayKey]}
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.12 }}
+            className="absolute z-[60] mt-2 left-0 w-full min-w-0 bg-white border border-stone-100 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] overflow-hidden"
+          >
+            <div className="p-2">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar..."
+                className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg text-stone-800 text-sm placeholder:text-stone-400 focus:outline-none focus:border-[var(--accent)]"
+                autoFocus
+              />
+            </div>
+            <div className="max-h-48 overflow-y-auto">
+              {filtered.length === 0 ? (
+                <div className="px-3 py-2 text-sm text-stone-400">Sin resultados</div>
+              ) : (
+                filtered.map((o) => (
+                  <button
+                    key={o[valueKey]}
+                    type="button"
+                    onClick={() => {
+                      onChange(o);
+                      setOpen(false);
+                      setSearch('');
+                    }}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-stone-100 transition-colors ${
+                      o[valueKey] === value ? 'text-[var(--accent)]' : 'text-stone-800'
+                    }`}
+                  >
+                    {o[displayKey]}
+                  </button>
+                ))
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

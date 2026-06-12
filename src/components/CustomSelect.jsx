@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CustomSelect({ options = [], value, onChange, placeholder = 'Seleccionar...', className = '', compact = false }) {
   const [open, setOpen] = useState(false);
   const [dropStyle, setDropStyle] = useState({});
+  const [flipped, setFlipped] = useState(false);
   const ref = useRef(null);
   const dropRef = useRef(null);
 
@@ -28,6 +30,7 @@ export default function CustomSelect({ options = [], value, onChange, placeholde
       const dropdownHeight = Math.min(options.length * (compact ? 28 : 36) + 8, 200);
       const spaceBelow = window.innerHeight - rect.bottom;
       const flipUp = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+      setFlipped(flipUp);
       setDropStyle({
         position: 'fixed',
         left: rect.left,
@@ -55,31 +58,37 @@ export default function CustomSelect({ options = [], value, onChange, placeholde
         <ChevronDown size={compact ? 12 : 14} className={`text-stone-400 transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {open && (
-        <div
-          ref={dropRef}
-          className="z-[9999] bg-white border border-stone-200 rounded-lg shadow-lg overflow-hidden"
-          style={dropStyle}
-        >
-          <div className="max-h-48 overflow-y-auto py-1">
-            {options.map((o) => (
-              <button
-                key={o.value}
-                type="button"
-                onClick={() => {
-                  onChange(o.value);
-                  setOpen(false);
-                }}
-                className={`w-full text-left px-3 hover:bg-stone-50 transition-colors ${
-                  compact ? 'py-1.5 text-xs' : 'py-2 text-sm'
-                } ${o.value === value ? 'text-[var(--accent)] font-medium bg-[var(--accent-light)]' : 'text-stone-700'}`}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            ref={dropRef}
+            className="z-[9999] bg-white border border-stone-200 rounded-lg shadow-lg overflow-hidden"
+            style={dropStyle}
+            initial={{ opacity: 0, y: flipped ? 4 : -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: flipped ? 4 : -4 }}
+            transition={{ duration: 0.12 }}
+          >
+            <div className="max-h-48 overflow-y-auto py-1">
+              {options.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(o.value);
+                    setOpen(false);
+                  }}
+                  className={`w-full text-left px-3 hover:bg-stone-50 transition-colors ${
+                    compact ? 'py-1.5 text-xs' : 'py-2 text-sm'
+                  } ${o.value === value ? 'text-[var(--accent)] font-medium bg-[var(--accent-light)]' : 'text-stone-700'}`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
