@@ -25,7 +25,7 @@ export default function POSPage() {
   const [cartas, setCartas] = useState([]);
   const [selectedCarta, setSelectedCarta] = useState(null); // null = "Todos"
 
-  // Sales channels (canales)
+  // Canales (sales channels — Rappi, PedidosYa, etc.)
   const [canales, setCanales] = useState([]);
   const [selectedCanal, setSelectedCanal] = useState(null);
 
@@ -116,11 +116,9 @@ export default function POSPage() {
       );
     }
 
-    // Filter by canal: only show products that have a precios_canal entry for that canal
+    // Filter by canal
     if (selectedCanal) {
-      list = list.filter(p =>
-        (p.precios_canal || []).some(pc => pc.canal_id === selectedCanal)
-      );
+      list = list.filter(p => (p.precios_canal || []).some(pc => pc.canal_id === selectedCanal));
     }
 
     // Search filter
@@ -221,8 +219,7 @@ export default function POSPage() {
         precioConIgv = cp;
         precioSinIgv = tasaIgv > 0 ? Math.round(cp / (1 + tasaIgv) * 100) / 100 : cp;
       }
-    }
-    if (selectedCarta) {
+    } else if (selectedCarta) {
       const cartaPrecio = (product.precios_categoria || []).find(pc => pc.categoria_id === selectedCarta);
       if (cartaPrecio) {
         const cp = parseFloat(cartaPrecio.precio) || precioBase;
@@ -359,11 +356,11 @@ export default function POSPage() {
       const payload = {
         fecha: todayStr(),
         cliente_id: clienteId,
-        canal_id: selectedCanal || null,
         tipo_venta: 'directo',
         metodo_pago: metodoPagoFinal,
         pago_detalle: pagoDetalle,
         comision_tarjeta: comisionTarjeta,
+        canal_id: selectedCanal || null,
         items: cartItems.map(i => ({
           producto_id: i.producto_id,
           variante_id: i.variante_id || null,
@@ -391,11 +388,11 @@ export default function POSPage() {
       })));
       setLastClienteId(clienteId);
       setCartItems([]);
-      setSelectedCanal(null);
       setPosCliente({ tipo_doc: 'DNI', num_doc: '', nombre: '', email: '', telefono: '' });
       setClienteEncontrado(false);
       setMetodoPago('efectivo');
       setSinComisionTarjeta(false);
+      setSelectedCanal(null);
       setPagaCon('');
       setPagoMixto(false);
       setPagoPartes([{ metodo: 'efectivo', monto: '', pagada: false }, { metodo: 'efectivo', monto: '', pagada: false }]);
@@ -990,28 +987,19 @@ export default function POSPage() {
           <div className="flex-1">
             {/* Canal tabs — segmented control with sliding pill */}
             {canales.length > 0 && (() => {
-              const canalOptions = [{ id: null, label: 'Tienda' }, ...canales.map(c => ({ id: c.id, label: `${c.nombre}${c.comision_pct > 0 ? ` ${c.comision_pct}%` : ''}` }))];
-              const activeIdx = canalOptions.findIndex(o => o.id === selectedCanal);
+              const opts = [{ id: null, label: 'Tienda' }, ...canales.map(c => ({ id: c.id, label: c.nombre + (c.comision_pct > 0 ? ` ${c.comision_pct}%` : '') }))];
+              const idx = Math.max(0, opts.findIndex(o => o.id === selectedCanal));
               return (
-                <div className="relative inline-flex bg-stone-100 rounded-xl p-1 mb-3">
-                  {/* Sliding pill */}
+                <div className="relative inline-flex bg-stone-100 rounded-2xl p-1.5 mb-4 gap-0.5">
                   <div
-                    className="absolute top-1 bottom-1 rounded-lg bg-[#0A2F24] shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
-                    style={{
-                      width: `calc(${100 / canalOptions.length}% - 0px)`,
-                      left: `calc(${(activeIdx >= 0 ? activeIdx : 0) * (100 / canalOptions.length)}% + 0px)`,
-                    }}
+                    className="absolute inset-y-1.5 rounded-xl bg-[#0A2F24] shadow-lg transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+                    style={{ width: `calc(${100 / opts.length}% - 3px)`, left: `calc(${idx * (100 / opts.length)}% + 1.5px)` }}
                   />
-                  {/* Buttons */}
-                  {canalOptions.map((o, i) => (
-                    <button
-                      key={o.id ?? 'tienda'}
-                      onClick={() => { setSelectedCanal(o.id); if (o.id) setSelectedCarta(null); }}
-                      className={`relative z-10 px-4 py-1.5 text-xs font-medium whitespace-nowrap transition-colors duration-200 ${
-                        i === activeIdx ? 'text-white' : 'text-stone-500 hover:text-stone-700'
-                      }`}
-                      style={{ width: `${100 / canalOptions.length}%` }}
-                    >
+                  {opts.map((o, i) => (
+                    <button key={o.id ?? '_t'} onClick={() => { setSelectedCanal(o.id); if (o.id) setSelectedCarta(null); }}
+                      className={`relative z-10 px-5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors duration-200 ${
+                        i === idx ? 'text-white' : 'text-stone-500 hover:text-stone-700'
+                      }`} style={{ minWidth: `${100 / opts.length}%` }}>
                       {o.label}
                     </button>
                   ))}
