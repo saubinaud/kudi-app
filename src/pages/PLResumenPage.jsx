@@ -205,6 +205,24 @@ export default function PLResumenPage() {
             <div className="px-3 sm:px-6 py-3 space-y-2">
               <PLRow label="Ventas brutas" amount={data.ingresos.brutos} indent />
               <PLRow label="Descuentos" amount={-data.ingresos.descuentos} negative indent />
+              {data.ingresos.igv_ventas > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-stone-500 pl-4">IGV por pagar</span>
+                  <span className="text-rose-500 font-medium tabular-nums">-{fmt(data.ingresos.igv_ventas)}</span>
+                </div>
+              )}
+              {data.ingresos.comision_tarjeta > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-stone-500 pl-4">Comisiones tarjeta</span>
+                  <span className="text-rose-500 font-medium tabular-nums">-{fmt(data.ingresos.comision_tarjeta)}</span>
+                </div>
+              )}
+              {data.ingresos.comision_canal > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-stone-500 pl-4">Comisiones canales</span>
+                  <span className="text-rose-500 font-medium tabular-nums">-{fmt(data.ingresos.comision_canal)}</span>
+                </div>
+              )}
             </div>
             <div className="px-3 sm:px-6 py-3 border-t border-stone-200 bg-stone-50/50">
               <div className="flex justify-between text-sm font-bold">
@@ -320,18 +338,6 @@ export default function PLResumenPage() {
                 </div>
               </div>
             </div>
-
-            {/* IMPUESTOS */}
-            {data.impuestos > 0 && (
-              <>
-                <div className="px-3 sm:px-6 py-4 bg-stone-50 border-t border-b border-stone-100">
-                  <p className="text-xs font-bold text-stone-500 uppercase tracking-wider">Impuestos</p>
-                </div>
-                <div className="px-3 sm:px-6 py-3 space-y-2">
-                  <PLRow label="IGV / Impuestos" amount={data.impuestos} indent />
-                </div>
-              </>
-            )}
 
             {/* UTILIDAD NETA — BIG, prominent */}
             <div className="px-3 sm:px-6 py-5 border-t-2 border-stone-400">
