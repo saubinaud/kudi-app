@@ -132,6 +132,30 @@ export default function POSPage() {
     return list;
   }, [enrichedProductos, posSearch, selectedCarta, selectedCanal]);
 
+  // Recalculate cart prices when canal changes
+  useEffect(() => {
+    if (cartItems.length === 0) return;
+    setCartItems(prev => prev.map(item => {
+      const product = productos.find(p => p.id === item.producto_id);
+      if (!product) return item;
+      const precioBase = parseFloat(product.precio_final) || 0;
+      const igvProducto = parseFloat(product.igv_rate) || 0;
+      const esInf = user?.tipo_negocio === 'informal';
+      const tasaIgv = esInf ? tasaIgvPOS : igvProducto;
+      let precioConIgv = esInf ? Math.ceil(precioBase * (1 + tasaIgv) * 10) / 10 : precioBase;
+      let precioSinIgv = esInf ? precioBase : (parseFloat(product.precio_venta) || precioBase);
+      if (selectedCanal) {
+        const canalPrecio = (product.precios_canal || []).find(pc => pc.canal_id === selectedCanal);
+        if (canalPrecio) {
+          const cp = parseFloat(canalPrecio.precio_override) || precioBase;
+          precioConIgv = cp;
+          precioSinIgv = tasaIgv > 0 ? Math.round(cp / (1 + tasaIgv) * 100) / 100 : cp;
+        }
+      }
+      return { ...item, precio_con_igv: precioConIgv, precio_sin_igv: precioSinIgv };
+    }));
+  }, [selectedCanal]); // eslint-disable-line
+
   // Cart totals — desglose tipo boleta
   const esInformal = user?.tipo_negocio === 'informal';
   const tasaIgvPOS = parseFloat(user?.igv_rate) || 0.18; // tasa real, incluso para informal
