@@ -25,6 +25,10 @@ export default function POSPage() {
   const [cartas, setCartas] = useState([]);
   const [selectedCarta, setSelectedCarta] = useState(null); // null = "Todos"
 
+  // Canales (sales channels — Rappi, PedidosYa, etc.)
+  const [canales, setCanales] = useState([]);
+  const [selectedCanal, setSelectedCanal] = useState(null);
+
   // Search
   const [posSearch, setPosSearch] = useState('');
 
@@ -85,10 +89,12 @@ export default function POSPage() {
       api.get('/productos'),
       api.get('/precios/categorias'),
       api.get('/canales/zonas').catch(() => ({ data: [] })),
-    ]).then(([prodRes, catRes, zonasRes]) => {
+      api.get('/canales').catch(() => ({ data: [] })),
+    ]).then(([prodRes, catRes, zonasRes, canalesRes]) => {
       setProductos((prodRes.data || []).filter(p => p.tipo_producto !== 'no_transformable' || p.disponible_venta));
       setCartas(catRes.data || catRes || []);
       setZonas(zonasRes.data || []);
+      setCanales((canalesRes.data || []).filter(c => c.activo));
     }).catch(() => toast.error('Error cargando productos'))
       .finally(() => setLoadingProductos(false));
   }, []); // eslint-disable-line
@@ -110,6 +116,11 @@ export default function POSPage() {
       );
     }
 
+    // Filter by canal
+    if (selectedCanal) {
+      list = list.filter(p => (p.precios_canal || []).some(pc => pc.canal_id === selectedCanal));
+    }
+
     // Search filter
     if (posSearch) {
       const q = posSearch.toLowerCase();
@@ -118,7 +129,7 @@ export default function POSPage() {
       );
     }
     return list;
-  }, [enrichedProductos, posSearch, selectedCarta]);
+  }, [enrichedProductos, posSearch, selectedCarta, selectedCanal]);
 
   // Cart totals — desglose tipo boleta
   const esInformal = user?.tipo_negocio === 'informal';
@@ -201,7 +212,14 @@ export default function POSPage() {
     const tasaIgv = esInformal ? tasaIgvPOS : igvProducto;
     let precioConIgv = esInformal ? Math.ceil(precioBase * (1 + tasaIgv) * 10) / 10 : precioBase;
     let precioSinIgv = esInformal ? precioBase : (parseFloat(product.precio_venta) || precioBase);
-    if (selectedCarta) {
+    if (selectedCanal) {
+      const canalPrecio = (product.precios_canal || []).find(pc => pc.canal_id === selectedCanal);
+      if (canalPrecio) {
+        const cp = parseFloat(canalPrecio.precio_override) || precioBase;
+        precioConIgv = cp;
+        precioSinIgv = tasaIgv > 0 ? Math.round(cp / (1 + tasaIgv) * 100) / 100 : cp;
+      }
+    } else if (selectedCarta) {
       const cartaPrecio = (product.precios_categoria || []).find(pc => pc.categoria_id === selectedCarta);
       if (cartaPrecio) {
         const cp = parseFloat(cartaPrecio.precio) || precioBase;
@@ -342,6 +360,7 @@ export default function POSPage() {
         metodo_pago: metodoPagoFinal,
         pago_detalle: pagoDetalle,
         comision_tarjeta: comisionTarjeta,
+        canal_id: selectedCanal || null,
         items: cartItems.map(i => ({
           producto_id: i.producto_id,
           variante_id: i.variante_id || null,
@@ -373,6 +392,7 @@ export default function POSPage() {
       setClienteEncontrado(false);
       setMetodoPago('efectivo');
       setSinComisionTarjeta(false);
+      setSelectedCanal(null);
       setPagaCon('');
       setPagoMixto(false);
       setPagoPartes([{ metodo: 'efectivo', monto: '', pagada: false }, { metodo: 'efectivo', monto: '', pagada: false }]);
@@ -965,8 +985,30 @@ export default function POSPage() {
         <div className="flex flex-col lg:flex-row gap-4 pb-20 lg:pb-0">
           {/* LEFT: Product Grid */}
           <div className="flex-1">
+            {/* Canal tabs — segmented control with sliding pill */}
+            {canales.length > 0 && (() => {
+              const opts = [{ id: null, label: 'Tienda' }, ...canales.map(c => ({ id: c.id, label: c.nombre + (c.comision_pct > 0 ? ` ${c.comision_pct}%` : '') }))];
+              const idx = Math.max(0, opts.findIndex(o => o.id === selectedCanal));
+              return (
+                <div className="relative inline-flex bg-stone-100 rounded-2xl p-1.5 mb-4 gap-0.5">
+                  <div
+                    className="absolute inset-y-1.5 rounded-xl bg-[#0A2F24] shadow-lg transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+                    style={{ width: `calc(${100 / opts.length}% - 3px)`, left: `calc(${idx * (100 / opts.length)}% + 1.5px)` }}
+                  />
+                  {opts.map((o, i) => (
+                    <button key={o.id ?? '_t'} onClick={() => { setSelectedCanal(o.id); if (o.id) setSelectedCarta(null); }}
+                      className={`relative z-10 px-5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors duration-200 ${
+                        i === idx ? 'text-white' : 'text-stone-500 hover:text-stone-700'
+                      }`} style={{ minWidth: `${100 / opts.length}%` }}>
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
+
             {/* Carta tabs */}
-            {cartas.length > 0 && (
+            {!selectedCanal && cartas.length > 0 && (
               <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1">
                 <button onClick={() => setSelectedCarta(null)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors duration-100 ${
@@ -1017,11 +1059,13 @@ export default function POSPage() {
                     )}
                     <p className="text-[11px] font-medium text-stone-800 truncate">{p.nombre}</p>
                     <p className="text-xs font-bold text-[var(--accent)]">{formatCurrency(
-                      selectedCarta
-                        ? ((p.precios_categoria || []).find(pc => pc.categoria_id === selectedCarta)?.precio || p.precio_final)
-                        : (conIgv
-                          ? (user?.tipo_negocio === 'informal' ? Math.ceil(parseFloat(p.precio_final) * (1 + tasaIgvPOS) * 10) / 10 : p.precio_final)
-                          : (user?.tipo_negocio === 'informal' ? p.precio_final : (p.precio_venta || p.precio_final)))
+                      selectedCanal
+                        ? ((p.precios_canal || []).find(pc => pc.canal_id === selectedCanal)?.precio_override || p.precio_final)
+                        : selectedCarta
+                          ? ((p.precios_categoria || []).find(pc => pc.categoria_id === selectedCarta)?.precio || p.precio_final)
+                          : (conIgv
+                            ? (user?.tipo_negocio === 'informal' ? Math.ceil(parseFloat(p.precio_final) * (1 + tasaIgvPOS) * 10) / 10 : p.precio_final)
+                            : (user?.tipo_negocio === 'informal' ? p.precio_final : (p.precio_venta || p.precio_final)))
                     )}</p>
                   </button>
                 ))}
