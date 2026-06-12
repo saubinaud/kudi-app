@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -983,8 +984,9 @@ export default function PLVentasPage() {
                     </div>
                     <span className="text-sm font-semibold text-stone-900 flex-shrink-0 ml-3">{formatCurrency(v.total)}</span>
                   </div>
+                  <AnimatePresence>
                   {isExpanded && (
-                    <div className="mt-3 pt-3 border-t border-stone-100">
+                    <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.12 }} className="mt-3 pt-3 border-t border-stone-100">
                       {/* Show each item if multi-product */}
                       {v.items && v.items.length > 0 ? (
                         <div className="space-y-1 mb-3">
@@ -1099,8 +1101,9 @@ export default function PLVentasPage() {
                           <Trash2 size={12} /> Eliminar
                         </button>
                       </div>
-                    </div>
+                    </motion.div>
                   )}
+                  </AnimatePresence>
                 </div>
               );
             })}
@@ -1110,10 +1113,11 @@ export default function PLVentasPage() {
 
 
       {/* Register/Edit Modal */}
+      <AnimatePresence>
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.15 }} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto">
             <div className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-stone-900">
@@ -1673,15 +1677,17 @@ export default function PLVentasPage() {
                 </button>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
+      </AnimatePresence>
 
       {/* Emitir comprobante modal */}
+      <AnimatePresence>
       {emitirModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setEmitirModal(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-md p-4 sm:p-6">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setEmitirModal(null)} />
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.15 }} className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-md p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-stone-900">Emitir comprobante</h3>
               <button onClick={() => setEmitirModal(null)} className={cx.btnGhost}><X size={18} /></button>
@@ -1754,15 +1760,17 @@ export default function PLVentasPage() {
                 </button>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
+      </AnimatePresence>
 
       {/* Sidebar detail panel */}
+      <AnimatePresence>
       {selectedVenta && ventaDetalle && (
         <div className="fixed inset-0 z-50 flex">
-          <div className="flex-1 bg-black/30 backdrop-blur-sm" onClick={() => { setSelectedVenta(null); setVentaDetalle(null); }} />
-          <div className="w-[520px] max-w-full bg-white h-full shadow-2xl overflow-y-auto border-l border-stone-200">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="flex-1 bg-black/30 backdrop-blur-sm" onClick={() => { setSelectedVenta(null); setVentaDetalle(null); }} />
+          <motion.div initial={{ x: 300 }} animate={{ x: 0 }} exit={{ x: 300 }} transition={{ duration: 0.2 }} className="w-[520px] max-w-full bg-white h-full shadow-2xl overflow-y-auto border-l border-stone-200">
 
             {/* Header — dark green top bar */}
             <div className="bg-[#0A2F24] px-6 py-5">
@@ -1965,9 +1973,10 @@ export default function PLVentasPage() {
                 </button>
               )}
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
+      </AnimatePresence>
 
       {/* Confirm delete */}
       <ConfirmDialog

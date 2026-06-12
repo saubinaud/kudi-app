@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -570,8 +570,15 @@ export default function POSPage() {
       {/* Cart footer */}
       {cartItems.length > 0 && (
         <div className="border-t border-stone-200 px-5 py-4">
+          <AnimatePresence mode="wait">
           {showCheckout ? (
-            <div className="space-y-4 max-h-[55vh] overflow-y-auto overflow-x-hidden">
+            <motion.div
+              key="checkout"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.15 }}
+              className="space-y-4 max-h-[55vh] overflow-y-auto overflow-x-hidden">
               {/* Back button */}
               <button onClick={() => { setShowCheckout(false); setShowClientSidebar(false); }} className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800 transition-colors duration-100 -mb-1">
                 <ArrowLeft size={12} />
@@ -893,9 +900,15 @@ export default function POSPage() {
                   ) : 'Confirmar venta'}
                 </button>
               </div>
-            </div>
+            </motion.div>
           ) : (
-            <>
+            <motion.div
+              key="cart-summary"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.15 }}
+            >
               <div className="space-y-1.5 mb-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-stone-400">Subtotal</span>
@@ -924,8 +937,9 @@ export default function POSPage() {
               >
                 Cobrar {formatCurrency(cartTotal)}
               </button>
-            </>
+            </motion.div>
           )}
+          </AnimatePresence>
         </div>
       )}
     </div>
@@ -1093,10 +1107,22 @@ export default function POSPage() {
       )}
 
       {/* Variant selector modal */}
+      <AnimatePresence>
       {variantModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div
+          key="variant-modal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40" onClick={() => setVariantModal(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xs max-w-[95vw] p-5">
+          <motion.div
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xs max-w-[95vw] p-5">
             <h3 className="font-bold text-stone-900 mb-1">{variantModal.nombre || variantModal.label}</h3>
             <p className="text-sm text-stone-500 mb-3">Selecciona variante</p>
             <div className="space-y-1 max-h-60 overflow-y-auto">
@@ -1114,9 +1140,10 @@ export default function POSPage() {
             <button onClick={() => setVariantModal(null)} className={cx.btnGhost + ' w-full mt-3'}>
               Cancelar
             </button>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* Mobile bottom bar */}
       {cartItems.length > 0 && (
@@ -1136,10 +1163,22 @@ export default function POSPage() {
       )}
 
       {/* Client + address sidebar */}
+      <AnimatePresence>
       {showClientSidebar && (
-        <div className="fixed inset-0 z-[60] flex">
+        <motion.div
+          key="client-sidebar"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-[60] flex">
           <div className="flex-1 bg-black/20" onClick={() => setShowClientSidebar(false)} />
-          <div className="w-full sm:w-96 bg-white h-full shadow-xl flex flex-col">
+          <motion.div
+            initial={{ x: 300 }}
+            animate={{ x: 0 }}
+            exit={{ x: 300 }}
+            transition={{ duration: 0.2 }}
+            className="w-full sm:w-96 bg-white h-full shadow-xl flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100 flex-shrink-0">
               <h3 className="font-bold text-stone-900 text-sm">Cliente y dirección</h3>
@@ -1263,15 +1302,28 @@ export default function POSPage() {
                 Confirmar
               </button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* Post-sale success overlay */}
+      <AnimatePresence>
       {lastSaleId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <motion.div
+          key="success-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40" onClick={() => setLastSaleId(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm max-w-[95vw] p-6 text-center">
+          <motion.div
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm max-w-[95vw] p-6 text-center">
             <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
               <CheckCircle size={32} className="text-emerald-600" />
             </div>
@@ -1321,9 +1373,10 @@ export default function POSPage() {
                 Nueva venta
               </button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+      </AnimatePresence>
       {/* Modal: Abrir caja */}
       {showAbrirCaja && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

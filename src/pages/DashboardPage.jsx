@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -504,8 +505,8 @@ export default function DashboardPage() {
 
         const renderGalleryGrid = (prods) => (
           <div className={`grid ${mobileColumns === 2 ? 'grid-cols-2' : 'grid-cols-1'} sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3`}>
-            {prods.map((p) => (
-              <div key={p.id} className={`${cx.cardHover} overflow-hidden group relative`} onClick={() => !p.locked && handleDetail(p)}>
+            {prods.map((p, index) => (
+              <motion.div key={p.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(index, 12) * 0.03, duration: 0.15 }} className={`${cx.cardHover} overflow-hidden group relative`} onClick={() => !p.locked && handleDetail(p)}>
                 {p.locked && (
                   <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] rounded-xl flex flex-col items-center justify-center z-10">
                     <Lock size={24} className="text-stone-300 mb-2" />
@@ -550,7 +551,7 @@ export default function DashboardPage() {
                     <Trash2 size={13} />
                   </button>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         );
@@ -666,13 +667,19 @@ export default function DashboardPage() {
           return (
             <div className={label === 'Presentaciones enteras' ? 'mb-5' : ''}>
               <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-3">{label} ({prods.length})</p>
-              {viewMode === 'gallery' && renderGalleryGrid(prods)}
-              {viewMode === 'table' && (
-                <>
-                  {renderMobileCards(prods)}
-                  {renderTable(prods)}
-                </>
-              )}
+              <AnimatePresence mode="wait">
+                {viewMode === 'gallery' && (
+                  <motion.div key="gallery" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+                    {renderGalleryGrid(prods)}
+                  </motion.div>
+                )}
+                {viewMode === 'table' && (
+                  <motion.div key="table" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+                    {renderMobileCards(prods)}
+                    {renderTable(prods)}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           );
         };
@@ -911,10 +918,11 @@ export default function DashboardPage() {
       )}
 
       {/* Detail modal — Airbnb listing style */}
+      <AnimatePresence>
       {detailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setDetailModal(null); setDetailData(null); }} />
-          <div className="relative bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setDetailModal(null); setDetailData(null); }} />
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.15 }} className="relative bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl">
 
             {/* Header with image */}
             {detailModal.imagen_url ? (
@@ -1043,9 +1051,10 @@ export default function DashboardPage() {
                 </>
               )}
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
+      </AnimatePresence>
       {/* Configurar cartas modal */}
       {showCartaConfig && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

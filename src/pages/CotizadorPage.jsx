@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -982,7 +983,12 @@ export default function CotizadorPage() {
         {/* Mobile material cards */}
         <div className="space-y-3 lg:hidden">
           {mats.map((mat) => (
-            <div key={mat._id} className="bg-stone-100 rounded-xl p-3 space-y-2">
+            <motion.div
+              key={mat._id}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.1 }}
+              className="bg-stone-100 rounded-xl p-3 space-y-2">
               <SearchableSelect
                 options={catalogMateriales}
                 value={mat.material_id}
@@ -1006,7 +1012,7 @@ export default function CotizadorPage() {
                   <Trash2 size={14} />
                 </button>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
 
@@ -1023,7 +1029,12 @@ export default function CotizadorPage() {
           </thead>
           <tbody>
             {mats.map((mat) => (
-              <tr key={mat._id} className="border-b border-stone-100 last:border-0">
+              <motion.tr
+                key={mat._id}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.1 }}
+                className="border-b border-stone-100 last:border-0">
                 <td className="py-2 pr-2">
                   <SearchableSelect
                     options={catalogMateriales}
@@ -1055,7 +1066,7 @@ export default function CotizadorPage() {
                     <Trash2 size={14} />
                   </button>
                 </td>
-              </tr>
+              </motion.tr>
             ))}
           </tbody>
         </table>
@@ -1369,8 +1380,14 @@ export default function CotizadorPage() {
                   </div>
 
                   {/* Expanded content */}
+                  <AnimatePresence initial={false}>
                   {!prep.collapsed && (
-                    <div className="mt-4 space-y-4">
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.12 }}
+                      className="mt-4 space-y-4">
                       {/* Name + rendimiento row */}
                       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                         <div className="sm:col-span-2">
@@ -1403,7 +1420,12 @@ export default function CotizadorPage() {
                       {/* Insumos — mobile cards */}
                       <div className="space-y-3 lg:hidden">
                         {prep.insumos.map((ins) => (
-                          <div key={ins._id} className="bg-stone-50 rounded-xl p-3 space-y-2">
+                          <motion.div
+                            key={ins._id}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.1 }}
+                            className="bg-stone-50 rounded-xl p-3 space-y-2">
                             <SearchableSelect
                               options={enrichedInsumos}
                               value={ins.insumo_id}
@@ -1432,7 +1454,7 @@ export default function CotizadorPage() {
                                 <Trash2 size={14} />
                               </button>
                             </div>
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
 
@@ -1449,7 +1471,12 @@ export default function CotizadorPage() {
                         </thead>
                         <tbody>
                           {prep.insumos.map((ins) => (
-                            <tr key={ins._id} className="border-b border-stone-100 last:border-0">
+                            <motion.tr
+                              key={ins._id}
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ duration: 0.1 }}
+                              className="border-b border-stone-100 last:border-0">
                               <td className="py-2 pr-2">
                                 <SearchableSelect
                                   options={enrichedInsumos}
@@ -1486,7 +1513,7 @@ export default function CotizadorPage() {
                                   <Trash2 size={14} />
                                 </button>
                               </td>
-                            </tr>
+                            </motion.tr>
                           ))}
                         </tbody>
                       </table>
@@ -1497,8 +1524,9 @@ export default function CotizadorPage() {
                       >
                         <Plus size={13} /> Agregar {(t.insumos || 'insumo').toLowerCase().replace(/s$/, '')}
                       </button>
-                    </div>
+                    </motion.div>
                   )}
+                  </AnimatePresence>
                 </div>
               ))}
             </div>
@@ -1658,8 +1686,14 @@ export default function CotizadorPage() {
                         </button>
                       </div>
                     </div>
+                    <AnimatePresence initial={false}>
                     {!isCollapsed && (
-                      <div className="mt-4 space-y-3">
+                      <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.12 }}
+                        className="mt-4 space-y-3">
                         <div className="flex items-center gap-2">
                           {catalogEmpaques.length > 0 && (
                             <div className="w-44">
@@ -1671,8 +1705,9 @@ export default function CotizadorPage() {
                           </button>
                         </div>
                         {renderMaterialsList(mats)}
-                      </div>
+                      </motion.div>
                     )}
+                    </AnimatePresence>
                   </div>
                 );
               })()}
@@ -1700,8 +1735,14 @@ export default function CotizadorPage() {
                         </button>
                       </div>
                     </div>
+                    <AnimatePresence initial={false}>
                     {!isCollapsed && (
-                      <div className="mt-4 space-y-3">
+                      <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.12 }}
+                        className="mt-4 space-y-3">
                         <div className="flex items-center gap-2">
                           {catalogEmpaques.length > 0 && (
                             <div className="w-44">
@@ -1713,8 +1754,9 @@ export default function CotizadorPage() {
                           </button>
                         </div>
                         {renderMaterialsList(mats)}
-                      </div>
+                      </motion.div>
                     )}
+                    </AnimatePresence>
                   </div>
                 );
               })()}
@@ -1724,7 +1766,11 @@ export default function CotizadorPage() {
 
         {/* ── Right column: Resumen — premium sticky card ── */}
         <div className="lg:col-span-1 lg:self-start lg:sticky lg:top-6">
-          <div className={`${cx.card} p-4`}>
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2 }}
+            className={`${cx.card} p-4`}>
             <h3 className="text-lg font-semibold text-stone-900 mb-4">Resumen<InfoTip text="El costo neto incluye insumos + empaque. El margen define tu ganancia." /></h3>
 
             {/* Pack sin items: mostrar mensaje */}
@@ -1960,7 +2006,7 @@ export default function CotizadorPage() {
                 </>
               )}
             </button>
-          </div>
+          </motion.div>
         </div>
       </div>
 
