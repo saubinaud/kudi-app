@@ -990,14 +990,14 @@ export default function POSPage() {
               const opts = [{ id: null, label: 'Tienda' }, ...canales.map(c => ({ id: c.id, label: c.nombre + (c.comision_pct > 0 ? ` ${c.comision_pct}%` : '') }))];
               const idx = Math.max(0, opts.findIndex(o => o.id === selectedCanal));
               return (
-                <div className="relative inline-flex bg-stone-100 rounded-2xl p-1.5 mb-4 gap-0.5">
+                <div className="relative inline-flex bg-stone-200/60 rounded-lg p-[3px] mb-4">
                   <div
-                    className="absolute inset-y-1.5 rounded-xl bg-[#0A2F24] shadow-lg transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
-                    style={{ width: `calc(${100 / opts.length}% - 3px)`, left: `calc(${idx * (100 / opts.length)}% + 1.5px)` }}
+                    className="absolute top-[3px] bottom-[3px] rounded-md bg-[#0A2F24] shadow-sm transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
+                    style={{ width: `calc(${100 / opts.length}% - 2px)`, left: `calc(${idx * (100 / opts.length)}% + 1px)` }}
                   />
                   {opts.map((o, i) => (
                     <button key={o.id ?? '_t'} onClick={() => { setSelectedCanal(o.id); if (o.id) setSelectedCarta(null); }}
-                      className={`relative z-10 px-5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-colors duration-200 ${
+                      className={`relative z-10 px-4 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors duration-200 ${
                         i === idx ? 'text-white' : 'text-stone-500 hover:text-stone-700'
                       }`} style={{ minWidth: `${100 / opts.length}%` }}>
                       {o.label}
