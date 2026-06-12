@@ -23,7 +23,7 @@ export default function SegmentedControl({ options = [], value, onChange, layout
       {options.map(o => {
         const isActive = o.key === value;
         return (
-          <button key={o.key} onClick={() => onChange(o.key)}
+          <button key={o.key ?? '__default'} onClick={() => onChange(o.key)}
             className={`relative z-10 ${pad} font-medium whitespace-nowrap`}
           >
             {isActive && (
