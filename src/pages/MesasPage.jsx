@@ -823,9 +823,9 @@ export default function MesasPage() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.2 }}
-              className="fixed right-4 top-1/3 z-30 w-64"
+              className="fixed right-4 top-1/4 z-30 w-72"
             >
-              <div className={cx.card + ' p-4 shadow-lg border-sky-200'}>
+              <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-xl">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-bold text-stone-800">Mesa {mesa.numero}</h3>
                   <button onClick={() => setEditMesaId(null)} className={cx.btnIcon + ' !p-1'}><X size={14} /></button>

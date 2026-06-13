@@ -268,7 +268,7 @@ export default function MesaCanvas({
   return (
     <div className="relative">
       {/* Toolbar */}
-      <div className="absolute top-3 right-3 z-30 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-lg border border-stone-200 p-1 shadow-sm">
+      <div className="absolute top-3 right-3 z-30 flex items-center gap-1 bg-white/95 backdrop-blur rounded-xl border border-stone-200/80 px-1.5 py-1 shadow-sm">
         {isEditing && mesas.length > 1 && (
           <>
             <button onClick={() => onUniformar?.()} className={cx.btnIcon + ' !p-1.5'} title="Igualar tamaño"><Equal size={16} /></button>
@@ -284,7 +284,7 @@ export default function MesaCanvas({
       {/* Canvas */}
       <div
         ref={containerRef}
-        className="overflow-auto rounded-xl border border-stone-200 bg-stone-50/80"
+        className="overflow-auto rounded-2xl border border-stone-200/80 bg-[#F8F8F6]"
         style={{ height: 'calc(100vh - 240px)', minHeight: '400px' }}
         onWheel={handleWheel}
       >
@@ -294,8 +294,8 @@ export default function MesaCanvas({
             transform: `scale(${zoom})`, transformOrigin: '0 0',
             width: CANVAS_W, height: CANVAS_H, position: 'absolute', top: 0, left: 0,
             backgroundImage: isEditing
-              ? `linear-gradient(to right, rgba(214,211,209,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(214,211,209,0.12) 1px, transparent 1px)`
-              : 'none',
+              ? `radial-gradient(circle, rgba(168,162,158,0.25) 1px, transparent 1px)`
+              : `radial-gradient(circle, rgba(168,162,158,0.08) 1px, transparent 1px)`,
             backgroundSize: `${CELL}px ${CELL}px`,
           }}>
             {/* Connection bridge between united mesas — short connector at edges */}
@@ -329,9 +329,10 @@ export default function MesaCanvas({
                 }
                 return (
                   <g key={`link-${secondary.id}`}>
-                    <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#f59e0b" strokeWidth="4" strokeLinecap="round" />
-                    <circle cx={x1} cy={y1} r="5" fill="#f59e0b" />
-                    <circle cx={x2} cy={y2} r="5" fill="#f59e0b" />
+                    <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#16A34A" strokeWidth="3" strokeLinecap="round" />
+                    <circle cx={x1} cy={y1} r="4" fill="#16A34A" />
+                    <circle cx={x2} cy={y2} r="4" fill="#16A34A" />
+                    <circle cx={(x1+x2)/2} cy={(y1+y2)/2} r="6" fill="#16A34A" opacity="0.15" />
                   </g>
                 );
               })}
@@ -364,37 +365,40 @@ export default function MesaCanvas({
                   layout={!isDragging && !resizingRef.current}
                   transition={{ type: 'spring', stiffness: 500, damping: 35, duration: 0.15 }}
                   style={{ position: 'absolute', left: px, top: py, width: pw, height: ph, opacity: isDimmed ? 0.25 : 1, borderRadius }}
-                  className={`flex flex-col items-center justify-center text-center select-none transition-all duration-150 overflow-visible ${
+                  className={`flex flex-col items-center justify-center text-center select-none overflow-visible transition-colors duration-150 ${
                     multiSelect
                       ? isMultiSelected
                         ? 'bg-violet-50 border-2 border-violet-500 shadow-md'
-                        : (mesa.sesion_id ? 'bg-stone-100 border-2 border-stone-200 opacity-40' : 'bg-white border-2 border-stone-200 hover:border-violet-300')
+                        : (mesa.sesion_id ? 'bg-stone-100 border-2 border-stone-200 opacity-40' : 'bg-white border border-stone-200 hover:border-violet-300')
                       : isEditing
                         ? isSelected
-                          ? 'bg-sky-50 border-2 border-sky-500 shadow-md'
-                          : 'bg-white border-2 border-stone-200 hover:border-stone-300'
+                          ? 'bg-white border-2 border-[#16A34A] shadow-[0_0_0_3px_rgba(22,163,74,0.1)]'
+                          : 'bg-white border border-stone-200 hover:border-stone-300'
                         : ocupada
-                          ? 'bg-emerald-50 border-2 border-emerald-400'
-                          : 'bg-white border-2 border-stone-200 hover:border-stone-300 hover:shadow-sm'
-                  } ${isDragging ? 'opacity-80 shadow-lg' : ''}`}
+                          ? 'bg-gradient-to-b from-emerald-50 to-white border-2 border-emerald-500/60 shadow-sm'
+                          : 'bg-white border border-stone-200/80 hover:border-stone-300'
+                  } ${isDragging ? 'opacity-80 shadow-xl' : ''}`}
                 >
                   {/* Number — scales with zoom */}
                   <span
                     style={{ fontSize: `${numSize}px` }}
                     className={`font-bold leading-none ${
                       multiSelect ? (isMultiSelected ? 'text-violet-700' : 'text-stone-400')
-                      : isEditing ? (isSelected ? 'text-sky-700' : 'text-stone-500')
-                      : ocupada ? 'text-emerald-700' : 'text-stone-400'
+                      : isEditing ? (isSelected ? 'text-[#0A2F24]' : 'text-stone-500')
+                      : ocupada ? 'text-[#0A2F24]' : 'text-stone-400'
                     }`}
                   >
                     {mesa.numero}
                   </span>
 
-                  {/* Capacity — also scales */}
+                  {/* Capacity — scales with zoom, prominent */}
                   {ph >= CELL * 2 && (
-                    <div className="flex items-center gap-0.5 mt-0.5" style={{ transform: `scale(${capScale})`, transformOrigin: 'center' }}>
-                      <Users size={8} className="text-stone-300" />
-                      <span className="text-[9px] text-stone-400">{mesa.capacidad ?? 4}</span>
+                    <div
+                      className={`flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-full ${ocupada && !isEditing ? 'bg-emerald-100/80' : 'bg-stone-100'}`}
+                      style={{ transform: `scale(${capScale})`, transformOrigin: 'center' }}
+                    >
+                      <Users size={10} className={ocupada && !isEditing ? 'text-emerald-600' : 'text-stone-400'} />
+                      <span className={`text-[11px] font-semibold ${ocupada && !isEditing ? 'text-emerald-700' : 'text-stone-500'}`}>{mesa.capacidad ?? 4}</span>
                     </div>
                   )}
 
@@ -457,20 +461,20 @@ export default function MesaCanvas({
                 pointerEvents: 'auto',
               }}
             >
-              <div className="flex gap-1">
+              <div className="flex gap-1.5 bg-white/95 backdrop-blur rounded-xl border border-stone-200/80 p-1 shadow-md">
                 <button
                   onClick={() => onDuplicar?.(selectedMesa.id)}
-                  className="w-7 h-7 bg-sky-500 hover:bg-sky-600 text-white rounded-full flex items-center justify-center shadow transition-colors"
+                  className="w-8 h-8 bg-stone-100 hover:bg-[#16A34A] hover:text-white text-stone-600 rounded-lg flex items-center justify-center transition-colors"
                   title="Duplicar"
                 >
-                  <Copy size={12} />
+                  <Copy size={14} />
                 </button>
                 <button
                   onClick={() => { onDeleteMesa?.(selectedMesa.id); setSelectedId(null); }}
-                  className="w-7 h-7 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center shadow transition-colors"
+                  className="w-8 h-8 bg-stone-100 hover:bg-rose-500 hover:text-white text-stone-600 rounded-lg flex items-center justify-center transition-colors"
                   title="Eliminar"
                 >
-                  <Trash2 size={12} />
+                  <Trash2 size={14} />
                 </button>
               </div>
             </div>
