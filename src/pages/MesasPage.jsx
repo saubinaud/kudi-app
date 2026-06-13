@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
@@ -50,6 +50,7 @@ export default function MesasPage() {
   const [editMesaId, setEditMesaId] = useState(null);
   const [editForm, setEditForm] = useState({ numero: '', nombre: '', capacidad: '', redondeo: 15 });
   const [editCollapsed, setEditCollapsed] = useState(false);
+  const editDragControls = useDragControls();
 
   // Config modal (for pisos)
   const [showConfig, setShowConfig] = useState(false);
@@ -818,6 +819,9 @@ export default function MesasPage() {
               key="edit-sidebar"
               drag
               dragMomentum={false}
+              dragListener={false}
+              dragControls={editDragControls}
+              dragConstraints={{ top: -500, bottom: 500, left: -500, right: 500 }}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
@@ -827,7 +831,9 @@ export default function MesasPage() {
             >
               <div className="bg-white rounded-2xl border border-stone-200/80 shadow-xl overflow-hidden">
                 {/* Header — always visible, acts as drag handle */}
-                <div className="flex items-center justify-between px-4 py-2.5 bg-stone-50 border-b border-stone-100 cursor-grab active:cursor-grabbing">
+                <div
+                  className="flex items-center justify-between px-4 py-2.5 bg-stone-50 border-b border-stone-100 cursor-grab active:cursor-grabbing"
+                  onPointerDown={(e) => editDragControls.start(e)}>
                   <span className="text-xs font-bold text-stone-700">Mesa {mesa.numero}</span>
                   <div className="flex items-center gap-1">
                     <button onClick={(e) => { e.stopPropagation(); setEditCollapsed(!editCollapsed); }} className={cx.btnIcon + ' !p-1'}>
