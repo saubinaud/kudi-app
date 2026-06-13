@@ -320,11 +320,11 @@ export default function MesaCanvas({
                   style={{
                     position: 'absolute', left: px, top: py, width: pw, height: ph,
                     opacity: isDimmed ? 0.2 : 1, borderRadius,
-                    boxShadow: ocupada
-                      ? '0 2px 8px rgba(10,47,36,0.15)'
-                      : isSelected
+                    boxShadow: isSelected
                         ? '0 0 0 4px rgba(22,163,74,0.12)'
-                        : '0 1px 4px rgba(0,0,0,0.04)',
+                        : ocupada
+                          ? '0 1px 6px rgba(0,0,0,0.06)'
+                          : '0 1px 3px rgba(0,0,0,0.03)',
                   }}
                   className={`flex flex-col items-center justify-center text-center select-none overflow-visible ${
                     multiSelect
@@ -333,7 +333,7 @@ export default function MesaCanvas({
                       : isEditing
                         ? isSelected ? 'bg-white border-2 border-[#16A34A]'
                           : 'bg-white border border-stone-200/80 hover:border-stone-300'
-                        : ocupada ? 'bg-[#0A2F24] border border-[#0A2F24]'
+                        : ocupada ? 'bg-white border-l-[5px] border-l-[#16A34A] border border-stone-200'
                           : 'bg-white border border-stone-200/60 hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
                   } ${isDragging ? 'shadow-xl opacity-90' : ''}`}
                 >
@@ -341,13 +341,13 @@ export default function MesaCanvas({
                     className={`font-bold leading-none tracking-tight ${
                       multiSelect ? (isMultiSelected ? 'text-violet-700' : 'text-stone-400')
                       : isEditing ? (isSelected ? 'text-[#0A2F24]' : 'text-stone-400')
-                      : ocupada ? 'text-white' : 'text-stone-400'
+                      : ocupada ? 'text-[#0A2F24]' : 'text-stone-400'
                     }`}>{mesa.numero}</span>
 
                   {ph >= CELL * 2 && (
                     <span style={{ fontSize: `${capSize}px` }}
                       className={`flex items-center gap-0.5 mt-0.5 font-medium ${
-                        ocupada && !isEditing ? 'text-emerald-300' : 'text-stone-400'
+                        ocupada && !isEditing ? 'text-emerald-600' : 'text-stone-400'
                       }`}>
                       <Users size={capSize * 0.9} />{mesa.capacidad ?? 4}
                     </span>
@@ -355,10 +355,10 @@ export default function MesaCanvas({
 
                   {!isEditing && !multiSelect && ocupada && ph >= CELL * 3.5 && (
                     <div className="flex items-center gap-1 mt-1" style={{ transform: `scale(${Math.max(1, 1.1 / zoom)})`, transformOrigin: 'center' }}>
-                      <Clock size={10} className="text-emerald-400" />
-                      <span className="text-[10px] font-medium text-emerald-300">{formatTimer(mesa.abierta_at)}</span>
+                      <Clock size={10} className="text-emerald-600" />
+                      <span className="text-[10px] font-medium text-emerald-600">{formatTimer(mesa.abierta_at)}</span>
                       {parseFloat(mesa.total_parcial) > 0 && pw >= CELL * 3 && (
-                        <span className="text-[10px] font-bold text-white ml-1">{formatCurrency(mesa.total_parcial)}</span>
+                        <span className="text-[10px] font-bold text-[#0A2F24] ml-1">{formatCurrency(mesa.total_parcial)}</span>
                       )}
                     </div>
                   )}
