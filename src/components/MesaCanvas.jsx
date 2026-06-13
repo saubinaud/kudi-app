@@ -323,7 +323,7 @@ export default function MesaCanvas({
                     boxShadow: isSelected
                         ? '0 0 0 4px rgba(22,163,74,0.12)'
                         : ocupada
-                          ? '0 1px 6px rgba(0,0,0,0.06)'
+                          ? '0 2px 8px rgba(22,163,74,0.08), 0 1px 3px rgba(0,0,0,0.04)'
                           : '0 1px 3px rgba(0,0,0,0.03)',
                   }}
                   className={`flex flex-col items-center justify-center text-center select-none overflow-visible ${
@@ -333,8 +333,8 @@ export default function MesaCanvas({
                       : isEditing
                         ? isSelected ? 'bg-white border-2 border-[#16A34A]'
                           : 'bg-white border border-stone-200/80 hover:border-stone-300'
-                        : ocupada ? 'bg-white border-l-[5px] border-l-[#16A34A] border border-stone-200'
-                          : 'bg-white border border-stone-200/60 hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)]'
+                        : ocupada ? 'bg-gradient-to-br from-emerald-50/60 to-white border border-emerald-300/50 border-l-4 border-l-[#16A34A]'
+                          : 'bg-white border border-stone-200/60 hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)]'
                   } ${isDragging ? 'shadow-xl opacity-90' : ''}`}
                 >
                   <span style={{ fontSize: `${numSize}px` }}
