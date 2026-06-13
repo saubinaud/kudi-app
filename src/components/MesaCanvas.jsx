@@ -76,6 +76,15 @@ export default function MesaCanvas({
     });
   }, [mesas]);
 
+  // Check overlap with existing mesas
+  const checkOverlap = useCallback((x, y, w, h, excludeId = null) => {
+    return mesas.some(m => {
+      if (m.id === excludeId) return false;
+      const mx = m.pos_x ?? 0, my = m.pos_y ?? 0, mw = m.ancho ?? 3, mh = m.alto ?? 2;
+      return x < mx + mw && x + w > mx && y < my + mh && y + h > my;
+    });
+  }, [mesas]);
+
   // Notify parent of selection changes
   useEffect(() => {
     onSelectMesa?.(selectedId);
@@ -154,7 +163,7 @@ export default function MesaCanvas({
       const x = Math.min(d.startCol, d.endCol - 1), y = Math.min(d.startRow, d.endRow - 1);
       const w = Math.abs(d.endCol - d.startCol), h = Math.abs(d.endRow - d.startRow);
       drawingRef.current = null;
-      if (w >= MIN_SIZE && h >= MIN_SIZE) onCreateMesa?.({ pos_x: x, pos_y: y, ancho: w, alto: h });
+      if (w >= MIN_SIZE && h >= MIN_SIZE && !checkOverlap(x, y, w, h)) onCreateMesa?.({ pos_x: x, pos_y: y, ancho: w, alto: h });
       forceRender(n => n + 1);
     }
     if (draggingRef.current) {
@@ -162,7 +171,7 @@ export default function MesaCanvas({
       const pos = tempPos[d.mesa.id];
       draggingRef.current = null;
       // Keep tempPos — parent will update via optimistic update, then tempPos becomes stale
-      if (pos && (pos.pos_x !== d.origX || pos.pos_y !== d.origY)) {
+      if (pos && (pos.pos_x !== d.origX || pos.pos_y !== d.origY) && !checkOverlap(pos.pos_x, pos.pos_y, d.mesa.ancho ?? 3, d.mesa.alto ?? 2, d.mesa.id)) {
         onMoveMesa?.(d.mesa.id, pos);
       }
       // Clear tempPos after a short delay to let optimistic update propagate
@@ -173,7 +182,7 @@ export default function MesaCanvas({
       const r = resizingRef.current;
       const pos = tempPos[r.mesa.id];
       resizingRef.current = null;
-      if (pos) onResizeMesa?.(r.mesa.id, pos);
+      if (pos && !checkOverlap(r.mesa.pos_x ?? 0, r.mesa.pos_y ?? 0, pos.ancho, pos.alto, r.mesa.id)) onResizeMesa?.(r.mesa.id, pos);
       setTimeout(() => setTempPos(prev => { const n = { ...prev }; delete n[r.mesa.id]; return n; }), 50);
       forceRender(n => n + 1);
     }
@@ -270,6 +279,25 @@ export default function MesaCanvas({
               : 'none',
             backgroundSize: `${CELL}px ${CELL}px`,
           }}>
+            {/* Connection lines between united mesas */}
+            <svg style={{ position: 'absolute', inset: 0, width: CANVAS_W, height: CANVAS_H, pointerEvents: 'none', zIndex: 1 }}>
+              {mesas.filter(m => m.sesion_principal_id).map(secondary => {
+                const primary = mesas.find(m => m.sesion_id === secondary.sesion_principal_id);
+                if (!primary) return null;
+                const sx = (secondary.pos_x ?? 0) * CELL + ((secondary.ancho ?? 3) * CELL) / 2;
+                const sy = (secondary.pos_y ?? 0) * CELL + ((secondary.alto ?? 2) * CELL) / 2;
+                const px = (primary.pos_x ?? 0) * CELL + ((primary.ancho ?? 3) * CELL) / 2;
+                const py = (primary.pos_y ?? 0) * CELL + ((primary.alto ?? 2) * CELL) / 2;
+                return (
+                  <g key={`link-${secondary.id}`}>
+                    <line x1={px} y1={py} x2={sx} y2={sy} stroke="#f59e0b" strokeWidth="3" strokeDasharray="6 4" opacity="0.7" />
+                    <circle cx={(px + sx) / 2} cy={(py + sy) / 2} r="6" fill="#f59e0b" />
+                    <circle cx={(px + sx) / 2} cy={(py + sy) / 2} r="3" fill="white" />
+                  </g>
+                );
+              })}
+            </svg>
+
             {mesas.map(mesa => {
               const tp = tempPos[mesa.id];
               const px = (tp?.pos_x ?? mesa.pos_x ?? 0) * CELL;
@@ -335,13 +363,10 @@ export default function MesaCanvas({
                     </>
                   )}
 
-                  {/* Linked indicator — large, visible */}
+                  {/* Linked badge — small indicator, line does the heavy lifting */}
                   {!isEditing && linkedLabel && (
-                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10 bg-amber-500 text-white px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm whitespace-nowrap">
-                      <Link2 size={12} />
-                      <span className="text-xs font-bold">
-                        {isLinked ? `Mesa ${linkedLabel}` : `+${linkedLabel}`}
-                      </span>
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-10 bg-amber-500 text-white px-1.5 py-0.5 rounded-full shadow-sm">
+                      <Link2 size={10} />
                     </div>
                   )}
 

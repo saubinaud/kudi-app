@@ -106,7 +106,7 @@ export default function MesaDetailPage() {
       } catch (err) {
         console.error('Load mesa:', err);
         toast.error('Error cargando mesa');
-        navigate('/mesas');
+        navigate(`/mesas${mesaInfo?.piso_id ? `?piso=${mesaInfo.piso_id}` : ''}`);
       } finally {
         setLoading(false);
       }
@@ -341,7 +341,7 @@ export default function MesaDetailPage() {
     if (sesion) {
       try { await api.del(`/mesas/sesion/${sesion.id}`); } catch {}
     }
-    navigate('/mesas');
+    navigate(`/mesas${mesaInfo?.piso_id ? `?piso=${mesaInfo.piso_id}` : ''}`);
   };
 
   // Group items by comanda
@@ -382,7 +382,7 @@ export default function MesaDetailPage() {
     <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
-        <button onClick={() => navigate('/mesas')} className={cx.btnIcon}><ArrowLeft size={20} /></button>
+        <button onClick={() => navigate(`/mesas${mesaInfo?.piso_id ? `?piso=${mesaInfo.piso_id}` : ''}`)} className={cx.btnIcon}><ArrowLeft size={20} /></button>
         <div className="flex-1">
           <h1 className="text-xl font-bold text-stone-800">
             Mesa {mesaInfo.numero}
@@ -635,11 +635,11 @@ export default function MesaDetailPage() {
                   if (d.sunat?.success) toast.success(`Boleta: ${d.comprobante?.serie}-${d.comprobante?.correlativo}`);
                   else toast.error(`SUNAT: ${d.sunat?.message || 'Error'}`);
                 } catch (err) { toast.error(err.message || 'Error'); }
-                finally { setEmittingBoleta(false); navigate('/mesas'); }
+                finally { setEmittingBoleta(false); navigate(`/mesas${mesaInfo?.piso_id ? `?piso=${mesaInfo.piso_id}` : ''}`); }
               }} className={cx.btnPrimary + ' w-full py-2.5 text-sm'}>
                 {emittingBoleta ? <span className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Emitiendo...</span> : 'Emitir boleta'}
               </button>
-              <button onClick={() => navigate('/mesas')} className={cx.btnGhost + ' w-full py-2.5 text-sm'}>Volver a mesas</button>
+              <button onClick={() => navigate(`/mesas${mesaInfo?.piso_id ? `?piso=${mesaInfo.piso_id}` : ''}`)} className={cx.btnGhost + ' w-full py-2.5 text-sm'}>Volver a mesas</button>
             </div>
           </motion.div>
         </div>

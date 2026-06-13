@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -21,6 +21,8 @@ export default function MesasPage() {
   const { user } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const pisoFromUrl = searchParams.get('piso');
 
   const initialLoadDone = useRef(false);
   const [pisos, setPisos] = useState([]);
@@ -61,7 +63,10 @@ export default function MesasPage() {
       setPisos(data.pisos || []);
       setMesas(data.mesas || []);
       setSelectedPiso(prev => {
+        // Priority: keep current > URL param > first piso
         if (prev && data.pisos?.some(p => p.id === prev)) return prev;
+        const fromUrl = pisoFromUrl ? parseInt(pisoFromUrl) : null;
+        if (fromUrl && data.pisos?.some(p => p.id === fromUrl)) return fromUrl;
         return data.pisos?.[0]?.id || null;
       });
       // Determine if we should show tutorial (only on first load)
@@ -829,8 +834,11 @@ export default function MesasPage() {
                   <div>
                     <label className={cx.label}>Capacidad (personas)</label>
                     <input type="number" value={editForm.capacidad} onChange={e => setEditForm(f => ({ ...f, capacidad: e.target.value }))}
-                      onBlur={saveEditMesa} className={cx.input + ' text-sm'} min="1" max="99" />
+                      className={cx.input + ' text-sm'} min="1" max="99" />
                   </div>
+                  <button onClick={saveEditMesa} className={cx.btnPrimary + ' w-full mt-4 min-h-[44px]'}>
+                    Guardar mesa
+                  </button>
                 </div>
               </div>
             </motion.div>
