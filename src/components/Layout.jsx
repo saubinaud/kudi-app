@@ -38,6 +38,7 @@ import {
   MessageSquare,
   Bell,
   Sparkles,
+  LayoutGrid,
 } from 'lucide-react';
 import NotificacionesSidebar from './NotificacionesSidebar';
 import UpdateBanner from './UpdateBanner';
@@ -140,6 +141,7 @@ export default function Layout() {
       label: 'Ingresos',
       icon: ShoppingCart,
       links: [
+        { to: '/mesas', label: 'Mesas', icon: LayoutGrid, perm: 'ventas', planRequired: 'empresario' },
         { to: '/pos', label: 'Caja', icon: ShoppingCart, perm: 'ventas' },
         { to: '/pl/ventas', label: 'Órdenes', icon: DollarSign, perm: 'ventas' },
         { to: '/comprobantes', label: 'Facturación', icon: FileText, perm: 'facturacion' },
@@ -336,7 +338,8 @@ export default function Layout() {
           const visibleLinks = group.links
             .map(l => ({ ...l, _state: permState(l.perm) }))
             .filter(l => !HIDDEN_ROUTES.includes(l.to))
-            .filter(l => isAdmin || l._state !== 'hidden');
+            .filter(l => isAdmin || l._state !== 'hidden')
+            .filter(l => !l.planRequired || user?.plan === l.planRequired);
           if (visibleLinks.length === 0) return null;
           const isGroupCollapsed = collapsedGroups[group.key];
 

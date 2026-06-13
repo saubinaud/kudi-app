@@ -38,6 +38,8 @@ import ComisionesPage from './pages/ComisionesPage';
 import ProveedoresPage from './pages/ProveedoresPage';
 import ShopifyPage from './pages/ShopifyPage';
 import POSPage from './pages/POSPage';
+import MesasPage from './pages/MesasPage';
+import MesaDetailPage from './pages/MesaDetailPage';
 import FeedbackPage from './pages/FeedbackPage';
 import NovedadesPage from './pages/NovedadesPage';
 import LandingPage from './pages/LandingPage';
@@ -47,7 +49,7 @@ import LandingPage from './pages/LandingPage';
 const ROUTE_MODULES = {
   '/dashboard': 'Dashboard', '/cotizador': 'Cotizador', '/insumos': 'Insumos',
   '/materiales': 'Materiales', '/preparaciones-predeterminadas': 'Plantillas prep',
-  '/empaques-predeterminados': 'Plantillas empaque', '/pos': 'Caja',
+  '/empaques-predeterminados': 'Plantillas empaque', '/pos': 'Caja', '/mesas': 'Mesas',
   '/pl': 'P&L', '/pl/ventas': 'Ventas', '/pl/gastos': 'Gastos',
   '/pl/compras': 'Compras', '/pl/cashflow': 'Cashflow', '/pl/resumen': 'Resumen P&L',
   '/stock': 'Stock', '/perdidas': 'Pérdidas', '/clientes': 'Clientes',
@@ -109,6 +111,8 @@ export default function App() {
               <Route path="/pl" element={<PLTimelinePage />} />
               <Route path="/pl/resumen" element={<PLResumenPage />} />
               <Route path="/pos" element={<POSPage />} />
+              <Route path="/mesas" element={<MesasPage />} />
+              <Route path="/mesas/:mesaId" element={<MesaDetailPage />} />
               <Route path="/pl/ventas" element={<PLVentasPage />} />
               <Route path="/pl/gastos" element={<PLGastosPage />} />
               <Route path="/pl/compras" element={<PLComprasPage />} />

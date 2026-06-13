@@ -9,6 +9,7 @@ import CustomSelect from '../components/CustomSelect';
 import SegmentedControl from '../components/SegmentedControl';
 import UbigeoSelect from '../components/UbigeoSelect';
 import { X, Package, CheckCircle, Minus, Plus, ShoppingCart, Banknote, CreditCard, Smartphone, ArrowLeft, Trash2, MapPin, Store, Truck as TruckIcon, User, ChevronRight, AlertTriangle, Lock, DollarSign, Clock } from 'lucide-react';
+import ProductGrid from '../components/ProductGrid';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -1023,8 +1024,22 @@ export default function POSPage() {
         </div>
       ) : (
         <div className="flex flex-col lg:flex-row gap-4 pb-20 lg:pb-0">
-          {/* LEFT: Product Grid */}
-          <div className="flex-1">
+          <ProductGrid
+            products={posFilteredProducts}
+            search={posSearch}
+            onSearchChange={setPosSearch}
+            onProductClick={addToCart}
+            loading={false}
+            getDisplayPrice={(p) =>
+              selectedCanal
+                ? ((p.precios_canal || []).find(pc => pc.canal_id === selectedCanal)?.precio_override || p.precio_final)
+                : selectedCarta
+                  ? ((p.precios_categoria || []).find(pc => pc.categoria_id === selectedCarta)?.precio || p.precio_final)
+                  : (conIgv
+                    ? (user?.tipo_negocio === 'informal' ? Math.ceil(parseFloat(p.precio_final) * (1 + tasaIgvPOS) * 10) / 10 : p.precio_final)
+                    : (user?.tipo_negocio === 'informal' ? p.precio_final : (p.precio_venta || p.precio_final)))
+            }
+          >
             {/* Canal tabs — segmented control with framer-motion */}
             {canales.length > 0 && (() => {
               const opts = [{ id: null, label: 'Tienda' }, ...canales.map(c => ({ id: c.id, label: c.nombre + (c.comision_pct > 0 ? ` ${c.comision_pct}%` : '') }))];
@@ -1066,56 +1081,7 @@ export default function POSPage() {
                 />
               </div>
             )}
-
-            {/* Search */}
-            <div className="mb-4">
-              <input
-                type="text"
-                value={posSearch}
-                onChange={e => setPosSearch(e.target.value)}
-                className={cx.input + ' text-sm'}
-                placeholder="Buscar producto..."
-              />
-            </div>
-
-            {/* Product Grid */}
-            {posFilteredProducts.length === 0 ? (
-              <div className={cx.card + ' p-12 text-center'}>
-                <Package size={40} className="text-stone-300 mx-auto mb-3" />
-                <p className="text-stone-400 text-sm">
-                  {posSearch ? 'Sin resultados' : 'No hay productos configurados'}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
-                {posFilteredProducts.map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => addToCart(p)}
-                    className="bg-white rounded-xl border border-stone-200 p-2 text-center hover:border-stone-400 hover:shadow transition-colors duration-100"
-                  >
-                    {p.imagen_url ? (
-                      <img src={p.imagen_url} className="w-full aspect-square object-cover rounded-lg mb-1.5" alt={p.nombre} />
-                    ) : (
-                      <div className="w-full aspect-square bg-stone-100 rounded-lg mb-1.5 flex items-center justify-center">
-                        <Package size={20} className="text-stone-300" />
-                      </div>
-                    )}
-                    <p className="text-[11px] font-medium text-stone-800 truncate">{p.nombre}</p>
-                    <p className="text-xs font-bold text-[var(--accent)]">{formatCurrency(
-                      selectedCanal
-                        ? ((p.precios_canal || []).find(pc => pc.canal_id === selectedCanal)?.precio_override || p.precio_final)
-                        : selectedCarta
-                          ? ((p.precios_categoria || []).find(pc => pc.categoria_id === selectedCarta)?.precio || p.precio_final)
-                          : (conIgv
-                            ? (user?.tipo_negocio === 'informal' ? Math.ceil(parseFloat(p.precio_final) * (1 + tasaIgvPOS) * 10) / 10 : p.precio_final)
-                            : (user?.tipo_negocio === 'informal' ? p.precio_final : (p.precio_venta || p.precio_final)))
-                    )}</p>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          </ProductGrid>
 
           {/* RIGHT: Cart — desktop only */}
           <div className="hidden lg:block lg:w-80 xl:w-96 flex-shrink-0">
