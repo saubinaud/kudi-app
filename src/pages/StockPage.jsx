@@ -378,13 +378,13 @@ export default function StockPage() {
             onClick={() => setShowNuevoProducto(true)}
             className={cx.btnSecondary + ' flex items-center gap-1.5'}
           >
-            <Plus size={14} /> Ingresar producto
+            <Plus size={16} /> Ingresar producto
           </button>
           <button
             onClick={() => setShowEntrada(true)}
             className={cx.btnPrimary + ' flex items-center gap-1.5'}
           >
-            <Plus size={14} /> Entrada
+            <Plus size={16} /> Entrada
           </button>
         </div>
       </div>
@@ -393,7 +393,7 @@ export default function StockPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
         <div className={`${cx.card} p-4 flex items-center gap-3`}>
           <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-            <Package size={18} className="text-blue-600" />
+            <Package size={20} className="text-blue-600" />
           </div>
           <div>
             <p className="text-xl font-bold text-stone-900">{summaryCards.total}</p>
@@ -402,7 +402,7 @@ export default function StockPage() {
         </div>
         <div className={`${cx.card} p-4 flex items-center gap-3`}>
           <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
-            <AlertTriangle size={18} className="text-amber-600" />
+            <AlertTriangle size={20} className="text-amber-600" />
           </div>
           <div>
             <p className="text-xl font-bold text-stone-900">{summaryCards.alerta}</p>
@@ -411,7 +411,7 @@ export default function StockPage() {
         </div>
         <div className={`${cx.card} p-4 flex items-center gap-3`}>
           <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center">
-            <XCircle size={18} className="text-rose-600" />
+            <XCircle size={20} className="text-rose-600" />
           </div>
           <div>
             <p className="text-xl font-bold text-stone-900">{summaryCards.agotados}</p>
@@ -438,7 +438,7 @@ export default function StockPage() {
                 <button
                   key={prod.id}
                   onClick={() => openSidebar(prod)}
-                  className="bg-white rounded-xl border border-stone-200 p-2.5 text-center hover:border-stone-400 hover:shadow transition-colors duration-100 group relative"
+                  className="bg-white rounded-xl border border-stone-200 p-2.5 text-center hover:border-stone-400 hover:shadow transition-colors duration-150 group relative"
                 >
                   {prod.imagen_url ? (
                     <img src={prod.imagen_url} className="w-full aspect-square object-cover rounded-lg mb-1.5" alt={prod.nombre} />
@@ -535,13 +535,13 @@ export default function StockPage() {
                                 }}
                                 className={cx.btnGhost + ' text-xs py-1 px-2'}
                               >
-                                <SlidersHorizontal size={13} />
+                                <SlidersHorizontal size={16} />
                               </button>
                             </Tooltip>
                             {isExpanded ? (
-                              <ChevronUp size={14} className="text-stone-400" />
+                              <ChevronUp size={16} className="text-stone-400" />
                             ) : (
-                              <ChevronDown size={14} className="text-stone-400" />
+                              <ChevronDown size={16} className="text-stone-400" />
                             )}
                           </div>
                         </td>
@@ -630,13 +630,13 @@ export default function StockPage() {
                           }}
                           className={cx.btnGhost + ' text-xs py-1 px-2'}
                         >
-                          <SlidersHorizontal size={13} />
+                          <SlidersHorizontal size={16} />
                         </button>
                       </Tooltip>
                       {isExpanded ? (
-                        <ChevronUp size={14} className="text-stone-400" />
+                        <ChevronUp size={16} className="text-stone-400" />
                       ) : (
-                        <ChevronDown size={14} className="text-stone-400" />
+                        <ChevronDown size={16} className="text-stone-400" />
                       )}
                     </div>
                   </div>
@@ -734,7 +734,7 @@ export default function StockPage() {
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <>
-                    <Plus size={14} /> Registrar
+                    <Plus size={16} /> Registrar
                   </>
                 )}
               </button>
@@ -859,7 +859,7 @@ export default function StockPage() {
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 ) : (
                   <>
-                    <Plus size={14} /> Crear e ingresar
+                    <Plus size={16} /> Crear e ingresar
                   </>
                 )}
               </button>
@@ -876,8 +876,8 @@ export default function StockPage() {
             {/* Header */}
             <div className="flex items-center justify-between p-5 border-b border-stone-100">
               <h3 className="text-lg font-semibold text-stone-900">Detalle de producto</h3>
-              <button onClick={() => setSidebarProduct(null)} className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors duration-100">
-                <X size={18} />
+              <button onClick={() => setSidebarProduct(null)} className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors duration-150">
+                <X size={16} />
               </button>
             </div>
 
@@ -895,7 +895,7 @@ export default function StockPage() {
                     </div>
                   ) : (
                     <div className="w-full aspect-video bg-stone-100 rounded-xl border-2 border-dashed border-stone-300 flex flex-col items-center justify-center gap-2 hover:border-stone-400 transition-colors">
-                      <ImageIcon size={24} className="text-stone-300" />
+                      <ImageIcon size={20} className="text-stone-300" />
                       <span className="text-xs text-stone-400">Click para subir imagen</span>
                     </div>
                   )}
@@ -948,11 +948,11 @@ export default function StockPage() {
                 </div>
                 <button
                   onClick={() => setSidebarDisponibleVenta(!sidebarDisponibleVenta)}
-                  className={`w-11 h-6 rounded-full transition-colors duration-200 relative ${
+                  className={`w-11 h-6 rounded-full transition-colors duration-150 relative ${
                     sidebarDisponibleVenta ? 'bg-[#16A34A]' : 'bg-stone-300'
                   }`}
                 >
-                  <div className={`w-5 h-5 bg-white rounded-full shadow absolute top-0.5 transition-transform duration-200 ${
+                  <div className={`w-5 h-5 bg-white rounded-full shadow absolute top-0.5 transition-transform duration-150 ${
                     sidebarDisponibleVenta ? 'translate-x-[22px]' : 'translate-x-0.5'
                   }`} />
                 </button>
@@ -1027,7 +1027,7 @@ export default function StockPage() {
               </button>
               {confirmDeleteProduct ? (
                 <div className="flex gap-2">
-                  <button onClick={handleDeleteProduct} className="flex-1 px-3 py-2 bg-rose-600 text-white text-xs font-semibold rounded-lg hover:bg-rose-700 transition-colors duration-100">
+                  <button onClick={handleDeleteProduct} className="flex-1 px-3 py-2 bg-rose-600 text-white text-xs font-semibold rounded-lg hover:bg-rose-700 transition-colors duration-150">
                     Confirmar eliminación
                   </button>
                   <button onClick={() => setConfirmDeleteProduct(false)} className={cx.btnGhost + ' text-xs'}>
@@ -1037,7 +1037,7 @@ export default function StockPage() {
               ) : (
                 <button
                   onClick={() => setConfirmDeleteProduct(true)}
-                  className="w-full text-xs text-stone-400 hover:text-rose-500 py-2 transition-colors duration-100"
+                  className="w-full text-xs text-stone-400 hover:text-rose-500 py-2 transition-colors duration-150"
                 >
                   Eliminar producto
                 </button>

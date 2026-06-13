@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import MesaCanvas from '../components/MesaCanvas';
+import SegmentedControl from '../components/SegmentedControl';
 import { ShoppingCart, Settings, Plus, Trash2, X, Pencil, Check, LayoutGrid, ArrowRight, MousePointer2, Move, Sparkles, Users, Link2, Search, Minus } from 'lucide-react';
 
 // Tutorial steps
@@ -411,7 +412,7 @@ export default function MesasPage() {
           {STEPS.map((s, i) => (
             <div
               key={s.key}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              className={`h-1.5 rounded-full transition-all duration-200 ${
                 i === tutorialStep ? 'w-8 bg-[#16A34A]' : i < tutorialStep ? 'w-4 bg-emerald-300' : 'w-4 bg-stone-200'
               }`}
             />
@@ -440,7 +441,7 @@ export default function MesasPage() {
                   onClick={() => setTutorialStep(1)}
                   className={cx.btnPrimary + ' px-8 py-3 text-base flex items-center gap-2'}
                 >
-                  Comenzar <ArrowRight size={18} />
+                  Comenzar <ArrowRight size={16} />
                 </button>
                 <button
                   onClick={finishTutorial}
@@ -528,7 +529,7 @@ export default function MesasPage() {
                   {mesasCreatedInTutorial === 0 && (
                     <div className="flex items-center gap-1.5 text-emerald-600 animate-pulse">
                       <MousePointer2 size={16} />
-                      <Move size={14} />
+                      <Move size={16} />
                     </div>
                   )}
                   {mesasCreatedInTutorial > 0 && (
@@ -536,7 +537,7 @@ export default function MesasPage() {
                       onClick={() => setTutorialStep(3)}
                       className={cx.btnPrimary + ' flex items-center gap-1.5'}
                     >
-                      Continuar <ArrowRight size={14} />
+                      Continuar <ArrowRight size={16} />
                     </button>
                   )}
                 </div>
@@ -583,7 +584,7 @@ export default function MesasPage() {
                 onClick={finishTutorial}
                 className={cx.btnPrimary + ' px-8 py-3 text-base flex items-center gap-2 mx-auto'}
               >
-                <Check size={18} /> Empezar a usar
+                <Check size={16} /> Empezar a usar
               </button>
             </motion.div>
           )}
@@ -608,7 +609,7 @@ export default function MesasPage() {
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold text-stone-800">Pisos del local</h2>
-              <button onClick={closeConfig} className={cx.btnIcon}><X size={18} /></button>
+              <button onClick={closeConfig} className={cx.btnIcon}><X size={16} /></button>
             </div>
 
             <div className="space-y-3 mb-6">
@@ -638,7 +639,7 @@ export default function MesasPage() {
                     className="text-stone-400 hover:text-rose-500 transition-colors"
                     disabled={savingConfig}
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={16} />
                   </button>
                 </div>
               ))}
@@ -747,7 +748,7 @@ export default function MesasPage() {
 
           {/* Buscar disponible — inline compact */}
           <div className="flex items-center gap-2 bg-white border border-stone-200 rounded-full px-3 py-1.5">
-            <Search size={14} className="text-stone-400" />
+            <Search size={12} className="text-stone-400" />
             <input
               type="number"
               value={disponiblesPersonas}
@@ -777,28 +778,14 @@ export default function MesasPage() {
 
       {/* Floor tabs */}
       {pisos.length > 1 && (
-        <div className="inline-flex bg-stone-100 rounded-full p-1 mb-4">
-          {pisos.map(piso => {
-            const isActive = piso.id === selectedPiso;
-            return (
-              <button
-                key={piso.id}
-                onClick={() => setSelectedPiso(piso.id)}
-                className="relative z-10 px-5 py-[7px] text-xs font-medium whitespace-nowrap min-h-[36px]"
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="piso-pill"
-                    className="absolute inset-0 bg-[#0A2F24] rounded-full shadow-sm"
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <span className={`relative z-10 transition-colors duration-150 ${isActive ? 'text-white' : 'text-stone-500 hover:text-stone-700'}`}>
-                  {piso.nombre}
-                </span>
-              </button>
-            );
-          })}
+        <div className="mb-4">
+          <SegmentedControl
+            options={pisos.map(p => ({ key: p.id, label: p.nombre }))}
+            value={selectedPiso}
+            onChange={setSelectedPiso}
+            layoutId="mesa-piso"
+            size="sm"
+          />
         </div>
       )}
 
@@ -862,10 +849,10 @@ export default function MesasPage() {
                   <div className="flex items-center gap-1">
                     {!editCollapsed && (
                       <button onClick={(e) => { e.stopPropagation(); setEditCollapsed(true); }} className={cx.btnIcon + ' !p-1.5'}>
-                        <Minus size={14} />
+                        <Minus size={16} />
                       </button>
                     )}
-                    <button onClick={(e) => { e.stopPropagation(); setEditMesaId(null); }} className={cx.btnIcon + ' !p-1.5'}><X size={14} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); setEditMesaId(null); }} className={cx.btnIcon + ' !p-1.5'}><X size={16} /></button>
                   </div>
                 </div>
                 {/* Body — collapsible */}

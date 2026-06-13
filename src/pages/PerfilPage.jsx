@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
@@ -160,7 +161,7 @@ export default function PerfilPage() {
             <img src={user.logo_url} alt="Logo" className="w-14 h-14 rounded-2xl object-cover" />
           ) : (
             <div className="w-14 h-14 rounded-2xl bg-[var(--accent)] flex items-center justify-center">
-              <User size={24} className="text-white" />
+              <User size={20} className="text-white" />
             </div>
           )}
           <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
@@ -184,7 +185,7 @@ export default function PerfilPage() {
         <div className={cx.card + ' p-5'}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-stone-900">Datos del negocio</h3>
-            {!editing && <button onClick={startEditing} className={cx.btnGhost + ' flex items-center gap-1'}><Pencil size={14} /> Editar</button>}
+            {!editing && <button onClick={startEditing} className={cx.btnGhost + ' flex items-center gap-1'}><Pencil size={16} /> Editar</button>}
           </div>
 
           {editing ? (
@@ -244,9 +245,9 @@ export default function PerfilPage() {
               </div>
               <div className="flex gap-2 pt-2">
                 <button onClick={handleSaveProfile} disabled={savingProfile} className={cx.btnPrimary + ' flex items-center gap-2'}>
-                  {savingProfile ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Save size={14} /> Guardar</>}
+                  {savingProfile ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Save size={16} /> Guardar</>}
                 </button>
-                <button onClick={() => setEditing(false)} className={cx.btnSecondary}><X size={14} /> Cancelar</button>
+                <button onClick={() => setEditing(false)} className={cx.btnSecondary}><X size={16} /> Cancelar</button>
               </div>
             </div>
           ) : (
@@ -298,7 +299,7 @@ export default function PerfilPage() {
             )}
             <button onClick={() => setShowRenovar(true)}
               className={cx.btnPrimary + ' inline-flex items-center gap-2 text-sm'}>
-              <CreditCard size={14} />
+              <CreditCard size={16} />
               {user?.plan && user.plan !== 'trial' ? 'Renovar plan' : 'Activar un plan'}
             </button>
           </div>
@@ -352,7 +353,7 @@ export default function PerfilPage() {
               <input type="password" value={pwForm.confirm_password} onChange={e => setPwForm({ ...pwForm, confirm_password: e.target.value })} className={cx.input} required />
             </div>
             <button type="submit" disabled={saving} className={cx.btnPrimary + ' flex items-center gap-2'}>
-              {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Save size={14} /> Actualizar</>}
+              {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Save size={16} /> Actualizar</>}
             </button>
           </form>
         </div>
@@ -363,7 +364,7 @@ export default function PerfilPage() {
         <div className={cx.card + ' p-5'}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-stone-900">Ajustes globales</h3>
-            {!editingAjustes && <button onClick={() => { setAjustesForm({ tarifa_mo_global: user?.tarifa_mo_global || '', margen_minimo_global: user?.margen_minimo_global || 33, comision_pos: user?.comision_pos || 0 }); setEditingAjustes(true); }} className={cx.btnGhost + ' flex items-center gap-1'}><Pencil size={14} /> Editar</button>}
+            {!editingAjustes && <button onClick={() => { setAjustesForm({ tarifa_mo_global: user?.tarifa_mo_global || '', margen_minimo_global: user?.margen_minimo_global || 33, comision_pos: user?.comision_pos || 0 }); setEditingAjustes(true); }} className={cx.btnGhost + ' flex items-center gap-1'}><Pencil size={16} /> Editar</button>}
           </div>
           {editingAjustes ? (
             <div className="space-y-4 max-w-sm">
@@ -382,9 +383,9 @@ export default function PerfilPage() {
               </div>
               <div className="flex gap-2">
                 <button onClick={handleSaveAjustes} disabled={savingAjustes} className={cx.btnPrimary + ' flex items-center gap-2'}>
-                  {savingAjustes ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Save size={14} /> Guardar</>}
+                  {savingAjustes ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Save size={16} /> Guardar</>}
                 </button>
-                <button onClick={() => setEditingAjustes(false)} className={cx.btnSecondary}><X size={14} /> Cancelar</button>
+                <button onClick={() => setEditingAjustes(false)} className={cx.btnSecondary}><X size={16} /> Cancelar</button>
               </div>
             </div>
           ) : (
@@ -404,21 +405,54 @@ export default function PerfilPage() {
       {tab === 'actividad' && <ActividadPage />}
 
       {/* Lightbox QR */}
+      <AnimatePresence>
       {qrZoom && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 cursor-zoom-out" onClick={() => setQrZoom(false)}>
-          <div className="absolute inset-0 bg-black/70" />
-          <img src="/yape-qr.jpg" alt="QR Yape" className="relative max-w-[90vw] max-h-[80vh] rounded-2xl shadow-2xl object-contain" />
-        </div>
+        <>
+          <motion.div
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => setQrZoom(false)}
+          />
+          <motion.div
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 cursor-zoom-out"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => setQrZoom(false)}
+          >
+            <img src="/yape-qr.jpg" alt="QR Yape" className="relative max-w-[90vw] max-h-[80vh] rounded-xl shadow-2xl object-contain" />
+          </motion.div>
+        </>
       )}
+      </AnimatePresence>
 
       {/* ══════ Modal: Renovar plan ══════ */}
+      <AnimatePresence>
       {showRenovar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowRenovar(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5">
+        <>
+          <motion.div
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => setShowRenovar(false)}
+          />
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+          >
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 space-y-5">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold text-stone-900">Renovar plan</h3>
-              <button onClick={() => setShowRenovar(false)} className="text-stone-400 hover:text-stone-600"><X size={18} /></button>
+              <button onClick={() => setShowRenovar(false)} className="text-stone-400 hover:text-stone-600"><X size={16} /></button>
             </div>
 
             {/* Plan selector */}
@@ -462,10 +496,10 @@ export default function PerfilPage() {
                     <span className="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full">Subido</span>
                   </div>
                 ) : (
-                  <div className="border-2 border-dashed border-stone-300 rounded-xl p-4 text-center hover:border-stone-400 transition-colors duration-100">
+                  <div className="border-2 border-dashed border-stone-300 rounded-xl p-4 text-center hover:border-stone-400 transition-colors duration-150">
                     {uploadingComp ? (
                       <div className="flex items-center justify-center gap-2 text-stone-500 text-sm">
-                        <Loader2 size={14} className="animate-spin" /> Subiendo...
+                        <Loader2 size={16} className="animate-spin" /> Subiendo...
                       </div>
                     ) : (
                       <>
@@ -513,12 +547,14 @@ export default function PerfilPage() {
               }}
               className={cx.btnPrimary + ' w-full flex items-center justify-center gap-2'}
             >
-              {sendingRenovar ? <Loader2 size={14} className="animate-spin" /> : <CreditCard size={14} />}
+              {sendingRenovar ? <Loader2 size={16} className="animate-spin" /> : <CreditCard size={16} />}
               Enviar comprobante de pago
             </button>
           </div>
-        </div>
+          </motion.div>
+        </>
       )}
+      </AnimatePresence>
     </div>
   );
 }

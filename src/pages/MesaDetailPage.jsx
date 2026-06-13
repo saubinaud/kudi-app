@@ -450,7 +450,7 @@ export default function MesaDetailPage() {
                         <button onClick={() => updateItemQty(item, 1)} className="w-6 h-6 rounded bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-500"><Plus size={12} /></button>
                       </div>
                       <span className="text-xs font-semibold text-stone-800 w-16 text-right">{formatCurrency(parseFloat(item.precio_unitario) * parseFloat(item.cantidad))}</span>
-                      <button onClick={() => removeItem(item)} className="text-stone-300 hover:text-rose-500 transition-colors"><X size={14} /></button>
+                      <button onClick={() => removeItem(item)} className="text-stone-300 hover:text-rose-500 transition-colors"><X size={16} /></button>
                     </div>
                   ))}
                 </div>
@@ -458,7 +458,7 @@ export default function MesaDetailPage() {
 
               {allItems.length === 0 && (
                 <div className="py-8 text-center">
-                  <Package size={28} className="text-stone-300 mx-auto mb-2" />
+                  <Package size={20} className="text-stone-300 mx-auto mb-2" />
                   <p className="text-stone-400 text-xs">Selecciona productos para empezar</p>
                 </div>
               )}
@@ -479,7 +479,7 @@ export default function MesaDetailPage() {
                     <FileText size={16} /> Precuenta
                   </button>
                   <button onClick={() => setShowCobrar(true)} className={cx.btnPrimary + ' w-full flex items-center justify-center gap-2 min-h-[44px] text-base'}>
-                    <ShoppingCart size={18} /> Cobrar {formatCurrency(subtotal)}
+                    <ShoppingCart size={16} /> Cobrar {formatCurrency(subtotal)}
                   </button>
                 </>
               )}
@@ -552,7 +552,7 @@ export default function MesaDetailPage() {
               className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto p-6">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-lg font-bold text-stone-900">Cobrar Mesa {mesaInfo.numero}</h3>
-                <button onClick={() => setShowCobrar(false)} className={cx.btnIcon}><X size={18} /></button>
+                <button onClick={() => setShowCobrar(false)} className={cx.btnIcon}><X size={16} /></button>
               </div>
               <div className="text-center mb-5">
                 <p className="text-stone-500 text-xs mb-1">Total a cobrar</p>
@@ -566,7 +566,7 @@ export default function MesaDetailPage() {
                     return (
                       <button key={m.key} onClick={() => setMetodoPago(m.key)}
                         className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-colors min-h-[44px] ${isActive ? 'border-emerald-500 bg-emerald-50' : 'border-stone-200 hover:border-stone-300'}`}>
-                        <m.icon size={18} className={isActive ? 'text-emerald-600' : 'text-stone-400'} />
+                        <m.icon size={16} className={isActive ? 'text-emerald-600' : 'text-stone-400'} />
                         <span className={`text-[10px] font-medium ${isActive ? 'text-emerald-700' : 'text-stone-500'}`}>{m.label}</span>
                       </button>
                     );
@@ -592,13 +592,13 @@ export default function MesaDetailPage() {
                     <div key={idx} className={cx.card + ' p-3'}>
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-semibold text-stone-600">Parte {idx + 1}</span>
-                        {pagoPartes.length > 2 && <button onClick={() => setPagoPartes(prev => prev.filter((_, i) => i !== idx))} className="text-stone-300 hover:text-rose-500"><X size={13} /></button>}
+                        {pagoPartes.length > 2 && <button onClick={() => setPagoPartes(prev => prev.filter((_, i) => i !== idx))} className="text-stone-300 hover:text-rose-500"><X size={16} /></button>}
                       </div>
                       <div className="grid grid-cols-4 gap-1.5 mb-2">
                         {metodosPago.map(m => (
                           <button key={m.key} onClick={() => { const n = [...pagoPartes]; n[idx] = {...n[idx], metodo: m.key}; setPagoPartes(n); }}
                             className={`flex flex-col items-center gap-0.5 p-2 rounded-lg border transition-colors ${parte.metodo === m.key ? 'border-emerald-500 bg-emerald-50' : 'border-stone-200'}`}>
-                            <m.icon size={14} className={parte.metodo === m.key ? 'text-emerald-600' : 'text-stone-400'} />
+                            <m.icon size={16} className={parte.metodo === m.key ? 'text-emerald-600' : 'text-stone-400'} />
                             <span className="text-[9px]">{m.label}</span>
                           </button>
                         ))}
