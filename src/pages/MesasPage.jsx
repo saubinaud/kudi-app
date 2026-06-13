@@ -830,16 +830,25 @@ export default function MesasPage() {
               style={{ width: editCollapsed ? 'auto' : '260px' }}
             >
               <div className="bg-white rounded-2xl border border-stone-200/80 shadow-xl overflow-hidden">
-                {/* Header — always visible, acts as drag handle */}
+                {/* Header — drag handle + click to expand */}
                 <div
-                  className="flex items-center justify-between px-4 py-2.5 bg-stone-50 border-b border-stone-100 cursor-grab active:cursor-grabbing"
-                  onPointerDown={(e) => editDragControls.start(e)}>
-                  <span className="text-xs font-bold text-stone-700">Mesa {mesa.numero}</span>
+                  className="flex items-center justify-between px-4 py-3 bg-stone-50/80 border-b border-stone-100 cursor-grab active:cursor-grabbing"
+                  onPointerDown={(e) => editDragControls.start(e)}
+                  onClick={() => editCollapsed && setEditCollapsed(false)}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-[#16A34A]/10 flex items-center justify-center">
+                      <span className="text-xs font-bold text-[#16A34A]">{mesa.numero}</span>
+                    </div>
+                    <span className="text-sm font-semibold text-stone-800">Mesa {mesa.numero}</span>
+                    {editCollapsed && <span className="text-xs text-stone-400">· click para editar</span>}
+                  </div>
                   <div className="flex items-center gap-1">
-                    <button onClick={(e) => { e.stopPropagation(); setEditCollapsed(!editCollapsed); }} className={cx.btnIcon + ' !p-1'}>
-                      {editCollapsed ? <Pencil size={12} /> : <Minus size={12} />}
-                    </button>
-                    <button onClick={(e) => { e.stopPropagation(); setEditMesaId(null); }} className={cx.btnIcon + ' !p-1'}><X size={12} /></button>
+                    {!editCollapsed && (
+                      <button onClick={(e) => { e.stopPropagation(); setEditCollapsed(true); }} className={cx.btnIcon + ' !p-1.5'}>
+                        <Minus size={14} />
+                      </button>
+                    )}
+                    <button onClick={(e) => { e.stopPropagation(); setEditMesaId(null); }} className={cx.btnIcon + ' !p-1.5'}><X size={14} /></button>
                   </div>
                 </div>
                 {/* Body — collapsible */}

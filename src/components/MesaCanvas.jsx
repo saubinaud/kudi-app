@@ -5,8 +5,8 @@ import { Clock, ZoomIn, ZoomOut, Maximize2, Trash2, Equal, Users, Copy } from 'l
 import { cx } from '../styles/tokens';
 
 const CELL = 24;
-const COLS = 80;
-const ROWS = 50;
+const COLS = 120;
+const ROWS = 80;
 const MIN_SIZE = 2;
 const CANVAS_W = COLS * CELL;
 const CANVAS_H = ROWS * CELL;
@@ -302,9 +302,11 @@ export default function MesaCanvas({
                 }
                 return (
                   <g key={`link-${sec.id}`}>
-                    <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#0A2F24" strokeWidth="2" strokeDasharray="4 3" opacity="0.3" />
-                    <circle cx={x1} cy={y1} r="3" fill="#0A2F24" opacity="0.4" />
-                    <circle cx={x2} cy={y2} r="3" fill="#0A2F24" opacity="0.4" />
+                    <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#16A34A" strokeWidth="3" strokeLinecap="round" />
+                    <circle cx={x1} cy={y1} r="5" fill="#16A34A" />
+                    <circle cx={x2} cy={y2} r="5" fill="#16A34A" />
+                    <circle cx={x1} cy={y1} r="2.5" fill="white" />
+                    <circle cx={x2} cy={y2} r="2.5" fill="white" />
                   </g>
                 );
               })}
@@ -373,9 +375,11 @@ export default function MesaCanvas({
                     </div>
                   )}
 
-                  {/* Resize handle */}
+                  {/* Resize handle — touch-friendly 44px hit area */}
                   {isEditing && isSelected && (
-                    <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#16A34A] rounded-full cursor-se-resize shadow-sm" />
+                    <div className="absolute -bottom-3 -right-3 w-11 h-11 flex items-center justify-center cursor-se-resize">
+                      <div className="w-4 h-4 bg-[#16A34A] rounded-full border-2 border-white shadow-md" />
+                    </div>
                   )}
 
                   {/* Multi-select checkmark */}
@@ -426,22 +430,25 @@ export default function MesaCanvas({
                   </div>
                 </div>
 
-                {/* Rounding corner handle — top-left, follows mesa position */}
+                {/* Rounding corner handle — top-left, touch-friendly */}
                 <div
                   style={{
                     position: 'absolute',
-                    left: smx + handleOffset,
-                    top: smy + handleOffset,
+                    left: smx + handleOffset - 22,
+                    top: smy + handleOffset - 22,
+                    width: 44, height: 44,
                     zIndex: 25,
-                    cursor: 'grab',
                     touchAction: 'none',
                     pointerEvents: 'auto',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}
+                  className="cursor-[nw-resize] group"
                   onPointerDown={(e) => handleRoundStart(e, selectedMesa)}
                   onPointerMove={handleRoundMove}
                   onPointerUp={handleRoundEnd}
+                  title="Arrastra para redondear esquinas"
                 >
-                  <div className="w-4 h-4 -translate-x-1/2 -translate-y-1/2 bg-[#16A34A] rounded-full border-2 border-white shadow-md cursor-grab active:cursor-grabbing hover:scale-125 transition-transform" />
+                  <div className="w-4 h-4 bg-[#16A34A] rounded-full border-2 border-white shadow-md group-hover:scale-150 group-active:scale-125 transition-transform" />
                 </div>
               </>
             );
@@ -450,11 +457,19 @@ export default function MesaCanvas({
       </div>
 
       {isEditing && (
-        <div className="flex items-center justify-center gap-4 mt-2 text-[10px] text-stone-400">
-          <span className="flex items-center gap-1"><span className="w-3 h-3 border border-dashed border-stone-400 rounded-sm inline-block" /> Arrastra para crear</span>
-          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#16A34A] rounded-full inline-block" /> Esquina = redondear</span>
-          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#16A34A] rounded-full inline-block border border-white shadow-sm" /> Inferior = redimensionar</span>
-          <span>Ctrl+Scroll = zoom</span>
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 mt-2.5 text-[11px] text-stone-500">
+          <span className="flex items-center gap-1.5">
+            <span className="w-4 h-3 border border-dashed border-[#16A34A]/50 rounded inline-block bg-emerald-50/50" />
+            Arrastra para crear
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 bg-[#16A34A] rounded-full inline-block shadow-sm" />
+            Redondear esquinas
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 bg-[#16A34A] rounded-full inline-block border-2 border-white shadow-sm" />
+            Cambiar tamaño
+          </span>
         </div>
       )}
     </div>
