@@ -437,48 +437,49 @@ export default function DashboardPage() {
       {/* Tipo de producto filter pills */}
       {products.length > 0 && (
         <div className="flex gap-2 mb-3 flex-wrap">
-          {[
-            { value: 'todos', label: 'Todos' },
-            { value: 'transformable', label: 'Transformables' },
-            ...(products.some(p => p.tipo_producto === 'no_transformable') ? [{ value: 'no_transformable', label: 'No transformables' }] : []),
-            { value: 'pack', label: 'Packs' },
-          ].map(t => (
-            <button key={t.value} onClick={() => setTipoFilter(t.value)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors duration-100 ${
-                tipoFilter === t.value ? 'bg-[#16A34A] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-              }`}>
-              {t.label}
-            </button>
-          ))}
+          <SegmentedControl
+            options={[
+              { key: 'todos', label: 'Todos' },
+              { key: 'transformable', label: 'Transformables' },
+              ...(products.some(p => p.tipo_producto === 'no_transformable') ? [{ key: 'no_transformable', label: 'No transformables' }] : []),
+              { key: 'pack', label: 'Packs' },
+            ]}
+            value={tipoFilter}
+            onChange={setTipoFilter}
+            layoutId="dash-tipo"
+            size="sm"
+          />
         </div>
       )}
 
       {/* Category tabs — cartas de precios */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-4 scrollbar-hide">
-        <button onClick={() => setSelectedCat(null)}
-          className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors duration-100 ${!selectedCat ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}>
-          Todos
-        </button>
-        {categorias.map(cat => (
-          <div key={cat.id} className="relative flex items-center">
-            <button onClick={() => setSelectedCat(cat.id)}
-              className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors duration-100 ${selectedCat === cat.id ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}>
-              {cat.nombre}
-            </button>
-            {selectedCat === cat.id && (
-              <div className="flex items-center ml-1 gap-0.5">
-                <button onClick={(e) => { e.stopPropagation(); setEditCatTarget(cat); }}
-                  className="text-stone-400 hover:text-blue-500" title="Renombrar">
-                  <Pencil size={10} />
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); setDeleteCatTarget(cat); }}
-                  className="text-stone-400 hover:text-rose-500" title="Eliminar">
-                  <X size={12} />
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
+        <SegmentedControl
+          options={[
+            { key: '__todos__', label: 'Todos' },
+            ...categorias.map(cat => ({ key: cat.id, label: cat.nombre })),
+          ]}
+          value={selectedCat || '__todos__'}
+          onChange={(key) => setSelectedCat(key === '__todos__' ? null : key)}
+          layoutId="dash-carta"
+          size="sm"
+          variant="light"
+        />
+        {selectedCat && (() => {
+          const cat = categorias.find(c => c.id === selectedCat);
+          return cat ? (
+            <div className="flex items-center gap-0.5">
+              <button onClick={(e) => { e.stopPropagation(); setEditCatTarget(cat); }}
+                className="text-stone-400 hover:text-blue-500">
+                <Pencil size={12} />
+              </button>
+              <button onClick={(e) => { e.stopPropagation(); setDeleteCatTarget(cat); }}
+                className="text-stone-400 hover:text-rose-500">
+                <X size={12} />
+              </button>
+            </div>
+          ) : null;
+        })()}
         <button onClick={() => setNewCatPrompt(true)}
           className="px-3 py-1.5 rounded-full text-sm whitespace-nowrap bg-stone-50 text-stone-400 hover:bg-stone-100 hover:text-stone-600 border border-dashed border-stone-300">
           + Nueva
