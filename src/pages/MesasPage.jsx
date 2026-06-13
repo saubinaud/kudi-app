@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import MesaCanvas from '../components/MesaCanvas';
-import { ShoppingCart, Settings, Plus, Trash2, X, Pencil, Check, LayoutGrid, ArrowRight, MousePointer2, Move, Sparkles } from 'lucide-react';
+import { ShoppingCart, Settings, Plus, Trash2, X, Pencil, Check, LayoutGrid, ArrowRight, MousePointer2, Move, Sparkles, Users, Link2, Search } from 'lucide-react';
 
 // Tutorial steps
 const STEPS = [
@@ -34,6 +34,15 @@ export default function MesasPage() {
   const [tutorialPisoName, setTutorialPisoName] = useState('');
   const [tutorialCreating, setTutorialCreating] = useState(false);
   const [mesasCreatedInTutorial, setMesasCreatedInTutorial] = useState(0);
+
+  // Unir mesas
+  const [unirMode, setUnirMode] = useState(false);
+  const [unirSelected, setUnirSelected] = useState([]);
+
+  // Filtro disponibles
+  const [showDisponibles, setShowDisponibles] = useState(false);
+  const [disponiblesPersonas, setDisponiblesPersonas] = useState('');
+  const [highlightIds, setHighlightIds] = useState(null);
 
   // Config modal (for pisos)
   const [showConfig, setShowConfig] = useState(false);
@@ -158,6 +167,56 @@ export default function MesasPage() {
     }
     toast.success('Mesas uniformadas');
     fetchEstado();
+  };
+
+  // Update capacidad
+  const handleUpdateCapacidad = async (id, capacidad) => {
+    try {
+      await api.put(`/mesas/${id}`, { capacidad });
+      setMesas(prev => prev.map(m => m.id === id ? { ...m, capacidad } : m));
+    } catch {
+      toast.error('Error actualizando capacidad');
+    }
+  };
+
+  // Unir mesas
+  const handleToggleUnirSelect = (mesaId) => {
+    const mesa = mesas.find(m => m.id === mesaId);
+    if (mesa?.sesion_id) return; // can't select occupied
+    setUnirSelected(prev =>
+      prev.includes(mesaId) ? prev.filter(id => id !== mesaId) : [...prev, mesaId]
+    );
+  };
+
+  const handleConfirmarUnion = async () => {
+    if (unirSelected.length < 2) return;
+    try {
+      const res = await api.post('/mesas/unir', { mesa_ids: unirSelected });
+      const sesion = res?.data || res;
+      toast.success('Mesas unidas');
+      setUnirMode(false);
+      setUnirSelected([]);
+      navigate(`/mesas/${unirSelected[0]}`);
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Error uniendo mesas');
+    }
+  };
+
+  // Filtro disponibles
+  const handleBuscarDisponibles = () => {
+    const personas = parseInt(disponiblesPersonas);
+    if (!personas || personas < 1) {
+      setHighlightIds(null);
+      return;
+    }
+    const libres = mesasFiltradas.filter(m => !m.sesion_id && (m.capacidad ?? 4) >= personas);
+    setHighlightIds(libres.map(m => m.id));
+  };
+
+  const clearDisponibles = () => {
+    setShowDisponibles(false);
+    setDisponiblesPersonas('');
+    setHighlightIds(null);
   };
 
   // === Tutorial handlers ===
@@ -475,8 +534,26 @@ export default function MesasPage() {
 
             <div className="space-y-3 mb-6">
               {configPisos.map(piso => (
-                <div key={piso.id} className="flex items-center justify-between px-4 py-3 bg-stone-50 rounded-xl">
-                  <span className="font-medium text-stone-800 text-sm">{piso.nombre}</span>
+                <div key={piso.id} className="flex items-center gap-3 px-4 py-3 bg-stone-50 rounded-xl">
+                  <span className="font-medium text-stone-800 text-sm flex-1">{piso.nombre}</span>
+                  <div className="flex items-center gap-1.5">
+                    <Users size={12} className="text-stone-400" />
+                    <input
+                      type="number"
+                      value={piso.aforo || ''}
+                      onChange={async (e) => {
+                        const val = parseInt(e.target.value) || null;
+                        try {
+                          await api.put(`/mesas/pisos/${piso.id}`, { aforo: val });
+                          setConfigPisos(prev => prev.map(p => p.id === piso.id ? { ...p, aforo: val } : p));
+                          setPisos(prev => prev.map(p => p.id === piso.id ? { ...p, aforo: val } : p));
+                        } catch {}
+                      }}
+                      className="w-14 px-2 py-1 text-xs text-center border border-stone-200 rounded-lg"
+                      placeholder="Aforo"
+                      min="1"
+                    />
+                  </div>
                   <button
                     onClick={() => deletePiso(piso.id)}
                     className="text-stone-400 hover:text-rose-500 transition-colors"
@@ -511,37 +588,112 @@ export default function MesasPage() {
     );
   }
 
+  // Aforo info
+  const currentPiso = pisos.find(p => p.id === selectedPiso);
+  const ocupadas = mesasFiltradas.filter(m => !!m.sesion_id).length;
+  const totalMesas = mesasFiltradas.length;
+  const personasOcupadas = mesasFiltradas.filter(m => m.sesion_id).reduce((s, m) => s + (parseInt(m.comensales) || 0), 0);
+
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-        <h1 className="text-xl font-bold text-stone-800">Mesas</h1>
-        <div className="flex gap-2">
-          <button onClick={openConfig} className={cx.btnGhost + ' flex items-center gap-1.5'}>
-            <Settings size={16} /> Pisos
-          </button>
-          {isEditing ? (
-            <button
-              onClick={() => setIsEditing(false)}
-              className={cx.btnPrimary + ' flex items-center gap-1.5'}
-            >
-              <Check size={16} /> Listo
-            </button>
-          ) : (
-            <button
-              onClick={() => setIsEditing(true)}
-              className={cx.btnSecondary + ' flex items-center gap-1.5'}
-            >
-              <Pencil size={16} /> Editar
-            </button>
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold text-stone-800">Mesas</h1>
+          {!isEditing && !unirMode && totalMesas > 0 && (
+            <span className="text-xs text-stone-400">
+              {ocupadas}/{totalMesas} ocupadas
+              {currentPiso?.aforo ? ` · Aforo: ${personasOcupadas}/${currentPiso.aforo}` : ''}
+            </span>
           )}
-          {!isEditing && (
-            <button onClick={() => navigate('/pos')} className={cx.btnSecondary + ' flex items-center gap-2'}>
-              <ShoppingCart size={16} /> Caja Rápida
-            </button>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {unirMode ? (
+            <>
+              <button onClick={() => { setUnirMode(false); setUnirSelected([]); }} className={cx.btnGhost + ' flex items-center gap-1.5'}>
+                <X size={16} /> Cancelar
+              </button>
+              <button
+                onClick={handleConfirmarUnion}
+                disabled={unirSelected.length < 2}
+                className={cx.btnPrimary + ' flex items-center gap-1.5'}
+              >
+                <Link2 size={16} /> Unir {unirSelected.length} mesas
+              </button>
+            </>
+          ) : isEditing ? (
+            <>
+              <button onClick={openConfig} className={cx.btnGhost + ' flex items-center gap-1.5'}>
+                <Settings size={16} /> Pisos
+              </button>
+              <button onClick={() => setIsEditing(false)} className={cx.btnPrimary + ' flex items-center gap-1.5'}>
+                <Check size={16} /> Listo
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setShowDisponibles(!showDisponibles)}
+                className={cx.btnGhost + ' flex items-center gap-1.5' + (showDisponibles ? ' bg-stone-100' : '')}
+              >
+                <Search size={16} /> Disponibles
+              </button>
+              <button onClick={() => { setUnirMode(true); setUnirSelected([]); }} className={cx.btnGhost + ' flex items-center gap-1.5'}>
+                <Link2 size={16} /> Unir
+              </button>
+              <button onClick={() => setIsEditing(true)} className={cx.btnSecondary + ' flex items-center gap-1.5'}>
+                <Pencil size={16} /> Editar
+              </button>
+              <button onClick={() => navigate('/pos')} className={cx.btnSecondary + ' flex items-center gap-2'}>
+                <ShoppingCart size={16} /> Caja Rápida
+              </button>
+            </>
           )}
         </div>
       </div>
+
+      {/* Disponibles filter bar */}
+      {showDisponibles && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          className={cx.card + ' p-3 mb-4 flex items-center gap-3 border-sky-200 bg-sky-50/50'}
+        >
+          <Users size={16} className="text-sky-600 flex-shrink-0" />
+          <span className="text-sm text-stone-700">Mesa para</span>
+          <input
+            type="number"
+            value={disponiblesPersonas}
+            onChange={e => setDisponiblesPersonas(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleBuscarDisponibles()}
+            className="w-16 px-2 py-1.5 border border-stone-300 rounded-lg text-sm text-center"
+            placeholder="4"
+            min="1"
+            autoFocus
+          />
+          <span className="text-sm text-stone-700">personas</span>
+          <button onClick={handleBuscarDisponibles} className={cx.btnPrimary + ' text-xs px-3 py-1.5'}>
+            Buscar
+          </button>
+          {highlightIds && (
+            <span className="text-xs text-sky-600 font-medium">
+              {highlightIds.length} mesa{highlightIds.length !== 1 ? 's' : ''} disponible{highlightIds.length !== 1 ? 's' : ''}
+            </span>
+          )}
+          <button onClick={clearDisponibles} className={cx.btnIcon + ' !p-1 ml-auto'}>
+            <X size={14} />
+          </button>
+        </motion.div>
+      )}
+
+      {/* Unir mode banner */}
+      {unirMode && (
+        <div className={cx.card + ' p-3 mb-4 flex items-center gap-3 border-violet-200 bg-violet-50/50'}>
+          <Link2 size={16} className="text-violet-600" />
+          <span className="text-sm text-stone-700">Selecciona las mesas que deseas unir en una sola cuenta</span>
+        </div>
+      )}
 
       {/* Floor tabs */}
       {pisos.length > 1 && (
@@ -578,8 +730,13 @@ export default function MesasPage() {
         onMoveMesa={handleMoveMesa}
         onResizeMesa={handleResizeMesa}
         onDeleteMesa={handleDeleteMesa}
-                onUniformar={handleUniformar}
+        onUpdateCapacidad={handleUpdateCapacidad}
+        onUniformar={handleUniformar}
         onMesaClick={handleMesaClick}
+        multiSelect={unirMode}
+        selectedMesaIds={unirSelected}
+        onToggleSelect={handleToggleUnirSelect}
+        highlightIds={highlightIds}
       />
 
       {/* Config modal */}
