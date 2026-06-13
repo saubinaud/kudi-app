@@ -111,17 +111,29 @@ export default function MesasPage() {
   const handleDuplicarMesa = async (mesaId) => {
     const mesa = mesas.find(m => m.id === mesaId);
     if (!mesa || !selectedPiso) return;
-    // Place duplicate offset to the right
-    const newX = (mesa.pos_x ?? 0) + (mesa.ancho ?? 3) + 1;
-    const newY = mesa.pos_y ?? 0;
+    const w = mesa.ancho ?? 3, h = mesa.alto ?? 2;
+    // Find first free spot: try right, then below, then further right
+    const candidates = [
+      { x: (mesa.pos_x ?? 0) + w + 1, y: mesa.pos_y ?? 0 },
+      { x: mesa.pos_x ?? 0, y: (mesa.pos_y ?? 0) + h + 1 },
+      { x: (mesa.pos_x ?? 0) + w + 1, y: (mesa.pos_y ?? 0) + h + 1 },
+      { x: (mesa.pos_x ?? 0) + (w + 1) * 2, y: mesa.pos_y ?? 0 },
+    ];
+    const pisoMesas = mesas.filter(m => m.piso_id === selectedPiso);
+    const overlaps = (x, y) => pisoMesas.some(m => {
+      const mx = m.pos_x ?? 0, my = m.pos_y ?? 0, mw = m.ancho ?? 3, mh = m.alto ?? 2;
+      return x < mx + mw && x + w > mx && y < my + mh && y + h > my;
+    });
+    const spot = candidates.find(c => !overlaps(c.x, c.y)) || candidates[0];
     try {
       const res = await api.post('/mesas', {
         piso_id: selectedPiso,
-        pos_x: newX,
-        pos_y: newY,
-        ancho: mesa.ancho ?? 3,
-        alto: mesa.alto ?? 2,
+        pos_x: spot.x,
+        pos_y: spot.y,
+        ancho: w,
+        alto: h,
         capacidad: mesa.capacidad ?? 4,
+        redondeo: mesa.redondeo ?? 15,
       });
       const newMesa = res?.data || res;
       setMesas(prev => [...prev, newMesa]);
