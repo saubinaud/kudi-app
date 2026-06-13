@@ -1415,11 +1415,9 @@ function MensajesTab() {
               {sending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 : <><Send size={16} /> {modo === 'broadcast' ? 'Enviar difusion' : 'Enviar'}</>}
             </button>
-            {modo === 'broadcast' && (
-              <button onClick={handlePreview} disabled={!mensaje.trim()} className={cx.btnSecondary + ' flex items-center justify-center gap-2 flex-1 sm:flex-none'}>
-                <Eye size={16} /> Preview email
-              </button>
-            )}
+            <button onClick={handlePreview} disabled={!mensaje.trim()} className={cx.btnSecondary + ' flex items-center justify-center gap-2 flex-1 sm:flex-none'}>
+              <Eye size={16} /> Preview email
+            </button>
           </div>
 
           {broadcastResult && (
