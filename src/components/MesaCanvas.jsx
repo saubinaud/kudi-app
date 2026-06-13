@@ -20,7 +20,7 @@ function formatTimer(abiertaAt) {
   return `${m}m`;
 }
 
-// Chair positions around a mesa
+// Chair positions: lines on the two longest sides of the mesa
 function getChairs(mesa, cell) {
   const x = (mesa.pos_x ?? 0) * cell;
   const y = (mesa.pos_y ?? 0) * cell;
@@ -29,52 +29,41 @@ function getChairs(mesa, cell) {
   const cap = mesa.capacidad ?? 4;
   const red = mesa.redondeo ?? 15;
   const isCircle = red >= 45;
-  const chairGap = 4;
+  const off = 11; // distance from edge
   const chairs = [];
 
   if (isCircle) {
     const cx = x + w / 2, cy = y + h / 2;
-    const radius = w / 2 + 8;
+    const r = w / 2 + off;
     for (let i = 0; i < cap; i++) {
       const a = (i / cap) * Math.PI * 2 - Math.PI / 2;
-      chairs.push({ x: cx + radius * Math.cos(a), y: cy + radius * Math.sin(a), rot: (a * 180 / Math.PI) + 90 });
+      chairs.push({ x: cx + r * Math.cos(a), y: cy + r * Math.sin(a), rot: (a * 180 / Math.PI) + 90 });
     }
   } else {
-    // Distribute along perimeter proportionally
-    const sides = [
-      { len: w, dir: 'top' }, { len: h, dir: 'right' },
-      { len: w, dir: 'bottom' }, { len: h, dir: 'left' },
-    ];
-    const perim = 2 * (w + h);
-    let counts = sides.map(s => Math.round(cap * s.len / perim));
-    let total = counts.reduce((a, b) => a + b, 0);
-    // Fix rounding — prefer long sides
-    const sorted = [0,1,2,3].sort((a, b) => sides[b].len - sides[a].len);
-    while (total < cap) { counts[sorted[total % 4]]++; total++; }
-    while (total > cap) {
-      for (let i = sorted.length - 1; i >= 0; i--) {
-        if (counts[sorted[i]] > 0 && total > cap) { counts[sorted[i]]--; total--; }
+    // Chairs on the two LONG sides (like a real dining table)
+    const side1 = Math.ceil(cap / 2);
+    const side2 = Math.floor(cap / 2);
+
+    if (w >= h) {
+      // Landscape: chairs on top and bottom
+      const spT = w / (side1 + 1);
+      for (let i = 0; i < side1; i++) chairs.push({ x: x + spT * (i + 1), y: y - off, rot: 180 });
+      if (side2 > 0) {
+        const spB = w / (side2 + 1);
+        for (let i = 0; i < side2; i++) chairs.push({ x: x + spB * (i + 1), y: y + h + off, rot: 0 });
+      }
+    } else {
+      // Portrait: chairs on left and right
+      const spL = h / (side1 + 1);
+      for (let i = 0; i < side1; i++) chairs.push({ x: x - off, y: y + spL * (i + 1), rot: 90 });
+      if (side2 > 0) {
+        const spR = h / (side2 + 1);
+        for (let i = 0; i < side2; i++) chairs.push({ x: x + w + off, y: y + spR * (i + 1), rot: 270 });
       }
     }
-    sides.forEach((s, si) => {
-      const n = counts[si];
-      if (n === 0) return;
-      const spacing = s.len / (n + 1);
-      for (let i = 0; i < n; i++) {
-        const pos = spacing * (i + 1);
-        switch (s.dir) {
-          case 'top': chairs.push({ x: x + pos, y: y - 8, rot: 180 }); break;
-          case 'bottom': chairs.push({ x: x + pos, y: y + h + 8, rot: 0 }); break;
-          case 'left': chairs.push({ x: x - 8, y: y + pos, rot: 90 }); break;
-          case 'right': chairs.push({ x: x + w + 8, y: y + pos, rot: 270 }); break;
-        }
-      }
-    });
   }
   return chairs;
 }
-
-// Chair = simple line stroke perpendicular to the mesa edge
 
 export default function MesaCanvas({
   mesas, isEditing,
@@ -442,16 +431,19 @@ export default function MesaCanvas({
         const tp = tempPos[mesa.id];
         const m = tp ? { ...mesa, pos_x: tp.pos_x ?? mesa.pos_x, pos_y: tp.pos_y ?? mesa.pos_y, ancho: tp.ancho ?? mesa.ancho, alto: tp.alto ?? mesa.alto } : mesa;
         const chairs = getChairs(m, CELL);
-        const color = ocupada ? '#16A34A' : '#a8a29e';
-        // Each chair = a short line perpendicular to the edge
-        return chairs.map((ch, i) => (
-          <line key={`ch-${mesa.id}-${i}`}
-            x1={ch.x} y1={ch.y}
-            x2={ch.x + Math.cos((ch.rot - 90) * Math.PI / 180) * 7}
-            y2={ch.y + Math.sin((ch.rot - 90) * Math.PI / 180) * 7}
-            stroke={color} strokeWidth="2.5" strokeLinecap="round"
-          />
-        ));
+        const color = ocupada ? '#16A34A' : '#78716c';
+        return chairs.map((ch, i) => {
+          const len = 10;
+          const dx = Math.cos((ch.rot - 90) * Math.PI / 180) * len;
+          const dy = Math.sin((ch.rot - 90) * Math.PI / 180) * len;
+          return (
+            <line key={`ch-${mesa.id}-${i}`}
+              x1={ch.x - dx * 0.5} y1={ch.y - dy * 0.5}
+              x2={ch.x + dx * 0.5} y2={ch.y + dy * 0.5}
+              stroke={color} strokeWidth="3" strokeLinecap="round"
+            />
+          );
+        });
       })}
     </svg>
   );
