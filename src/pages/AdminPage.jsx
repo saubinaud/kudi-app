@@ -1251,9 +1251,15 @@ function MensajesTab() {
   const [replyText, setReplyText] = useState('');
 
   // Form
-  const [destino, setDestino] = useState(''); // userId or '' for broadcast
+  const [modo, setModo] = useState('directo'); // 'directo' | 'broadcast'
+  const [destino, setDestino] = useState('');
   const [asunto, setAsunto] = useState('');
   const [mensaje, setMensaje] = useState('');
+  const [enviarEmail, setEnviarEmail] = useState(true);
+  const [filtroPlan, setFiltroPlan] = useState('');
+  const [previewHtml, setPreviewHtml] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -1268,18 +1274,42 @@ function MensajesTab() {
   const handleSend = async () => {
     if (!mensaje.trim()) return;
     setSending(true);
+    setBroadcastResult(null);
     try {
-      await api.post('/admin/mensajes', {
-        para_usuario_id: destino ? parseInt(destino) : null,
-        asunto: asunto.trim() || null,
-        mensaje: mensaje.trim(),
-      });
-      toast.success(destino ? 'Mensaje enviado' : 'Mensaje enviado a todos');
+      if (modo === 'broadcast') {
+        const res = await api.post('/admin/mensajes/broadcast-email', {
+          asunto: asunto.trim() || 'Mensaje de Kudi',
+          mensaje: mensaje.trim(),
+          filtro_plan: filtroPlan || undefined,
+        });
+        const r = res.data || res;
+        setBroadcastResult(r);
+        toast.success(`Enviado a ${r.sent} usuario${r.sent !== 1 ? 's' : ''}${r.failed > 0 ? ` (${r.failed} fallaron)` : ''}`);
+      } else {
+        await api.post('/admin/mensajes', {
+          para_usuario_id: destino ? parseInt(destino) : null,
+          asunto: asunto.trim() || null,
+          mensaje: mensaje.trim(),
+        });
+        toast.success(destino ? 'Mensaje enviado + email' : 'Mensaje enviado a todos (sin email)');
+      }
       setAsunto(''); setMensaje(''); setDestino('');
       const r = await api.get('/admin/mensajes');
       setMensajes(r.data || []);
     } catch (err) { toast.error(err.message); }
     finally { setSending(false); }
+  };
+
+  const handlePreview = async () => {
+    if (!mensaje.trim()) return;
+    try {
+      const res = await api.post('/admin/mensajes/preview', {
+        asunto: asunto.trim() || 'Mensaje de Kudi',
+        mensaje: mensaje.trim(),
+      });
+      setPreviewHtml(res.data?.html || res.html || '');
+      setShowPreview(true);
+    } catch (err) { toast.error('Error generando preview'); }
   };
 
   const handleExpand = async (id) => {
@@ -1304,40 +1334,122 @@ function MensajesTab() {
     } catch (err) { toast.error(err.message); }
   };
 
+  const variables = ['{nombre}', '{empresa}', '{email}', '{plan}'];
+  const insertVariable = (v) => setMensaje(prev => prev + v);
+
   if (loading) return <div className="space-y-3">{[1,2,3].map(i => <div key={i} className={cx.skeleton + ' h-16'} />)}</div>;
 
   return (
     <div className="space-y-6">
       {/* Send form */}
-      <div className={cx.card + ' p-5'}>
-        <h3 className="text-sm font-semibold text-stone-800 mb-3 flex items-center gap-2"><Send size={14} /> Enviar mensaje</h3>
-        <div className="space-y-3">
-          <div>
-            <label className={cx.label}>Destinatario</label>
-            <select
-              value={destino}
-              onChange={e => setDestino(e.target.value)}
-              className={cx.input}
-            >
-              <option value="">Todos los usuarios</option>
-              {usuarios.map(u => (
-                <option key={u.id} value={u.id}>{u.nombre || u.email} ({u.email})</option>
-              ))}
-            </select>
+      <div className={cx.card + ' p-4 sm:p-5'}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+          <h3 className="text-sm font-semibold text-stone-800 flex items-center gap-2"><Send size={16} /> Enviar mensaje</h3>
+          <div className="inline-flex bg-stone-100 rounded-full p-0.5">
+            <button onClick={() => setModo('directo')}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors duration-150 ${modo === 'directo' ? 'bg-[#0A2F24] text-white' : 'text-stone-500'}`}>
+              Directo
+            </button>
+            <button onClick={() => setModo('broadcast')}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors duration-150 ${modo === 'broadcast' ? 'bg-[#0A2F24] text-white' : 'text-stone-500'}`}>
+              Difusion
+            </button>
           </div>
+        </div>
+
+        <div className="space-y-3">
+          {modo === 'directo' ? (
+            <div>
+              <label className={cx.label}>Destinatario</label>
+              <select value={destino} onChange={e => setDestino(e.target.value)} className={cx.input}>
+                <option value="">Todos los usuarios (in-app, sin email)</option>
+                {usuarios.map(u => (
+                  <option key={u.id} value={u.id}>{u.nombre || u.email} ({u.email})</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label className={cx.label}>Enviar a</label>
+              <select value={filtroPlan} onChange={e => setFiltroPlan(e.target.value)} className={cx.input}>
+                <option value="">Todos los usuarios activos</option>
+                <option value="trial">Solo Trial</option>
+                <option value="independiente">Solo Independiente (S/80)</option>
+                <option value="emprendedor">Solo Emprendedor (S/100)</option>
+                <option value="empresario">Solo Empresario (S/180)</option>
+              </select>
+              <p className="text-[11px] text-stone-400 mt-1">Cada usuario recibira el email personalizado con sus datos</p>
+            </div>
+          )}
+
           <div>
             <label className={cx.label}>Asunto</label>
-            <input type="text" value={asunto} onChange={e => setAsunto(e.target.value)} className={cx.input} placeholder="Ej: Bienvenido a Kudi" />
+            <input type="text" value={asunto} onChange={e => setAsunto(e.target.value)} className={cx.input}
+              placeholder={modo === 'broadcast' ? 'Ej: Hola {empresa}, tenemos novedades' : 'Ej: Bienvenido a Kudi'} />
           </div>
+
           <div>
-            <label className={cx.label}>Mensaje</label>
-            <textarea value={mensaje} onChange={e => setMensaje(e.target.value)} className={cx.input + ' min-h-[80px] resize-y'} placeholder="Escribe tu mensaje..." rows={3} />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className={cx.label + ' !mb-0'}>Mensaje</label>
+              {modo === 'broadcast' && (
+                <div className="flex gap-1">
+                  {variables.map(v => (
+                    <button key={v} onClick={() => insertVariable(v)}
+                      className="text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded font-mono hover:bg-emerald-100 transition-colors duration-150">
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <textarea value={mensaje} onChange={e => setMensaje(e.target.value)}
+              className={cx.input + ' min-h-[100px] resize-y'}
+              placeholder={modo === 'broadcast'
+                ? 'Hola {nombre}, tu negocio {empresa} tiene acceso a nuevas funcionalidades...'
+                : 'Escribe tu mensaje...'}
+              rows={4} />
           </div>
-          <button onClick={handleSend} disabled={sending || !mensaje.trim()} className={cx.btnPrimary + ' flex items-center gap-2'}>
-            {sending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Send size={14} /> Enviar</>}
-          </button>
+
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button onClick={handleSend} disabled={sending || !mensaje.trim()} className={cx.btnPrimary + ' flex items-center justify-center gap-2 flex-1 sm:flex-none'}>
+              {sending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                : <><Send size={16} /> {modo === 'broadcast' ? 'Enviar difusion' : 'Enviar'}</>}
+            </button>
+            {modo === 'broadcast' && (
+              <button onClick={handlePreview} disabled={!mensaje.trim()} className={cx.btnSecondary + ' flex items-center justify-center gap-2 flex-1 sm:flex-none'}>
+                <Eye size={16} /> Preview email
+              </button>
+            )}
+          </div>
+
+          {broadcastResult && (
+            <div className="bg-emerald-50 rounded-xl p-3 text-sm text-emerald-700">
+              Enviado a <strong>{broadcastResult.sent}</strong> usuario{broadcastResult.sent !== 1 ? 's' : ''}
+              {broadcastResult.failed > 0 && <span className="text-rose-600"> ({broadcastResult.failed} fallaron)</span>}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Email Preview Modal */}
+      {showPreview && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowPreview(false)}>
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200">
+              <h4 className="text-sm font-semibold text-stone-800">Preview del email</h4>
+              <button onClick={() => setShowPreview(false)} className="text-stone-400 hover:text-stone-600"><X size={16} /></button>
+            </div>
+            <div className="overflow-auto max-h-[75vh]">
+              <iframe
+                srcDoc={previewHtml}
+                className="w-full border-0"
+                style={{ minHeight: '500px' }}
+                title="Email preview"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Messages list */}
       <div>
