@@ -141,7 +141,7 @@ export default function Layout() {
       label: 'Ingresos',
       icon: ShoppingCart,
       links: [
-        { to: '/mesas', label: 'Mesas', icon: LayoutGrid, perm: 'ventas', planRequired: '__unreleased__' },
+        { to: '/mesas', label: 'Mesas', icon: LayoutGrid, perm: 'ventas', planRequired: 'empresario' },
         { to: '/pos', label: 'Caja', icon: ShoppingCart, perm: 'ventas' },
         { to: '/pl/ventas', label: 'Órdenes', icon: DollarSign, perm: 'ventas' },
         { to: '/comprobantes', label: 'Facturación', icon: FileText, perm: 'facturacion' },
