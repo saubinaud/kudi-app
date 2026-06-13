@@ -394,8 +394,8 @@ export default function MesaCanvas({
 
             return (
               <>
-                {/* Actions — top-right */}
-                <div style={{ position: 'absolute', left: smx + smw - 66, top: smy - 16, zIndex: 25, pointerEvents: 'auto' }}>
+                {/* Actions — top-right, clamped to stay inside canvas */}
+                <div style={{ position: 'absolute', left: Math.min(smx + smw - 66, CANVAS_W * zoom - 76), top: Math.max(smy - 36, 4), zIndex: 25, pointerEvents: 'auto' }}>
                   <div className="flex gap-0.5 bg-white rounded-xl border border-stone-200/80 p-0.5 shadow-lg">
                     <button onClick={() => onDuplicar?.(selectedMesa.id)} title="Duplicar"
                       className="w-8 h-8 hover:bg-stone-50 text-stone-400 hover:text-[#16A34A] rounded-lg flex items-center justify-center transition-colors">
