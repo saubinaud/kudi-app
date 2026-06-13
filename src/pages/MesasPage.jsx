@@ -267,11 +267,8 @@ export default function MesasPage() {
     setDisponiblesPersonas(val);
     const personas = parseInt(val);
     if (!personas || personas < 1) { setHighlightIds(null); return; }
-    // capacidad >= personas Y mesa libre (no tiene items comandados)
-    const libres = mesasFiltradas.filter(m => {
-      const hasItems = parseInt(m.items_count) > 0;
-      return !hasItems && !m.sesion_principal_id && (m.capacidad ?? 4) >= personas;
-    });
+    // Disponible = sin sesión activa (ni primaria ni secundaria) + capacidad suficiente
+    const libres = mesasFiltradas.filter(m => !m.sesion_id && (m.capacidad ?? 4) >= personas);
     setHighlightIds(libres.map(m => m.id));
   }, [mesasFiltradas]);
 

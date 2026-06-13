@@ -5,8 +5,8 @@ import { Clock, ZoomIn, ZoomOut, Maximize2, Trash2, Equal, Users, Copy, Link2 } 
 import { cx } from '../styles/tokens';
 
 const CELL = 24;
-const COLS = 40;
-const ROWS = 28;
+const COLS = 80;
+const ROWS = 50;
 const MIN_SIZE = 2;
 const CANVAS_W = COLS * CELL;
 const CANVAS_H = ROWS * CELL;
