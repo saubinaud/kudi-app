@@ -215,7 +215,13 @@ export default function MesaCanvas({
     const r = containerRef.current.getBoundingClientRect();
     setZoom(Math.round(Math.max(0.3, Math.min(r.width / ((maxX + 3) * CELL), r.height / ((maxY + 3) * CELL), 1.5)) * 10) / 10);
   };
-  const handleWheel = (e) => { if (e.ctrlKey || e.metaKey) { e.preventDefault(); setZoom(z => Math.min(2, Math.max(0.3, Math.round((z + (e.deltaY > 0 ? -0.1 : 0.1)) * 10) / 10))); } };
+  const handleWheel = useCallback((e) => { if (e.ctrlKey || e.metaKey) { e.preventDefault(); setZoom(z => Math.min(2, Math.max(0.3, Math.round((z + (e.deltaY > 0 ? -0.1 : 0.1)) * 10) / 10))); } }, []);
+
+  // Attach wheel listener as non-passive to allow preventDefault
+  useEffect(() => {
+    const el = containerRef.current;
+    if (el) { el.addEventListener('wheel', handleWheel, { passive: false }); return () => el.removeEventListener('wheel', handleWheel); }
+  }, [handleWheel]);
 
   useEffect(() => {
     const h = (e) => {
@@ -253,7 +259,7 @@ export default function MesaCanvas({
       <div ref={containerRef}
         className="overflow-auto rounded-2xl border border-stone-200/60 bg-[#FAFAF8]"
         style={{ height: 'calc(100vh - 240px)', minHeight: '400px' }}
-        onWheel={handleWheel}>
+>
         <div style={{ width: CANVAS_W * zoom, height: CANVAS_H * zoom, position: 'relative' }}>
           <div style={{
             transform: `scale(${zoom})`, transformOrigin: '0 0',
