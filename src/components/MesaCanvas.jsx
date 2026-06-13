@@ -331,12 +331,14 @@ export default function MesaCanvas({
     if (ocupada) {
       return 'bg-gradient-to-br from-emerald-50/70 via-emerald-50/30 to-white border border-emerald-200/60 border-l-4 border-l-[#16A34A]';
     }
-    return 'bg-white border border-stone-200/50';
+    return 'bg-white border border-stone-200';
   };
 
   const getMesaShadow = (mesa) => {
     const hasItems = parseInt(mesa.items_count) > 0;
     const ocupada = !!mesa.sesion_id && hasItems;
+    const isHighlighted = highlightIds && highlightIds.includes(mesa.id);
+    if (isHighlighted) return '0 0 0 3px rgba(22,163,74,0.25), 0 2px 12px rgba(22,163,74,0.15)';
     if (selectedId === mesa.id) return '0 0 0 4px rgba(22,163,74,0.1)';
     if (ocupada) return '0 2px 12px rgba(22,163,74,0.08), 0 1px 4px rgba(0,0,0,0.04)';
     return '0 1px 3px rgba(0,0,0,0.02)';
@@ -416,7 +418,7 @@ export default function MesaCanvas({
                   <motion.div key={mesa.id}
                     layout={!draggingRef.current && !resizingRef.current}
                     transition={{ type: 'spring', stiffness: 500, damping: 35, duration: 0.15 }}
-                    style={{ position: 'absolute', left: px, top: py, width: pw, height: ph, opacity: isDimmed ? 0.2 : 1, borderRadius: `${redondeo}%`, boxShadow: getMesaShadow(mesa) }}
+                    style={{ position: 'absolute', left: px, top: py, width: pw, height: ph, opacity: isDimmed ? 0.4 : 1, borderRadius: `${redondeo}%`, boxShadow: getMesaShadow(mesa) }}
                     className={`flex flex-col items-center justify-center text-center select-none overflow-visible ${getMesaClasses(mesa)} ${draggingRef.current?.mesa?.id === mesa.id ? 'shadow-xl opacity-90' : ''}`}>
                     {renderMesaContent(mesa, pw, ph, editZoom)}
                   </motion.div>
@@ -480,7 +482,7 @@ export default function MesaCanvas({
                 const redondeo = mesa.redondeo ?? 15;
                 return (
                   <motion.div key={mesa.id}
-                    initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: isDimmed ? 0.2 : 1, scale: 1 }}
+                    initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: isDimmed ? 0.4 : 1, scale: 1 }}
                     transition={{ duration: 0.3, delay: 0.02 }}
                     whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                     style={{ position: 'absolute', left: px, top: py, width: pw, height: ph, borderRadius: `${redondeo}%`, boxShadow: getMesaShadow(mesa), cursor: 'pointer' }}
