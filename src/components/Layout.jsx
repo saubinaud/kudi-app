@@ -339,7 +339,7 @@ export default function Layout() {
             .map(l => ({ ...l, _state: permState(l.perm) }))
             .filter(l => !HIDDEN_ROUTES.includes(l.to))
             .filter(l => isAdmin || l._state !== 'hidden')
-            .filter(l => !l.planRequired || user?.plan === l.planRequired);
+            .filter(l => !l.planRequired || user?.plan === l.planRequired || user?.plan === 'trial');
           if (visibleLinks.length === 0) return null;
           const isGroupCollapsed = collapsedGroups[group.key];
 

@@ -6,7 +6,15 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import MesaCanvas from '../components/MesaCanvas';
-import { ShoppingCart, Settings, Plus, Trash2, X, Pencil, Check } from 'lucide-react';
+import { ShoppingCart, Settings, Plus, Trash2, X, Pencil, Check, LayoutGrid, ArrowRight, MousePointer2, Move, Sparkles } from 'lucide-react';
+
+// Tutorial steps
+const STEPS = [
+  { key: 'welcome', title: 'Módulo de Mesas', desc: 'Organiza tu local, gestiona pedidos por mesa y cobra cuando el cliente esté listo.' },
+  { key: 'piso', title: 'Crea tu primer piso', desc: 'Cada piso representa una zona de tu local: planta baja, terraza, segundo piso, etc.' },
+  { key: 'draw', title: 'Dibuja tus mesas', desc: 'Arrastra sobre la cuadrícula para crear mesas. Puedes moverlas y cambiarles el tamaño.' },
+  { key: 'done', title: '¡Todo listo!', desc: 'Tu local está configurado. Ahora puedes gestionar pedidos por mesa.' },
+];
 
 export default function MesasPage() {
   const api = useApi();
@@ -19,6 +27,12 @@ export default function MesasPage() {
   const [selectedPiso, setSelectedPiso] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Tutorial
+  const [tutorialStep, setTutorialStep] = useState(null); // null = no tutorial
+  const [tutorialPisoName, setTutorialPisoName] = useState('');
+  const [tutorialCreating, setTutorialCreating] = useState(false);
+  const [mesasCreatedInTutorial, setMesasCreatedInTutorial] = useState(0);
 
   // Config modal (for pisos)
   const [showConfig, setShowConfig] = useState(false);
@@ -35,6 +49,10 @@ export default function MesasPage() {
       if (!selectedPiso && data.pisos?.length > 0) {
         setSelectedPiso(data.pisos[0].id);
       }
+      // Determine if we should show tutorial
+      if (data.pisos?.length === 0 && data.mesas?.length === 0) {
+        setTutorialStep(0); // welcome
+      }
     } catch (err) {
       console.error('Fetch mesas estado:', err);
     } finally {
@@ -44,12 +62,11 @@ export default function MesasPage() {
 
   useEffect(() => {
     fetchEstado();
-    // Polling only in view mode
-    if (!isEditing) {
+    if (!isEditing && tutorialStep === null) {
       const interval = setInterval(fetchEstado, 10000);
       return () => clearInterval(interval);
     }
-  }, [fetchEstado, isEditing]);
+  }, [fetchEstado, isEditing, tutorialStep]);
 
   const mesasFiltradas = useMemo(() =>
     selectedPiso ? mesas.filter(m => m.piso_id === selectedPiso) : mesas,
@@ -72,12 +89,16 @@ export default function MesasPage() {
   };
 
   const handleCreateMesa = async ({ pos_x, pos_y, ancho, alto }) => {
-    if (!selectedPiso) return;
+    const pisoId = selectedPiso;
+    if (!pisoId) return;
     try {
-      const res = await api.post('/mesas', { piso_id: selectedPiso, pos_x, pos_y, ancho, alto });
+      const res = await api.post('/mesas', { piso_id: pisoId, pos_x, pos_y, ancho, alto });
       const mesa = res?.data || res;
       setMesas(prev => [...prev, mesa]);
-      toast.success(`Mesa ${mesa.numero} creada`);
+      // Tutorial: track mesas created
+      if (tutorialStep === 2) {
+        setMesasCreatedInTutorial(prev => prev + 1);
+      }
     } catch (err) {
       toast.error(err?.response?.data?.error || 'Error creando mesa');
     }
@@ -107,10 +128,34 @@ export default function MesasPage() {
     try {
       await api.del(`/mesas/${id}`);
       setMesas(prev => prev.filter(m => m.id !== id));
-      toast.success('Mesa eliminada');
     } catch (err) {
       toast.error(err?.response?.data?.error || 'Error eliminando mesa');
     }
+  };
+
+  // === Tutorial handlers ===
+
+  const handleTutorialCreatePiso = async () => {
+    if (!tutorialPisoName.trim()) return;
+    setTutorialCreating(true);
+    try {
+      const res = await api.post('/mesas/pisos', { nombre: tutorialPisoName.trim() });
+      const piso = res?.data || res;
+      setPisos([piso]);
+      setSelectedPiso(piso.id);
+      setTutorialStep(2); // go to draw step
+      setIsEditing(true);
+    } catch {
+      toast.error('Error creando piso');
+    } finally {
+      setTutorialCreating(false);
+    }
+  };
+
+  const finishTutorial = () => {
+    setTutorialStep(null);
+    setIsEditing(false);
+    fetchEstado();
   };
 
   // === Piso config ===
@@ -182,30 +227,206 @@ export default function MesasPage() {
     );
   }
 
-  // No floors configured
-  if (pisos.length === 0) {
+  // === TUTORIAL MODE ===
+  if (tutorialStep !== null) {
+    const step = STEPS[tutorialStep];
+
     return (
       <div className="max-w-7xl mx-auto">
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold text-stone-800">Mesas</h1>
-          <button onClick={() => navigate('/pos')} className={cx.btnSecondary + ' flex items-center gap-2'}>
+          <button onClick={() => navigate('/pos')} className={cx.btnGhost + ' flex items-center gap-2 text-sm'}>
             <ShoppingCart size={16} /> Caja Rápida
           </button>
         </div>
-        <div className={cx.card + ' p-16 text-center'}>
-          <div className="w-16 h-16 bg-stone-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Settings size={28} className="text-stone-400" />
-          </div>
-          <p className="text-stone-600 font-medium mb-1">Configura tus mesas</p>
-          <p className="text-stone-400 text-sm mb-6">Crea pisos y dibuja la distribución de tu local.</p>
-          <button onClick={openConfig} className={cx.btnPrimary}>
-            Configurar pisos
-          </button>
+
+        {/* Step indicator */}
+        <div className="flex items-center justify-center gap-2 mb-6">
+          {STEPS.map((s, i) => (
+            <div
+              key={s.key}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                i === tutorialStep ? 'w-8 bg-[#16A34A]' : i < tutorialStep ? 'w-4 bg-emerald-300' : 'w-4 bg-stone-200'
+              }`}
+            />
+          ))}
         </div>
-        {showConfig && renderConfigModal()}
+
+        <AnimatePresence mode="wait">
+          {/* Step 0: Welcome */}
+          {tutorialStep === 0 && (
+            <motion.div
+              key="welcome"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.25 }}
+              className={cx.card + ' max-w-lg mx-auto p-10 text-center'}
+            >
+              <div className="w-20 h-20 bg-emerald-50 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <LayoutGrid size={36} className="text-emerald-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-stone-900 mb-2">{step.title}</h2>
+              <p className="text-stone-500 text-sm mb-8 max-w-sm mx-auto">{step.desc}</p>
+
+              <div className="flex flex-col gap-3 items-center">
+                <button
+                  onClick={() => setTutorialStep(1)}
+                  className={cx.btnPrimary + ' px-8 py-3 text-base flex items-center gap-2'}
+                >
+                  Comenzar <ArrowRight size={18} />
+                </button>
+                <button
+                  onClick={finishTutorial}
+                  className="text-stone-400 text-xs hover:text-stone-600 transition-colors"
+                >
+                  Configurar después
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 1: Create floor */}
+          {tutorialStep === 1 && (
+            <motion.div
+              key="piso"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.25 }}
+              className={cx.card + ' max-w-lg mx-auto p-10 text-center'}
+            >
+              <div className="w-14 h-14 bg-sky-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                <span className="text-2xl font-bold text-sky-600">1</span>
+              </div>
+              <h2 className="text-xl font-bold text-stone-900 mb-2">{step.title}</h2>
+              <p className="text-stone-500 text-sm mb-6">{step.desc}</p>
+
+              <div className="max-w-xs mx-auto space-y-4">
+                <div>
+                  <label className={cx.label}>Nombre del piso</label>
+                  <input
+                    type="text"
+                    value={tutorialPisoName}
+                    onChange={e => setTutorialPisoName(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleTutorialCreatePiso()}
+                    className={cx.input + ' text-center'}
+                    placeholder="ej: Planta baja"
+                    autoFocus
+                  />
+                </div>
+                <button
+                  onClick={handleTutorialCreatePiso}
+                  disabled={!tutorialPisoName.trim() || tutorialCreating}
+                  className={cx.btnPrimary + ' w-full py-3 flex items-center justify-center gap-2'}
+                >
+                  {tutorialCreating ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>Continuar <ArrowRight size={16} /></>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 2: Draw mesas */}
+          {tutorialStep === 2 && (
+            <motion.div
+              key="draw"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.25 }}
+            >
+              {/* Floating tutorial card */}
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.25 }}
+                className={cx.card + ' p-4 mb-4 flex items-center gap-4 border-emerald-200 bg-emerald-50/50'}
+              >
+                <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <span className="text-lg font-bold text-emerald-600">2</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-stone-800 text-sm">{step.title}</p>
+                  <p className="text-stone-500 text-xs mt-0.5">
+                    {mesasCreatedInTutorial === 0
+                      ? 'Haz clic en un punto y arrastra para crear tu primera mesa.'
+                      : `${mesasCreatedInTutorial} mesa${mesasCreatedInTutorial > 1 ? 's' : ''} creada${mesasCreatedInTutorial > 1 ? 's' : ''}. Puedes crear más o continuar.`
+                    }
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {mesasCreatedInTutorial === 0 && (
+                    <div className="flex items-center gap-1.5 text-emerald-600 animate-pulse">
+                      <MousePointer2 size={16} />
+                      <Move size={14} />
+                    </div>
+                  )}
+                  {mesasCreatedInTutorial > 0 && (
+                    <button
+                      onClick={() => setTutorialStep(3)}
+                      className={cx.btnPrimary + ' flex items-center gap-1.5'}
+                    >
+                      Continuar <ArrowRight size={14} />
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+
+              {/* Canvas */}
+              <MesaCanvas
+                mesas={mesasFiltradas}
+                isEditing={true}
+                onCreateMesa={handleCreateMesa}
+                onMoveMesa={handleMoveMesa}
+                onResizeMesa={handleResizeMesa}
+                onDeleteMesa={handleDeleteMesa}
+                onMesaClick={() => {}}
+              />
+            </motion.div>
+          )}
+
+          {/* Step 3: Done */}
+          {tutorialStep === 3 && (
+            <motion.div
+              key="done"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className={cx.card + ' max-w-lg mx-auto p-10 text-center'}
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}
+                className="w-20 h-20 bg-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-6"
+              >
+                <Sparkles size={36} className="text-emerald-600" />
+              </motion.div>
+              <h2 className="text-2xl font-bold text-stone-900 mb-2">{step.title}</h2>
+              <p className="text-stone-500 text-sm mb-3">{step.desc}</p>
+              <p className="text-stone-400 text-xs mb-8">
+                Tip: Puedes editar la distribución en cualquier momento con el botón "Editar".
+              </p>
+              <button
+                onClick={finishTutorial}
+                className={cx.btnPrimary + ' px-8 py-3 text-base flex items-center gap-2 mx-auto'}
+              >
+                <Check size={18} /> Empezar a usar
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     );
   }
+
+  // === NORMAL MODE (pisos exist) ===
 
   function renderConfigModal() {
     return (
