@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { formatCurrency } from '../utils/format';
-import { Clock, ZoomIn, ZoomOut, Maximize2, Trash2, Equal, Users, Copy } from 'lucide-react';
+import { Clock, ZoomIn, ZoomOut, Maximize2, Trash2, Equal, Users, Copy, Link2 } from 'lucide-react';
 import { cx } from '../styles/tokens';
 
 const CELL = 24;
@@ -31,18 +31,15 @@ export default function MesaCanvas({
   onUpdateCapacidad,
   onUniformar,
   onMesaClick,
-  // Multi-select mode (for unir)
+  onSelectMesa,
   multiSelect = false,
   selectedMesaIds = [],
   onToggleSelect,
-  // Highlight filter (for disponibles)
   highlightIds = null,
 }) {
   const containerRef = useRef(null);
   const [zoom, setZoom] = useState(1);
   const [selectedId, setSelectedId] = useState(null);
-  const [editingCapacidad, setEditingCapacidad] = useState(null);
-  const [capacidadInput, setCapacidadInput] = useState('');
 
   // Interaction refs
   const drawingRef = useRef(null);
@@ -79,14 +76,17 @@ export default function MesaCanvas({
     });
   }, [mesas]);
 
-  // Pointer handlers
+  // Notify parent of selection changes
+  useEffect(() => {
+    onSelectMesa?.(selectedId);
+  }, [selectedId]); // eslint-disable-line
+
   const handlePointerDown = (e) => {
     if (e.button !== 0) return;
     e.preventDefault();
     e.target.setPointerCapture(e.pointerId);
     const { col, row } = screenToGrid(e.clientX, e.clientY);
 
-    // Multi-select mode (unir)
     if (multiSelect) {
       const mesa = mesaAtGrid(col, row);
       if (mesa) onToggleSelect?.(mesa.id);
@@ -106,34 +106,22 @@ export default function MesaCanvas({
         }
         draggingRef.current = { mesa, startCol: col, startRow: row, origX: mx, origY: my };
         setSelectedId(mesa.id);
-        setEditingCapacidad(null);
         forceRender(n => n + 1);
         return;
       }
       drawingRef.current = { startCol: col, startRow: row, endCol: col + 1, endRow: row + 1 };
       setSelectedId(null);
-      setEditingCapacidad(null);
       forceRender(n => n + 1);
       return;
     }
 
-    // View mode
     const mesa = mesaAtGrid(col, row);
-    if (mesa) {
-      // If mesa is linked (secondary in a group), redirect to primary
-      if (mesa.sesion_principal_id) {
-        const primary = mesas.find(m => m.sesion_id && !m.sesion_principal_id &&
-          mesas.some(linked => linked.sesion_principal_id === m.sesion_id && linked.id === mesa.id));
-        // Just click the mesa, the detail page handles the redirect
-      }
-      onMesaClick?.(mesa);
-    }
+    if (mesa) onMesaClick?.(mesa);
   };
 
   const handlePointerMove = (e) => {
     if (!isEditing || multiSelect) return;
     const { col, row } = screenToGrid(e.clientX, e.clientY);
-
     if (drawingRef.current) {
       drawingRef.current = {
         ...drawingRef.current,
@@ -145,15 +133,17 @@ export default function MesaCanvas({
     if (draggingRef.current) {
       const d = draggingRef.current;
       const dx = col - d.startCol, dy = row - d.startRow;
-      const newX = Math.max(0, Math.min(COLS - (d.mesa.ancho ?? 3), d.origX + dx));
-      const newY = Math.max(0, Math.min(ROWS - (d.mesa.alto ?? 2), d.origY + dy));
-      setTempPos(prev => ({ ...prev, [d.mesa.id]: { pos_x: newX, pos_y: newY } }));
+      setTempPos(prev => ({ ...prev, [d.mesa.id]: {
+        pos_x: Math.max(0, Math.min(COLS - (d.mesa.ancho ?? 3), d.origX + dx)),
+        pos_y: Math.max(0, Math.min(ROWS - (d.mesa.alto ?? 2), d.origY + dy)),
+      }}));
     }
     if (resizingRef.current) {
       const r = resizingRef.current;
-      const newW = Math.max(MIN_SIZE, Math.min(COLS - (r.mesa.pos_x ?? 0), r.origW + col - r.startCol + 1 - 1));
-      const newH = Math.max(MIN_SIZE, Math.min(ROWS - (r.mesa.pos_y ?? 0), r.origH + row - r.startRow + 1 - 1));
-      setTempPos(prev => ({ ...prev, [r.mesa.id]: { ancho: newW, alto: newH } }));
+      setTempPos(prev => ({ ...prev, [r.mesa.id]: {
+        ancho: Math.max(MIN_SIZE, Math.min(COLS - (r.mesa.pos_x ?? 0), r.origW + col - r.startCol)),
+        alto: Math.max(MIN_SIZE, Math.min(ROWS - (r.mesa.pos_y ?? 0), r.origH + row - r.startRow)),
+      }}));
     }
   };
 
@@ -171,16 +161,20 @@ export default function MesaCanvas({
       const d = draggingRef.current;
       const pos = tempPos[d.mesa.id];
       draggingRef.current = null;
-      setTempPos({});
-      if (pos && (pos.pos_x !== d.origX || pos.pos_y !== d.origY)) onMoveMesa?.(d.mesa.id, pos);
+      // Keep tempPos — parent will update via optimistic update, then tempPos becomes stale
+      if (pos && (pos.pos_x !== d.origX || pos.pos_y !== d.origY)) {
+        onMoveMesa?.(d.mesa.id, pos);
+      }
+      // Clear tempPos after a short delay to let optimistic update propagate
+      setTimeout(() => setTempPos(prev => { const n = { ...prev }; delete n[d.mesa.id]; return n; }), 50);
       forceRender(n => n + 1);
     }
     if (resizingRef.current) {
       const r = resizingRef.current;
       const pos = tempPos[r.mesa.id];
       resizingRef.current = null;
-      setTempPos({});
       if (pos) onResizeMesa?.(r.mesa.id, pos);
+      setTimeout(() => setTempPos(prev => { const n = { ...prev }; delete n[r.mesa.id]; return n; }), 50);
       forceRender(n => n + 1);
     }
   };
@@ -203,7 +197,7 @@ export default function MesaCanvas({
   // Keyboard delete
   useEffect(() => {
     const handleKey = (e) => {
-      if (!isEditing || !selectedId || editingCapacidad) return;
+      if (!isEditing || !selectedId) return;
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
         onDeleteMesa?.(selectedId);
@@ -212,19 +206,7 @@ export default function MesaCanvas({
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [isEditing, selectedId, onDeleteMesa, editingCapacidad]);
-
-  // Capacidad edit
-  const startEditCapacidad = (mesa) => {
-    setEditingCapacidad(mesa.id);
-    setCapacidadInput(String(mesa.capacidad ?? 4));
-  };
-  const saveCapacidad = () => {
-    if (editingCapacidad && capacidadInput) {
-      onUpdateCapacidad?.(editingCapacidad, parseInt(capacidadInput) || 4);
-    }
-    setEditingCapacidad(null);
-  };
+  }, [isEditing, selectedId, onDeleteMesa]);
 
   const drawing = drawingRef.current;
   const drawRect = drawing ? (() => {
@@ -233,10 +215,29 @@ export default function MesaCanvas({
     return { x: x * CELL, y: y * CELL, w: w * CELL, h: h * CELL, valid: w >= MIN_SIZE && h >= MIN_SIZE };
   })() : null;
 
+  // Find linked mesa numbers for display
+  const getLinkedLabel = (mesa) => {
+    if (!mesa.sesion_principal_id && !mesa.sesion_id) return null;
+    // This mesa is primary — find secondaries
+    if (mesa.sesion_id && !mesa.sesion_principal_id) {
+      const linked = mesas.filter(m => m.sesion_principal_id === mesa.sesion_id);
+      if (linked.length > 0) return linked.map(m => m.numero).join('+');
+    }
+    // This mesa is secondary — find primary
+    if (mesa.sesion_principal_id) {
+      const primary = mesas.find(m => m.sesion_id === mesa.sesion_principal_id);
+      if (primary) return String(primary.numero);
+    }
+    return null;
+  };
+
+  // Selected mesa for floating buttons position
+  const selectedMesa = isEditing ? mesas.find(m => m.id === selectedId) : null;
+
   return (
     <div className="relative">
       {/* Toolbar */}
-      <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-lg border border-stone-200 p-1 shadow-sm">
+      <div className="absolute top-3 right-3 z-30 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-lg border border-stone-200 p-1 shadow-sm">
         {isEditing && mesas.length > 1 && (
           <>
             <button onClick={() => onUniformar?.()} className={cx.btnIcon + ' !p-1.5'} title="Igualar tamaño"><Equal size={16} /></button>
@@ -253,15 +254,16 @@ export default function MesaCanvas({
       <div
         ref={containerRef}
         className="overflow-auto rounded-xl border border-stone-200 bg-stone-50/80"
-        style={{ height: 'calc(100vh - 220px)', minHeight: '400px' }}
+        style={{ height: 'calc(100vh - 240px)', minHeight: '400px' }}
         onWheel={handleWheel}
       >
         <div style={{ width: CANVAS_W * zoom, height: CANVAS_H * zoom, position: 'relative' }}>
+          {/* Scaled canvas */}
           <div style={{
             transform: `scale(${zoom})`, transformOrigin: '0 0',
             width: CANVAS_W, height: CANVAS_H, position: 'absolute', top: 0, left: 0,
             backgroundImage: isEditing
-              ? `linear-gradient(to right, rgba(214,211,209,0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(214,211,209,0.15) 1px, transparent 1px)`
+              ? `linear-gradient(to right, rgba(214,211,209,0.12) 1px, transparent 1px), linear-gradient(to bottom, rgba(214,211,209,0.12) 1px, transparent 1px)`
               : 'none',
             backgroundSize: `${CELL}px ${CELL}px`,
           }}>
@@ -271,11 +273,13 @@ export default function MesaCanvas({
               const py = (tp?.pos_y ?? mesa.pos_y ?? 0) * CELL;
               const pw = (tp?.ancho ?? mesa.ancho ?? 3) * CELL;
               const ph = (tp?.alto ?? mesa.alto ?? 2) * CELL;
-              const ocupada = !!mesa.sesion_id;
+              const hasItems = parseInt(mesa.items_count) > 0;
+              const ocupada = !!mesa.sesion_id && hasItems;
               const isSelected = selectedId === mesa.id;
               const isMultiSelected = multiSelect && selectedMesaIds.includes(mesa.id);
               const isDimmed = highlightIds && !highlightIds.includes(mesa.id);
               const isLinked = !!mesa.sesion_principal_id;
+              const linkedLabel = getLinkedLabel(mesa);
               const isDragging = draggingRef.current?.mesa?.id === mesa.id;
 
               return (
@@ -283,68 +287,43 @@ export default function MesaCanvas({
                   key={mesa.id}
                   layout={!isDragging && !resizingRef.current}
                   transition={{ type: 'spring', stiffness: 500, damping: 35, duration: 0.15 }}
-                  style={{ position: 'absolute', left: px, top: py, width: pw, height: ph, opacity: isDimmed ? 0.3 : 1 }}
-                  className={`rounded-xl flex flex-col items-center justify-center text-center select-none transition-all duration-150 ${
+                  style={{ position: 'absolute', left: px, top: py, width: pw, height: ph, opacity: isDimmed ? 0.25 : 1 }}
+                  className={`rounded-xl flex flex-col items-center justify-center text-center select-none transition-all duration-150 overflow-visible ${
                     multiSelect
                       ? isMultiSelected
                         ? 'bg-violet-50 border-2 border-violet-500 shadow-md'
-                        : ocupada
-                          ? 'bg-stone-100 border-2 border-stone-200 opacity-50'
-                          : 'bg-white border-2 border-stone-200 hover:border-violet-300'
+                        : (mesa.sesion_id ? 'bg-stone-100 border-2 border-stone-200 opacity-40' : 'bg-white border-2 border-stone-200 hover:border-violet-300')
                       : isEditing
                         ? isSelected
                           ? 'bg-sky-50 border-2 border-sky-500 shadow-md'
                           : 'bg-white border-2 border-stone-200 hover:border-stone-300'
                         : ocupada
-                          ? isLinked
-                            ? 'bg-amber-50 border-2 border-amber-400 shadow-sm'
-                            : 'bg-emerald-50 border-2 border-emerald-400 shadow-sm'
+                          ? 'bg-emerald-50 border-2 border-emerald-400'
                           : 'bg-white border-2 border-stone-200 hover:border-stone-300 hover:shadow-sm'
                   } ${isDragging ? 'opacity-80 shadow-lg' : ''}`}
                 >
                   {/* Number */}
                   <span className={`font-bold leading-none ${pw < CELL * 3 ? 'text-sm' : 'text-xl'} ${
-                    multiSelect
-                      ? isMultiSelected ? 'text-violet-700' : 'text-stone-400'
-                      : isEditing
-                        ? isSelected ? 'text-sky-700' : 'text-stone-500'
-                        : ocupada ? (isLinked ? 'text-amber-700' : 'text-emerald-700') : 'text-stone-400'
+                    multiSelect ? (isMultiSelected ? 'text-violet-700' : 'text-stone-400')
+                    : isEditing ? (isSelected ? 'text-sky-700' : 'text-stone-500')
+                    : ocupada ? 'text-emerald-700' : 'text-stone-400'
                   }`}>
                     {mesa.numero}
                   </span>
 
-                  {/* Capacity badge */}
+                  {/* Capacity */}
                   {ph >= CELL * 2 && (
-                    <div className={`flex items-center gap-0.5 mt-0.5 ${
-                      isEditing && isSelected ? 'cursor-pointer' : ''
-                    }`}
-                      onClick={(e) => { if (isEditing && isSelected) { e.stopPropagation(); startEditCapacidad(mesa); } }}
-                    >
-                      <Users size={9} className="text-stone-400" />
-                      {editingCapacidad === mesa.id ? (
-                        <input
-                          type="number"
-                          value={capacidadInput}
-                          onChange={e => setCapacidadInput(e.target.value)}
-                          onBlur={saveCapacidad}
-                          onKeyDown={e => e.key === 'Enter' && saveCapacidad()}
-                          className="w-8 text-[10px] text-center bg-white border border-sky-300 rounded px-0.5"
-                          min="1"
-                          max="99"
-                          autoFocus
-                          onClick={e => e.stopPropagation()}
-                        />
-                      ) : (
-                        <span className="text-[10px] text-stone-400">{mesa.capacidad ?? 4}</span>
-                      )}
+                    <div className="flex items-center gap-0.5 mt-0.5">
+                      <Users size={8} className="text-stone-300" />
+                      <span className="text-[9px] text-stone-400">{mesa.capacidad ?? 4}</span>
                     </div>
                   )}
 
-                  {/* View mode: timer & total */}
+                  {/* View: timer & total */}
                   {!isEditing && !multiSelect && ocupada && !isLinked && ph >= CELL * 3 && (
                     <>
                       <div className="flex items-center gap-0.5 mt-0.5">
-                        <Clock size={9} className="text-emerald-500" />
+                        <Clock size={8} className="text-emerald-500" />
                         <span className="text-[9px] font-medium text-emerald-600">{formatTimer(mesa.abierta_at)}</span>
                       </div>
                       {parseFloat(mesa.total_parcial) > 0 && pw >= CELL * 3 && (
@@ -353,43 +332,19 @@ export default function MesaCanvas({
                     </>
                   )}
 
-                  {/* Linked badge */}
-                  {!isEditing && isLinked && (
-                    <span className="text-[8px] text-amber-600 font-medium mt-0.5">unida</span>
-                  )}
-
-                  {/* Items badge */}
-                  {!isEditing && ocupada && !isLinked && parseInt(mesa.items_count) > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                      {mesa.items_count}
-                    </span>
+                  {/* Linked indicator */}
+                  {!isEditing && linkedLabel && (
+                    <div className="flex items-center gap-0.5 mt-0.5">
+                      <Link2 size={8} className="text-amber-500" />
+                      <span className="text-[9px] font-medium text-amber-600">
+                        {isLinked ? `→${linkedLabel}` : `+${linkedLabel}`}
+                      </span>
+                    </div>
                   )}
 
                   {/* Multi-select checkmark */}
                   {multiSelect && isMultiSelected && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-violet-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">✓</span>
-                  )}
-
-                  {/* Edit: action buttons on selected mesa */}
-                  {isEditing && isSelected && (
-                    <>
-                      {/* Duplicate */}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onDuplicar?.(mesa.id); }}
-                        className="absolute -top-2.5 -left-2.5 w-6 h-6 bg-sky-500 hover:bg-sky-600 text-white rounded-full flex items-center justify-center shadow-sm z-20 transition-colors"
-                        title="Duplicar"
-                      >
-                        <Copy size={11} />
-                      </button>
-                      {/* Delete */}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onDeleteMesa?.(mesa.id); setSelectedId(null); }}
-                        className="absolute -top-2.5 -right-2.5 w-6 h-6 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center shadow-sm z-20 transition-colors"
-                        title="Eliminar"
-                      >
-                        <Trash2 size={11} />
-                      </button>
-                    </>
+                    <span className="absolute -top-2 -right-2 bg-violet-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-sm">✓</span>
                   )}
 
                   {/* Resize handle */}
@@ -419,12 +374,42 @@ export default function MesaCanvas({
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
           />
+
+          {/* Floating action buttons ABOVE overlay for selected mesa in edit mode */}
+          {isEditing && selectedMesa && (
+            <div
+              style={{
+                position: 'absolute',
+                left: (selectedMesa.pos_x ?? 0) * CELL * zoom - 8,
+                top: (selectedMesa.pos_y ?? 0) * CELL * zoom - 12,
+                zIndex: 20,
+                pointerEvents: 'auto',
+              }}
+            >
+              <div className="flex gap-1">
+                <button
+                  onClick={() => onDuplicar?.(selectedMesa.id)}
+                  className="w-7 h-7 bg-sky-500 hover:bg-sky-600 text-white rounded-full flex items-center justify-center shadow transition-colors"
+                  title="Duplicar"
+                >
+                  <Copy size={12} />
+                </button>
+                <button
+                  onClick={() => { onDeleteMesa?.(selectedMesa.id); setSelectedId(null); }}
+                  className="w-7 h-7 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center shadow transition-colors"
+                  title="Eliminar"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {isEditing && (
         <p className="text-[10px] text-stone-400 mt-2 text-center">
-          Arrastra para crear · Click para seleccionar · Click capacidad para editar · Ctrl+Scroll para zoom
+          Arrastra para crear · Click para seleccionar · Ctrl+Scroll para zoom
         </p>
       )}
     </div>

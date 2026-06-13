@@ -44,6 +44,10 @@ export default function MesasPage() {
   const [disponiblesPersonas, setDisponiblesPersonas] = useState('');
   const [highlightIds, setHighlightIds] = useState(null);
 
+  // Edit sidebar
+  const [editMesaId, setEditMesaId] = useState(null);
+  const [editForm, setEditForm] = useState({ numero: '', nombre: '', capacidad: '' });
+
   // Config modal (for pisos)
   const [showConfig, setShowConfig] = useState(false);
   const [configPisos, setConfigPisos] = useState([]);
@@ -86,31 +90,14 @@ export default function MesasPage() {
 
   // === Canvas handlers ===
 
-  const handleMesaClick = async (mesa) => {
-    if (mesa.sesion_id) {
-      // If this is a secondary (linked) mesa, redirect to the primary
-      if (mesa.sesion_principal_id) {
-        const primary = mesas.find(m => m.sesion_id === mesa.sesion_principal_id);
-        if (primary) {
-          navigate(`/mesas/${primary.id}`);
-          return;
-        }
-      }
-      navigate(`/mesas/${mesa.id}`);
-      return;
+  const handleMesaClick = (mesa) => {
+    // If linked (secondary), redirect to primary
+    if (mesa.sesion_principal_id) {
+      const primary = mesas.find(m => m.sesion_id === mesa.sesion_principal_id);
+      if (primary) { navigate(`/mesas/${primary.id}`); return; }
     }
-    try {
-      await api.post(`/mesas/${mesa.id}/abrir`, { comensales: 1 });
-      navigate(`/mesas/${mesa.id}`);
-    } catch (err) {
-      // 409 = already has session (race condition) — just navigate
-      if (err?.response?.status === 409) {
-        await fetchEstado();
-        navigate(`/mesas/${mesa.id}`);
-        return;
-      }
-      toast.error(err?.response?.data?.error || 'Error al abrir mesa');
-    }
+    // Navigate to detail — session is created on first comandar, not here
+    navigate(`/mesas/${mesa.id}`);
   };
 
   const handleDuplicarMesa = async (mesaId) => {
@@ -153,20 +140,20 @@ export default function MesasPage() {
   };
 
   const handleMoveMesa = async (id, { pos_x, pos_y }) => {
+    // Optimistic update — no snap-back
+    setMesas(prev => prev.map(m => m.id === id ? { ...m, pos_x, pos_y } : m));
     try {
-      const res = await api.put(`/mesas/${id}`, { pos_x, pos_y });
-      const updated = res?.data || res;
-      setMesas(prev => prev.map(m => m.id === id ? { ...m, ...updated } : m));
+      await api.put(`/mesas/${id}`, { pos_x, pos_y });
     } catch {
       toast.error('Error moviendo mesa');
+      fetchEstado();
     }
   };
 
   const handleResizeMesa = async (id, { ancho, alto }) => {
+    setMesas(prev => prev.map(m => m.id === id ? { ...m, ancho, alto } : m));
     try {
-      const res = await api.put(`/mesas/${id}`, { ancho, alto });
-      const updated = res?.data || res;
-      setMesas(prev => prev.map(m => m.id === id ? { ...m, ...updated } : m));
+      await api.put(`/mesas/${id}`, { ancho, alto });
     } catch {
       toast.error('Error redimensionando mesa');
     }
@@ -206,6 +193,36 @@ export default function MesasPage() {
     fetchEstado();
   };
 
+  // Edit sidebar
+  const handleSelectMesa = (mesaId) => {
+    if (!isEditing || !mesaId) { setEditMesaId(null); return; }
+    const mesa = mesas.find(m => m.id === mesaId);
+    if (mesa) {
+      setEditMesaId(mesaId);
+      setEditForm({ numero: String(mesa.numero), nombre: mesa.nombre || '', capacidad: String(mesa.capacidad ?? 4) });
+    } else {
+      setEditMesaId(null);
+    }
+  };
+
+  const saveEditMesa = async () => {
+    if (!editMesaId) return;
+    try {
+      const updates = {};
+      const mesa = mesas.find(m => m.id === editMesaId);
+      if (editForm.numero && parseInt(editForm.numero) !== mesa?.numero) updates.numero = parseInt(editForm.numero);
+      if (editForm.nombre !== (mesa?.nombre || '')) updates.nombre = editForm.nombre || null;
+      if (editForm.capacidad && parseInt(editForm.capacidad) !== (mesa?.capacidad ?? 4)) updates.capacidad = parseInt(editForm.capacidad);
+      if (Object.keys(updates).length === 0) return;
+      const res = await api.put(`/mesas/${editMesaId}`, updates);
+      const updated = res?.data || res;
+      setMesas(prev => prev.map(m => m.id === editMesaId ? { ...m, ...updated } : m));
+      toast.success('Mesa actualizada');
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Error actualizando mesa');
+    }
+  };
+
   // Update capacidad
   const handleUpdateCapacidad = async (id, capacidad) => {
     try {
@@ -239,16 +256,18 @@ export default function MesasPage() {
     }
   };
 
-  // Filtro disponibles
-  const handleBuscarDisponibles = () => {
-    const personas = parseInt(disponiblesPersonas);
-    if (!personas || personas < 1) {
-      setHighlightIds(null);
-      return;
-    }
-    const libres = mesasFiltradas.filter(m => !m.sesion_id && (m.capacidad ?? 4) >= personas);
+  // Filtro disponibles — live, sin botón
+  const updateDisponibles = useCallback((val) => {
+    setDisponiblesPersonas(val);
+    const personas = parseInt(val);
+    if (!personas || personas < 1) { setHighlightIds(null); return; }
+    // capacidad >= personas Y mesa libre (no tiene items comandados)
+    const libres = mesasFiltradas.filter(m => {
+      const hasItems = parseInt(m.items_count) > 0;
+      return !hasItems && !m.sesion_principal_id && (m.capacidad ?? 4) >= personas;
+    });
     setHighlightIds(libres.map(m => m.id));
-  };
+  }, [mesasFiltradas]);
 
   const clearDisponibles = () => {
     setShowDisponibles(false);
@@ -702,17 +721,13 @@ export default function MesasPage() {
           <input
             type="number"
             value={disponiblesPersonas}
-            onChange={e => setDisponiblesPersonas(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleBuscarDisponibles()}
+            onChange={e => updateDisponibles(e.target.value)}
             className="w-16 px-2 py-1.5 border border-stone-300 rounded-lg text-sm text-center"
             placeholder="4"
             min="1"
             autoFocus
           />
           <span className="text-sm text-stone-700">personas</span>
-          <button onClick={handleBuscarDisponibles} className={cx.btnPrimary + ' text-xs px-3 py-1.5'}>
-            Buscar
-          </button>
           {highlightIds && (
             <span className="text-xs text-sky-600 font-medium">
               {highlightIds.length} mesa{highlightIds.length !== 1 ? 's' : ''} disponible{highlightIds.length !== 1 ? 's' : ''}
@@ -771,11 +786,54 @@ export default function MesasPage() {
         onDuplicar={handleDuplicarMesa}
         onUniformar={handleUniformar}
         onMesaClick={handleMesaClick}
+        onSelectMesa={handleSelectMesa}
         multiSelect={unirMode}
         selectedMesaIds={unirSelected}
         onToggleSelect={handleToggleUnirSelect}
         highlightIds={highlightIds}
       />
+
+      {/* Edit sidebar */}
+      <AnimatePresence>
+        {isEditing && editMesaId && (() => {
+          const mesa = mesas.find(m => m.id === editMesaId);
+          if (!mesa) return null;
+          return (
+            <motion.div
+              key="edit-sidebar"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.2 }}
+              className="fixed right-4 top-1/3 z-30 w-64"
+            >
+              <div className={cx.card + ' p-4 shadow-lg border-sky-200'}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold text-stone-800">Mesa {mesa.numero}</h3>
+                  <button onClick={() => setEditMesaId(null)} className={cx.btnIcon + ' !p-1'}><X size={14} /></button>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className={cx.label}>Número</label>
+                    <input type="number" value={editForm.numero} onChange={e => setEditForm(f => ({ ...f, numero: e.target.value }))}
+                      onBlur={saveEditMesa} className={cx.input + ' text-sm'} min="1" />
+                  </div>
+                  <div>
+                    <label className={cx.label}>Nombre (opcional)</label>
+                    <input type="text" value={editForm.nombre} onChange={e => setEditForm(f => ({ ...f, nombre: e.target.value }))}
+                      onBlur={saveEditMesa} className={cx.input + ' text-sm'} placeholder="ej: Terraza 1" />
+                  </div>
+                  <div>
+                    <label className={cx.label}>Capacidad (personas)</label>
+                    <input type="number" value={editForm.capacidad} onChange={e => setEditForm(f => ({ ...f, capacidad: e.target.value }))}
+                      onBlur={saveEditMesa} className={cx.input + ' text-sm'} min="1" max="99" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
 
       {/* Config modal */}
       {showConfig && renderConfigModal()}
