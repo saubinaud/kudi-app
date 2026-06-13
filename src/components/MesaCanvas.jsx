@@ -74,8 +74,7 @@ function getChairs(mesa, cell) {
   return chairs;
 }
 
-// SVG chair path (U-shape seat facing up = toward table)
-const CHAIR_PATH = 'M-5,3 C-5,-2 -3,-4 0,-4 C3,-4 5,-2 5,3';
+// Chair = simple line stroke perpendicular to the mesa edge
 
 export default function MesaCanvas({
   mesas, isEditing,
@@ -333,7 +332,7 @@ export default function MesaCanvas({
           className={`font-bold leading-none tracking-tight ${
             multiSelect ? (selectedMesaIds.includes(mesa.id) ? 'text-violet-700' : 'text-stone-400')
             : isEditing ? (selectedId === mesa.id ? 'text-[#0A2F24]' : 'text-stone-400')
-            : ocupada ? 'text-[#0A2F24]' : 'text-stone-600'
+            : ocupada ? 'text-[#0A2F24]' : 'text-stone-700'
           }`}>{mesa.numero}</span>
 
         {ph >= CELL * 2 && (
@@ -443,10 +442,15 @@ export default function MesaCanvas({
         const tp = tempPos[mesa.id];
         const m = tp ? { ...mesa, pos_x: tp.pos_x ?? mesa.pos_x, pos_y: tp.pos_y ?? mesa.pos_y, ancho: tp.ancho ?? mesa.ancho, alto: tp.alto ?? mesa.alto } : mesa;
         const chairs = getChairs(m, CELL);
+        const color = ocupada ? '#16A34A' : '#a8a29e';
+        // Each chair = a short line perpendicular to the edge
         return chairs.map((ch, i) => (
-          <g key={`chair-${mesa.id}-${i}`} transform={`translate(${ch.x},${ch.y}) rotate(${ch.rot})`}>
-            <path d={CHAIR_PATH} fill={ocupada ? '#16A34A' : '#d6d3d1'} stroke={ocupada ? '#15803D' : '#a8a29e'} strokeWidth="1.5" strokeLinecap="round" />
-          </g>
+          <line key={`ch-${mesa.id}-${i}`}
+            x1={ch.x} y1={ch.y}
+            x2={ch.x + Math.cos((ch.rot - 90) * Math.PI / 180) * 7}
+            y2={ch.y + Math.sin((ch.rot - 90) * Math.PI / 180) * 7}
+            stroke={color} strokeWidth="2.5" strokeLinecap="round"
+          />
         ));
       })}
     </svg>
