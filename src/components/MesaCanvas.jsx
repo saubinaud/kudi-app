@@ -48,6 +48,25 @@ export default function MesaCanvas({
   const [, forceRender] = useState(0);
   const [tempPos, setTempPos] = useState({});
 
+  // Auto-fit zoom to show all mesas on mount
+  const didAutoFit = useRef(false);
+  useEffect(() => {
+    if (didAutoFit.current || !containerRef.current || mesas.length === 0) return;
+    didAutoFit.current = true;
+    // Calculate bounding box of all mesas
+    let maxX = 0, maxY = 0;
+    for (const m of mesas) {
+      maxX = Math.max(maxX, (m.pos_x ?? 0) + (m.ancho ?? 3));
+      maxY = Math.max(maxY, (m.pos_y ?? 0) + (m.alto ?? 2));
+    }
+    if (maxX === 0 || maxY === 0) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const contentW = (maxX + 2) * CELL; // +2 padding
+    const contentH = (maxY + 2) * CELL;
+    const fitZoom = Math.min(rect.width / contentW, rect.height / contentH, 1.5);
+    setZoom(Math.round(Math.max(0.4, fitZoom) * 10) / 10);
+  }, [mesas.length]); // eslint-disable-line
+
   // Timer
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -332,18 +351,19 @@ export default function MesaCanvas({
               const isLinked = !!mesa.sesion_principal_id;
               const linkedLabel = getLinkedLabel(mesa);
               const isDragging = draggingRef.current?.mesa?.id === mesa.id;
-              const isCircle = mesa.forma === 'circle';
+              const redondeo = mesa.redondeo ?? 15;
+              const borderRadius = redondeo >= 50 ? '50%' : `${redondeo}%`;
               // Scale number so it stays readable at any zoom
-              const numScale = Math.max(1, 1.2 / zoom);
-              const numSize = Math.min(pw * 0.5, ph * 0.4, 28 * numScale);
-              const capScale = Math.max(1, 1 / zoom);
+              const numScale = Math.max(1, 1.3 / zoom);
+              const numSize = Math.min(pw * 0.5, ph * 0.45, 30 * numScale);
+              const capScale = Math.max(1.2, 1.5 / zoom);
 
               return (
                 <motion.div
                   key={mesa.id}
                   layout={!isDragging && !resizingRef.current}
                   transition={{ type: 'spring', stiffness: 500, damping: 35, duration: 0.15 }}
-                  style={{ position: 'absolute', left: px, top: py, width: pw, height: ph, opacity: isDimmed ? 0.25 : 1, borderRadius: isCircle ? '50%' : '12px' }}
+                  style={{ position: 'absolute', left: px, top: py, width: pw, height: ph, opacity: isDimmed ? 0.25 : 1, borderRadius }}
                   className={`flex flex-col items-center justify-center text-center select-none transition-all duration-150 overflow-visible ${
                     multiSelect
                       ? isMultiSelected
