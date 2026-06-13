@@ -87,10 +87,13 @@ export default function MesaCanvas({
     const y = isEditing
       ? (clientY - r.top + c.scrollTop) / editZoom
       : (clientY - r.top - viewTx.oy) / viewTx.zoom;
-    return {
-      col: Math.max(0, Math.min(COLS - 1, Math.floor(x / CELL))),
-      row: Math.max(0, Math.min(ROWS - 1, Math.floor(y / CELL))),
-    };
+    const col = Math.floor(x / CELL);
+    const row = Math.floor(y / CELL);
+    // In edit mode: clamp to canvas bounds (for drawing)
+    // In view mode: don't clamp (let mesaAtGrid return null for empty areas)
+    return isEditing
+      ? { col: Math.max(0, Math.min(COLS - 1, col)), row: Math.max(0, Math.min(ROWS - 1, row)) }
+      : { col, row };
   }, [editZoom, isEditing, viewTx]);
 
   const mesaAtGrid = useCallback((col, row) => mesas.find(m => {
