@@ -332,14 +332,19 @@ export default function MesaCanvas({
               const isLinked = !!mesa.sesion_principal_id;
               const linkedLabel = getLinkedLabel(mesa);
               const isDragging = draggingRef.current?.mesa?.id === mesa.id;
+              const isCircle = mesa.forma === 'circle';
+              // Scale number so it stays readable at any zoom
+              const numScale = Math.max(1, 1.2 / zoom);
+              const numSize = Math.min(pw * 0.5, ph * 0.4, 28 * numScale);
+              const capScale = Math.max(1, 1 / zoom);
 
               return (
                 <motion.div
                   key={mesa.id}
                   layout={!isDragging && !resizingRef.current}
                   transition={{ type: 'spring', stiffness: 500, damping: 35, duration: 0.15 }}
-                  style={{ position: 'absolute', left: px, top: py, width: pw, height: ph, opacity: isDimmed ? 0.25 : 1 }}
-                  className={`rounded-xl flex flex-col items-center justify-center text-center select-none transition-all duration-150 overflow-visible ${
+                  style={{ position: 'absolute', left: px, top: py, width: pw, height: ph, opacity: isDimmed ? 0.25 : 1, borderRadius: isCircle ? '50%' : '12px' }}
+                  className={`flex flex-col items-center justify-center text-center select-none transition-all duration-150 overflow-visible ${
                     multiSelect
                       ? isMultiSelected
                         ? 'bg-violet-50 border-2 border-violet-500 shadow-md'
@@ -353,18 +358,21 @@ export default function MesaCanvas({
                           : 'bg-white border-2 border-stone-200 hover:border-stone-300 hover:shadow-sm'
                   } ${isDragging ? 'opacity-80 shadow-lg' : ''}`}
                 >
-                  {/* Number */}
-                  <span className={`font-bold leading-none ${pw < CELL * 3 ? 'text-sm' : 'text-xl'} ${
-                    multiSelect ? (isMultiSelected ? 'text-violet-700' : 'text-stone-400')
-                    : isEditing ? (isSelected ? 'text-sky-700' : 'text-stone-500')
-                    : ocupada ? 'text-emerald-700' : 'text-stone-400'
-                  }`}>
+                  {/* Number — scales with zoom */}
+                  <span
+                    style={{ fontSize: `${numSize}px` }}
+                    className={`font-bold leading-none ${
+                      multiSelect ? (isMultiSelected ? 'text-violet-700' : 'text-stone-400')
+                      : isEditing ? (isSelected ? 'text-sky-700' : 'text-stone-500')
+                      : ocupada ? 'text-emerald-700' : 'text-stone-400'
+                    }`}
+                  >
                     {mesa.numero}
                   </span>
 
-                  {/* Capacity */}
+                  {/* Capacity — also scales */}
                   {ph >= CELL * 2 && (
-                    <div className="flex items-center gap-0.5 mt-0.5">
+                    <div className="flex items-center gap-0.5 mt-0.5" style={{ transform: `scale(${capScale})`, transformOrigin: 'center' }}>
                       <Users size={8} className="text-stone-300" />
                       <span className="text-[9px] text-stone-400">{mesa.capacidad ?? 4}</span>
                     </div>

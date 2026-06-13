@@ -48,7 +48,7 @@ export default function MesasPage() {
 
   // Edit sidebar
   const [editMesaId, setEditMesaId] = useState(null);
-  const [editForm, setEditForm] = useState({ numero: '', nombre: '', capacidad: '' });
+  const [editForm, setEditForm] = useState({ numero: '', nombre: '', capacidad: '', forma: 'rect' });
 
   // Config modal (for pisos)
   const [showConfig, setShowConfig] = useState(false);
@@ -205,7 +205,7 @@ export default function MesasPage() {
     const mesa = mesas.find(m => m.id === mesaId);
     if (mesa) {
       setEditMesaId(mesaId);
-      setEditForm({ numero: String(mesa.numero), nombre: mesa.nombre || '', capacidad: String(mesa.capacidad ?? 4) });
+      setEditForm({ numero: String(mesa.numero), nombre: mesa.nombre || '', capacidad: String(mesa.capacidad ?? 4), forma: mesa.forma || 'rect' });
     } else {
       setEditMesaId(null);
     }
@@ -224,6 +224,15 @@ export default function MesasPage() {
       if (num !== mesa.numero) updates.numero = num;
       if (editForm.nombre !== (mesa.nombre || '')) updates.nombre = editForm.nombre || null;
       if (cap !== (mesa.capacidad ?? 4)) updates.capacidad = cap;
+      if (editForm.forma !== (mesa.forma || 'rect')) {
+        updates.forma = editForm.forma;
+        // Circle = force square (ancho = alto)
+        if (editForm.forma === 'circle') {
+          const size = Math.min(mesa.ancho ?? 3, mesa.alto ?? 2);
+          updates.ancho = size;
+          updates.alto = size;
+        }
+      }
       if (Object.keys(updates).length === 0) return;
       const res = await api.put(`/mesas/${editMesaId}`, updates);
       const updated = res?.data || res;
@@ -835,6 +844,25 @@ export default function MesasPage() {
                     <label className={cx.label}>Capacidad (personas)</label>
                     <input type="number" value={editForm.capacidad} onChange={e => setEditForm(f => ({ ...f, capacidad: e.target.value }))}
                       className={cx.input + ' text-sm'} min="1" max="99" />
+                  </div>
+                  <div>
+                    <label className={cx.label}>Forma</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setEditForm(f => ({ ...f, forma: 'rect' }))}
+                        className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1.5 transition-colors ${editForm.forma === 'rect' ? 'border-sky-500 bg-sky-50' : 'border-stone-200'}`}
+                      >
+                        <div className="w-10 h-7 rounded-lg border-2 border-current" style={{ color: editForm.forma === 'rect' ? '#0ea5e9' : '#a8a29e' }} />
+                        <span className={`text-[10px] font-medium ${editForm.forma === 'rect' ? 'text-sky-700' : 'text-stone-500'}`}>Rectangular</span>
+                      </button>
+                      <button
+                        onClick={() => setEditForm(f => ({ ...f, forma: 'circle' }))}
+                        className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1.5 transition-colors ${editForm.forma === 'circle' ? 'border-sky-500 bg-sky-50' : 'border-stone-200'}`}
+                      >
+                        <div className="w-8 h-8 rounded-full border-2 border-current" style={{ color: editForm.forma === 'circle' ? '#0ea5e9' : '#a8a29e' }} />
+                        <span className={`text-[10px] font-medium ${editForm.forma === 'circle' ? 'text-sky-700' : 'text-stone-500'}`}>Circular</span>
+                      </button>
+                    </div>
                   </div>
                   <button onClick={saveEditMesa} className={cx.btnPrimary + ' w-full mt-4 min-h-[44px]'}>
                     Guardar mesa
