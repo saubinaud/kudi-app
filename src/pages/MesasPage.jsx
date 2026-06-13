@@ -88,6 +88,14 @@ export default function MesasPage() {
 
   const handleMesaClick = async (mesa) => {
     if (mesa.sesion_id) {
+      // If this is a secondary (linked) mesa, redirect to the primary
+      if (mesa.sesion_principal_id) {
+        const primary = mesas.find(m => m.sesion_id === mesa.sesion_principal_id);
+        if (primary) {
+          navigate(`/mesas/${primary.id}`);
+          return;
+        }
+      }
       navigate(`/mesas/${mesa.id}`);
       return;
     }
@@ -95,7 +103,36 @@ export default function MesasPage() {
       await api.post(`/mesas/${mesa.id}/abrir`, { comensales: 1 });
       navigate(`/mesas/${mesa.id}`);
     } catch (err) {
+      // 409 = already has session (race condition) — just navigate
+      if (err?.response?.status === 409) {
+        await fetchEstado();
+        navigate(`/mesas/${mesa.id}`);
+        return;
+      }
       toast.error(err?.response?.data?.error || 'Error al abrir mesa');
+    }
+  };
+
+  const handleDuplicarMesa = async (mesaId) => {
+    const mesa = mesas.find(m => m.id === mesaId);
+    if (!mesa || !selectedPiso) return;
+    // Place duplicate offset to the right
+    const newX = (mesa.pos_x ?? 0) + (mesa.ancho ?? 3) + 1;
+    const newY = mesa.pos_y ?? 0;
+    try {
+      const res = await api.post('/mesas', {
+        piso_id: selectedPiso,
+        pos_x: newX,
+        pos_y: newY,
+        ancho: mesa.ancho ?? 3,
+        alto: mesa.alto ?? 2,
+        capacidad: mesa.capacidad ?? 4,
+      });
+      const newMesa = res?.data || res;
+      setMesas(prev => [...prev, newMesa]);
+      toast.success(`Mesa ${newMesa.numero} creada`);
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Error duplicando mesa');
     }
   };
 
@@ -731,6 +768,7 @@ export default function MesasPage() {
         onResizeMesa={handleResizeMesa}
         onDeleteMesa={handleDeleteMesa}
         onUpdateCapacidad={handleUpdateCapacidad}
+        onDuplicar={handleDuplicarMesa}
         onUniformar={handleUniformar}
         onMesaClick={handleMesaClick}
         multiSelect={unirMode}

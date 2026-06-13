@@ -83,6 +83,16 @@ export default function MesaDetailPage() {
         navigate('/mesas');
         return;
       }
+      // If this is a secondary (linked) mesa, redirect to the primary
+      if (mesa.sesion_principal_id) {
+        const primaryMesa = (estadoData.mesas || []).find(m =>
+          m.sesion_id === mesa.sesion_principal_id
+        );
+        if (primaryMesa) {
+          navigate(`/mesas/${primaryMesa.id}`, { replace: true });
+          return;
+        }
+      }
       const res = await api.get(`/mesas/sesion/${mesa.sesion_id}`);
       const data = res?.data || res;
       setSesion(data);

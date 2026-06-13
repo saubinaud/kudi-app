@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { formatCurrency } from '../utils/format';
-import { Clock, ZoomIn, ZoomOut, Maximize2, Trash2, Equal, Users } from 'lucide-react';
+import { Clock, ZoomIn, ZoomOut, Maximize2, Trash2, Equal, Users, Copy } from 'lucide-react';
 import { cx } from '../styles/tokens';
 
 const CELL = 24;
@@ -27,6 +27,7 @@ export default function MesaCanvas({
   onMoveMesa,
   onResizeMesa,
   onDeleteMesa,
+  onDuplicar,
   onUpdateCapacidad,
   onUniformar,
   onMesaClick,
@@ -369,14 +370,26 @@ export default function MesaCanvas({
                     <span className="absolute -top-1.5 -right-1.5 bg-violet-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">✓</span>
                   )}
 
-                  {/* Edit: delete button on mesa */}
+                  {/* Edit: action buttons on selected mesa */}
                   {isEditing && isSelected && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onDeleteMesa?.(mesa.id); setSelectedId(null); }}
-                      className="absolute -top-2.5 -right-2.5 w-6 h-6 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center shadow-sm z-20 transition-colors"
-                    >
-                      <Trash2 size={11} />
-                    </button>
+                    <>
+                      {/* Duplicate */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onDuplicar?.(mesa.id); }}
+                        className="absolute -top-2.5 -left-2.5 w-6 h-6 bg-sky-500 hover:bg-sky-600 text-white rounded-full flex items-center justify-center shadow-sm z-20 transition-colors"
+                        title="Duplicar"
+                      >
+                        <Copy size={11} />
+                      </button>
+                      {/* Delete */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onDeleteMesa?.(mesa.id); setSelectedId(null); }}
+                        className="absolute -top-2.5 -right-2.5 w-6 h-6 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center shadow-sm z-20 transition-colors"
+                        title="Eliminar"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </>
                   )}
 
                   {/* Resize handle */}
