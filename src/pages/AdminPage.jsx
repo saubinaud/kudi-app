@@ -658,48 +658,54 @@ function UsuariosTab() {
 
       {/* Mobile cards */}
       <div className="space-y-3 lg:hidden">
-        {users.map(u => (
-          <div key={u.id} className={`${cx.card} p-5`}>
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-stone-800 font-medium text-sm">{u.nombre || u.email}</h3>
-                <p className="text-stone-500 text-xs mt-0.5">{u.email}</p>
+        {sorted.map((u, index) => (
+          <motion.div
+            key={u.id}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: Math.min(index, 10) * 0.03 }}
+            className="bg-white rounded-xl border border-stone-200 p-4 space-y-2"
+          >
+            <div className="flex justify-between items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-stone-800 font-medium text-sm truncate">{u.nombre || u.email}</h3>
+                <p className="text-stone-500 text-xs mt-0.5 truncate">{u.email}</p>
                 <p className="text-stone-500 text-xs mt-1">{u.empresa_nombre || '-'}{u.giro_nombre ? ` · ${u.giro_nombre}` : ''}</p>
-                {u.empresa_ruc && <p className="text-stone-400 text-[10px] mt-0.5">RUC: {u.empresa_ruc}</p>}
-                {u.empresa_telefono && <p className="text-stone-400 text-[10px]">Tel: {u.empresa_telefono}</p>}
+                {u.empresa_ruc && <p className="text-stone-400 text-xs mt-0.5">RUC: {u.empresa_ruc}</p>}
+                {u.empresa_telefono && <p className="text-stone-400 text-xs">Tel: {u.empresa_telefono}</p>}
               </div>
-              <div className="flex flex-col items-end gap-1">
-                <div className="flex items-center gap-1">
-                  {u.rol === 'admin' && <span className={cx.badge('bg-violet-50 text-violet-600')}>admin</span>}
-                  <span className={cx.badge(u.estado === 'activo' ? 'bg-[var(--accent-light)] text-[var(--success)]' : u.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')}>{u.estado}</span>
-                  <span className={cx.badge(PLAN_COLORS[u.plan] || 'bg-stone-100 text-stone-600')}>{PLAN_LABEL[u.plan] || u.plan}</span>
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <div className="flex items-center gap-1 flex-wrap justify-end">
+                  {u.rol === 'admin' && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-50 text-violet-600">admin</span>}
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${u.estado === 'activo' ? 'bg-emerald-50 text-emerald-600' : u.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'}`}>{u.estado}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${PLAN_COLORS[u.plan] || 'bg-stone-100 text-stone-600'}`}>{PLAN_LABEL[u.plan] || u.plan}</span>
                 </div>
-                <span className="text-[10px] text-stone-400">{timeAgo(u.created_at)}</span>
+                <span className="text-xs text-stone-400">{timeAgo(u.created_at)}</span>
               </div>
             </div>
             {/* Activity stats */}
-            <div className="flex flex-wrap gap-3 mt-3 text-[10px] text-stone-500">
-              <span><Package size={10} className="inline mr-0.5" />{u.total_productos || 0} prod</span>
-              <span><ShoppingCart size={10} className="inline mr-0.5" />{u.total_ventas || 0} ventas</span>
-              {u.total_comprobantes > 0 && <span><FileText size={10} className="inline mr-0.5" />{u.total_comprobantes} boletas</span>}
-              {u.certificado_subido && <span className="text-violet-600"><ShieldCheck size={10} className="inline mr-0.5" />Cert .p12</span>}
-              {u.facturacion_habilitada && <span className="text-teal-600"><FileText size={10} className="inline mr-0.5" />Fact. activa</span>}
-              {u.ultima_venta && <span>Última venta: {timeAgo(u.ultima_venta)}</span>}
+            <div className="flex flex-wrap gap-3 text-xs text-stone-500">
+              <span className="flex items-center gap-1"><Package size={12} />{u.total_productos || 0} prod</span>
+              <span className="flex items-center gap-1"><ShoppingCart size={12} />{u.total_ventas || 0} ventas</span>
+              {u.total_comprobantes > 0 && <span className="flex items-center gap-1"><FileText size={12} />{u.total_comprobantes} boletas</span>}
+              {u.certificado_subido && <span className="flex items-center gap-1 text-violet-600"><ShieldCheck size={12} />Cert .p12</span>}
+              {u.facturacion_habilitada && <span className="flex items-center gap-1 text-teal-600"><FileText size={12} />Fact. activa</span>}
+              {u.ultima_venta && <span>Ultima venta: {timeAgo(u.ultima_venta)}</span>}
             </div>
             {u.estado === 'pendiente' && u.onboarding_token && (
-              <div className="mt-2 flex gap-2 items-center">
-                <input type="text" readOnly value={`${window.location.href.split('#')[0]}#/onboarding?token=${u.onboarding_token}`} className={cx.input + ' text-[10px] flex-1'} />
-                <button onClick={() => { navigator.clipboard.writeText(`${window.location.href.split('#')[0]}#/onboarding?token=${u.onboarding_token}`); toast.success('Link copiado'); }} className={cx.btnSecondary + ' text-xs flex items-center gap-1'}><Copy size={12} /> Copiar</button>
+              <div className="flex gap-2 items-center">
+                <input type="text" readOnly value={`${window.location.href.split('#')[0]}#/onboarding?token=${u.onboarding_token}`} className={cx.input + ' text-xs flex-1'} />
+                <button onClick={() => { navigator.clipboard.writeText(`${window.location.href.split('#')[0]}#/onboarding?token=${u.onboarding_token}`); toast.success('Link copiado'); }} className={cx.btnSecondary + ' min-h-[44px] text-xs flex items-center gap-1'}><Copy size={14} /> Copiar</button>
               </div>
             )}
-            <div className="flex gap-2 mt-3 border-t border-stone-200 pt-3">
-              <button onClick={() => startEditPermisos(u)} className={cx.btnGhost + ' flex-1 flex items-center justify-center gap-1'}><Settings size={13} /> Permisos</button>
-              <button onClick={() => toggleStatus(u)} className={`${u.estado === 'activo' ? cx.btnDanger : cx.btnGhost + ' text-[var(--success)]'} flex-1 flex items-center justify-center gap-1`}>
-                {u.estado === 'activo' ? <><Ban size={13} /> Suspender</> : <><CheckCircle size={13} /> Reactivar</>}
+            <div className="flex flex-col gap-2 border-t border-stone-200 pt-3">
+              <button onClick={() => startEditPermisos(u)} className={cx.btnGhost + ' w-full min-h-[44px] flex items-center justify-center gap-1.5 text-sm'}><Settings size={15} /> Permisos</button>
+              <button onClick={() => toggleStatus(u)} className={`${u.estado === 'activo' ? cx.btnDanger : cx.btnGhost + ' text-[var(--success)]'} w-full min-h-[44px] flex items-center justify-center gap-1.5 text-sm`}>
+                {u.estado === 'activo' ? <><Ban size={15} /> Suspender</> : <><CheckCircle size={15} /> Reactivar</>}
               </button>
-              <button onClick={() => setDeleteTarget(u)} className={cx.btnDanger + ' flex items-center justify-center gap-1'}><Trash2 size={13} /></button>
+              <button onClick={() => setDeleteTarget(u)} className={cx.btnDanger + ' w-full min-h-[44px] flex items-center justify-center gap-1.5 text-sm'}><Trash2 size={15} /> Eliminar</button>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
@@ -981,14 +987,14 @@ function PagosTab() {
   return (
     <div>
       {/* Filter pills */}
-      <div className="flex items-center gap-2 mb-4">
-        <Filter size={14} className="text-stone-400" />
+      <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+        <Filter size={14} className="text-stone-400 shrink-0" />
         {['todos', 'pendiente', 'aprobado', 'rechazado'].map(f => (
           <button key={f} onClick={() => setFiltro(f)}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${filtro === f ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'}`}>
+            className={`px-3 py-2 min-h-[44px] lg:min-h-0 lg:py-1.5 rounded-full text-xs font-semibold transition-colors whitespace-nowrap ${filtro === f ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'}`}>
             {f.charAt(0).toUpperCase() + f.slice(1)}
             {f === 'pendiente' && pagos.filter(p => p.estado === 'pendiente').length > 0 && (
-              <span className="ml-1.5 w-4 h-4 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[9px] font-bold">
+              <span className="ml-1.5 w-4 h-4 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-bold">
                 {pagos.filter(p => p.estado === 'pendiente').length}
               </span>
             )}
@@ -1005,53 +1011,59 @@ function PagosTab() {
         <>
           {/* Mobile cards */}
           <div className="space-y-3 lg:hidden">
-            {filtered.map(p => (
-              <div key={p.id} className={`${cx.card} p-5`}>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-stone-800 font-medium text-sm">{p.usuario_nombre || '-'}</p>
-                    <p className="text-stone-400 text-xs">{p.usuario_email || '-'}</p>
+            {filtered.map((p, index) => (
+              <motion.div
+                key={p.id}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(index, 10) * 0.03 }}
+                className="bg-white rounded-xl border border-stone-200 p-4 space-y-2"
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-stone-800 font-medium text-sm truncate">{p.usuario_nombre || '-'}</p>
+                    <p className="text-stone-400 text-xs truncate">{p.usuario_email || '-'}</p>
                     {p.empresa_nombre && <p className="text-stone-500 text-xs mt-0.5">Empresa: {p.empresa_nombre}</p>}
-                    <p className="text-stone-400 text-[10px] mt-1">{formatDate(p.created_at)}</p>
+                    <p className="text-stone-400 text-xs mt-1">{formatDate(p.created_at)}</p>
                   </div>
-                  <div className="text-right">
-                    <span className={estadoBadge(p.estado)}>{p.estado}</span>
-                    <p className="text-stone-800 font-semibold text-sm mt-1">{formatCurrency(p.monto)}</p>
+                  <div className="text-right shrink-0">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${p.estado === 'aprobado' ? 'bg-emerald-50 text-emerald-600' : p.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'}`}>{p.estado}</span>
+                    <p className="text-stone-800 font-semibold text-sm mt-1.5">{formatCurrency(p.monto)}</p>
                   </div>
                 </div>
                 {p.comprobante_url && (
-                  <button onClick={() => setImageModal(p.comprobante_url)} className={cx.btnGhost + ' text-xs flex items-center gap-1 mt-2'}>
-                    <Eye size={13} /> Ver comprobante
+                  <button onClick={() => setImageModal(p.comprobante_url)} className={cx.btnGhost + ' min-h-[44px] text-sm flex items-center gap-1.5 w-full justify-center'}>
+                    <Eye size={15} /> Ver comprobante
                   </button>
                 )}
-                {p.referencia_pago && <p className="text-[10px] text-emerald-600 mt-1">Ref: {p.referencia_pago}</p>}
-                {p.nota && <p className="text-[10px] text-rose-500 mt-1">Nota: {p.nota}</p>}
+                {p.referencia_pago && <p className="text-xs text-emerald-600">Ref: {p.referencia_pago}</p>}
+                {p.nota && <p className="text-xs text-rose-500">Nota: {p.nota}</p>}
                 {p.estado === 'pendiente' && (
-                  <div className="flex gap-2 mt-3 border-t border-stone-200 pt-3">
+                  <div className="flex flex-col gap-2 border-t border-stone-200 pt-3">
                     {actionRow?.id === p.id ? (
-                      <div className="flex-1 space-y-2">
+                      <div className="space-y-2">
                         <input type="text" value={actionValue} onChange={e => setActionValue(e.target.value)}
                           placeholder={actionRow.type === 'aprobar' ? 'Referencia de pago' : 'Motivo de rechazo'}
-                          className={cx.input + ' text-xs'} autoFocus />
+                          className={cx.input + ' text-sm'} autoFocus />
                         <div className="flex gap-2">
                           <button disabled={submitting} onClick={() => actionRow.type === 'aprobar' ? handleAprobar(p.id) : handleRechazar(p.id)}
-                            className={`${actionRow.type === 'aprobar' ? cx.btnPrimary : cx.btnDanger} text-xs flex-1`}>
+                            className={`${actionRow.type === 'aprobar' ? cx.btnPrimary : cx.btnDanger} text-sm min-h-[44px] flex-1`}>
                             {submitting ? 'Procesando...' : actionRow.type === 'aprobar' ? 'Confirmar' : 'Confirmar rechazo'}
                           </button>
-                          <button onClick={() => { setActionRow(null); setActionValue(''); }} className={cx.btnGhost + ' text-xs'}>Cancelar</button>
+                          <button onClick={() => { setActionRow(null); setActionValue(''); }} className={cx.btnGhost + ' text-sm min-h-[44px]'}>Cancelar</button>
                         </div>
                       </div>
                     ) : (
                       <>
                         <button onClick={() => { setActionRow({ id: p.id, type: 'aprobar' }); setActionValue(''); }}
-                          className={cx.btnPrimary + ' text-xs flex-1 flex items-center justify-center gap-1'}><Check size={13} /> Aprobar</button>
+                          className={cx.btnPrimary + ' text-sm min-h-[44px] w-full flex items-center justify-center gap-1.5'}><Check size={15} /> Aprobar</button>
                         <button onClick={() => { setActionRow({ id: p.id, type: 'rechazar' }); setActionValue(''); }}
-                          className={cx.btnDanger + ' text-xs flex-1 flex items-center justify-center gap-1'}><XCircle size={13} /> Rechazar</button>
+                          className={cx.btnDanger + ' text-sm min-h-[44px] w-full flex items-center justify-center gap-1.5'}><XCircle size={15} /> Rechazar</button>
                       </>
                     )}
                   </div>
                 )}
-              </div>
+              </motion.div>
             ))}
           </div>
 
@@ -1169,35 +1181,91 @@ function RegistrosTab() {
   }
 
   return (
-    <div className="space-y-2">
-      {registros.map((r, i) => (
-        <div key={r.id || i} className={`${cx.card} px-5 py-4 flex items-center gap-4`}>
-          {/* Avatar */}
-          <div className="w-9 h-9 rounded-full bg-stone-100 flex items-center justify-center text-xs font-bold text-stone-500 shrink-0">
-            {(r.nombre || r.email || '?').charAt(0).toUpperCase()}
-          </div>
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm font-medium text-stone-800 truncate">{r.nombre || '-'}</p>
-              <span className={cx.badge(PLAN_COLORS[r.plan] || (r.plan && r.plan !== 'trial' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'))}>
-                {PLAN_LABEL[r.plan] || r.plan || 'Trial'}
-              </span>
-              {r.estado && (
-                <span className={cx.badge(r.estado === 'activo' ? 'bg-[var(--accent-light)] text-[var(--success)]' : r.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')}>
-                  {r.estado}
-                </span>
-              )}
+    <div>
+      {/* Mobile cards */}
+      <div className="space-y-3 lg:hidden">
+        {registros.map((r, index) => (
+          <motion.div
+            key={r.id || index}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: Math.min(index, 10) * 0.03 }}
+            className="bg-white rounded-xl border border-stone-200 p-4 space-y-2"
+          >
+            <div className="flex items-start gap-3">
+              {/* Avatar */}
+              <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-sm font-bold text-stone-500 shrink-0">
+                {(r.nombre || r.email || '?').charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-stone-800 truncate">{r.nombre || '-'}</p>
+                <p className="text-xs text-stone-400 truncate">{r.email}</p>
+                {(r.giro || r.empresa) && (
+                  <p className="text-xs text-stone-400 mt-0.5">{r.giro || r.empresa}</p>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-stone-400 truncate">{r.email}</p>
-            {(r.giro || r.empresa) && (
-              <p className="text-xs text-stone-400 mt-0.5">{r.giro || r.empresa}</p>
-            )}
-          </div>
-          {/* Timestamp */}
-          <p className="text-xs text-stone-400 shrink-0">{timeAgo(r.created_at || r.fecha)}</p>
-        </div>
-      ))}
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${PLAN_COLORS[r.plan] || (r.plan && r.plan !== 'trial' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600')}`}>
+                  {PLAN_LABEL[r.plan] || r.plan || 'Trial'}
+                </span>
+                {r.estado && (
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${r.estado === 'activo' ? 'bg-emerald-50 text-emerald-600' : r.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'}`}>
+                    {r.estado}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-stone-400 shrink-0">{timeAgo(r.created_at || r.fecha)}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className={`${cx.card} hidden lg:block overflow-x-auto`}>
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-stone-200">
+              <th className={cx.th}>Usuario</th>
+              <th className={cx.th}>Email</th>
+              <th className={cx.th}>Giro / Empresa</th>
+              <th className={cx.th}>Plan</th>
+              <th className={cx.th}>Estado</th>
+              <th className={cx.th + ' text-right'}>Registro</th>
+            </tr>
+          </thead>
+          <tbody>
+            {registros.map((r, i) => (
+              <tr key={r.id || i} className={cx.tr}>
+                <td className={cx.td}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-xs font-bold text-stone-500 shrink-0">
+                      {(r.nombre || r.email || '?').charAt(0).toUpperCase()}
+                    </div>
+                    <p className="text-sm font-medium text-stone-800">{r.nombre || '-'}</p>
+                  </div>
+                </td>
+                <td className={cx.td + ' text-stone-400 text-xs'}>{r.email}</td>
+                <td className={cx.td + ' text-stone-500 text-sm'}>{r.giro || r.empresa || '-'}</td>
+                <td className={cx.td}>
+                  <span className={cx.badge(PLAN_COLORS[r.plan] || (r.plan && r.plan !== 'trial' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'))}>
+                    {PLAN_LABEL[r.plan] || r.plan || 'Trial'}
+                  </span>
+                </td>
+                <td className={cx.td}>
+                  {r.estado && (
+                    <span className={cx.badge(r.estado === 'activo' ? 'bg-emerald-50 text-emerald-600' : r.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')}>
+                      {r.estado}
+                    </span>
+                  )}
+                </td>
+                <td className={cx.td + ' text-right text-stone-400 text-xs'}>{timeAgo(r.created_at || r.fecha)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -1261,6 +1329,7 @@ function MensajesTab() {
   const [mensaje, setMensaje] = useState('');
   const [enviarEmail, setEnviarEmail] = useState(true);
   const [filtroPlan, setFiltroPlan] = useState('');
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [previewHtml, setPreviewHtml] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [broadcastResult, setBroadcastResult] = useState(null);
@@ -1274,6 +1343,31 @@ function MensajesTab() {
       setUsuarios((u.data || []).filter(x => x.rol !== 'admin'));
     }).catch(() => toast.error('Error cargando datos')).finally(() => setLoading(false));
   }, []);
+
+  // Auto-select all matching users when filtroPlan changes
+  const filteredUsers = filtroPlan
+    ? usuarios.filter(u => (u.plan || 'trial') === filtroPlan)
+    : usuarios;
+
+  useEffect(() => {
+    if (modo === 'broadcast') {
+      setSelectedUserIds(filteredUsers.map(u => u.id));
+    }
+  }, [filtroPlan, usuarios, modo]);
+
+  const toggleUserId = (id) => {
+    setSelectedUserIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleAllUsers = () => {
+    if (selectedUserIds.length === filteredUsers.length) {
+      setSelectedUserIds([]);
+    } else {
+      setSelectedUserIds(filteredUsers.map(u => u.id));
+    }
+  };
 
   const handleSend = async () => {
     if (!mensaje.trim()) return;
@@ -1295,6 +1389,7 @@ function MensajesTab() {
           asunto: asunto.trim() || 'Mensaje de Kudi',
           mensaje: mensaje.trim(),
           filtro_plan: filtroPlan || undefined,
+          filtro_ids: selectedUserIds.length > 0 ? selectedUserIds : undefined,
         });
         const r = res.data || res;
         setBroadcastResult(r);
@@ -1421,16 +1516,82 @@ function MensajesTab() {
                 </div>
               </div>
             ) : (
-              <div>
-                <label className={cx.label}>Enviar a</label>
-                <select value={filtroPlan} onChange={e => setFiltroPlan(e.target.value)} className={cx.input}>
-                  <option value="">Todos los usuarios activos</option>
-                  <option value="trial">Solo Trial</option>
-                  <option value="independiente">Solo Independiente (S/80)</option>
-                  <option value="emprendedor">Solo Emprendedor (S/100)</option>
-                  <option value="empresario">Solo Empresario (S/180)</option>
-                </select>
-                <p className="text-[11px] text-stone-400 mt-1">Cada usuario recibira el email personalizado con sus datos</p>
+              <div className="space-y-3">
+                <div>
+                  <label className={cx.label}>Filtrar por plan</label>
+                  <select value={filtroPlan} onChange={e => setFiltroPlan(e.target.value)} className={cx.input}>
+                    <option value="">Todos los usuarios activos</option>
+                    <option value="trial">Solo Trial</option>
+                    <option value="independiente">Solo Independiente (S/80)</option>
+                    <option value="emprendedor">Solo Emprendedor (S/100)</option>
+                    <option value="empresario">Solo Empresario (S/180)</option>
+                  </select>
+                </div>
+
+                {/* User checklist */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className={cx.label + ' !mb-0'}>
+                      Destinatarios
+                      <span className="text-stone-400 font-normal ml-1.5">
+                        {selectedUserIds.length} de {filteredUsers.length} seleccionados
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={toggleAllUsers}
+                      className="text-xs text-emerald-600 hover:text-emerald-700 font-medium transition-colors duration-150"
+                    >
+                      {selectedUserIds.length === filteredUsers.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                    </button>
+                  </div>
+
+                  <div className="border border-stone-200 rounded-lg max-h-[200px] overflow-y-auto">
+                    {filteredUsers.length === 0 ? (
+                      <div className="px-3 py-4 text-center text-xs text-stone-400">
+                        No hay usuarios con este filtro
+                      </div>
+                    ) : (
+                      filteredUsers.map(u => {
+                        const checked = selectedUserIds.includes(u.id);
+                        const plan = u.plan || 'trial';
+                        const planColors = {
+                          trial: 'bg-amber-50 text-amber-600',
+                          independiente: 'bg-blue-50 text-blue-600',
+                          emprendedor: 'bg-emerald-50 text-emerald-600',
+                          empresario: 'bg-purple-50 text-purple-600',
+                        };
+                        return (
+                          <label
+                            key={u.id}
+                            className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors duration-100 border-b border-stone-100 last:border-b-0 ${
+                              checked ? 'bg-emerald-50/40' : 'hover:bg-stone-50'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleUserId(u.id)}
+                              className="w-3.5 h-3.5 rounded border-stone-300 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-0 flex-shrink-0"
+                            />
+                            <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-medium text-stone-700 truncate">
+                                {u.nombre || u.email.split('@')[0]}
+                              </span>
+                              <span className="text-xs text-stone-400 truncate">
+                                {u.email}
+                              </span>
+                            </div>
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${planColors[plan] || 'bg-stone-100 text-stone-500'}`}>
+                              {plan}
+                            </span>
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
+                  <p className="text-[11px] text-stone-400 mt-1">Cada usuario recibira el email personalizado con sus datos</p>
+                </div>
               </div>
             )}
 
