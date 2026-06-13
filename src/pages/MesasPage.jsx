@@ -60,9 +60,10 @@ export default function MesasPage() {
       const data = res?.data || res;
       setPisos(data.pisos || []);
       setMesas(data.mesas || []);
-      if (!selectedPiso && data.pisos?.length > 0) {
-        setSelectedPiso(data.pisos[0].id);
-      }
+      setSelectedPiso(prev => {
+        if (prev && data.pisos?.some(p => p.id === prev)) return prev;
+        return data.pisos?.[0]?.id || null;
+      });
       // Determine if we should show tutorial (only on first load)
       if (!initialLoadDone.current && data.pisos?.length === 0 && data.mesas?.length === 0) {
         setTutorialStep(0); // welcome
