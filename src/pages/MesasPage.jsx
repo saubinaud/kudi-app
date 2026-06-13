@@ -5,17 +5,8 @@ import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
-import { formatCurrency } from '../utils/format';
-import { ShoppingCart, Settings, Plus, Trash2, X, Clock, Users } from 'lucide-react';
-
-function formatTimer(abiertaAt) {
-  if (!abiertaAt) return '';
-  const diff = Math.floor((Date.now() - new Date(abiertaAt).getTime()) / 1000);
-  const h = Math.floor(diff / 3600);
-  const m = Math.floor((diff % 3600) / 60);
-  if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`;
-  return `${m}m`;
-}
+import MesaCanvas from '../components/MesaCanvas';
+import { ShoppingCart, Settings, Plus, Trash2, X, Pencil, Check } from 'lucide-react';
 
 export default function MesasPage() {
   const api = useApi();
@@ -27,11 +18,13 @@ export default function MesasPage() {
   const [mesas, setMesas] = useState([]);
   const [selectedPiso, setSelectedPiso] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showConfig, setShowConfig] = useState(false);
-  const [abriendo, setAbriendo] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
-  // Timer refresh
-  const [, setTick] = useState(0);
+  // Config modal (for pisos)
+  const [showConfig, setShowConfig] = useState(false);
+  const [configPisos, setConfigPisos] = useState([]);
+  const [newPisoNombre, setNewPisoNombre] = useState('');
+  const [savingConfig, setSavingConfig] = useState(false);
 
   const fetchEstado = useCallback(async () => {
     try {
@@ -51,49 +44,82 @@ export default function MesasPage() {
 
   useEffect(() => {
     fetchEstado();
-    const interval = setInterval(fetchEstado, 10000);
-    return () => clearInterval(interval);
-  }, [fetchEstado]);
-
-  // Update timers every 30s
-  useEffect(() => {
-    const interval = setInterval(() => setTick(t => t + 1), 30000);
-    return () => clearInterval(interval);
-  }, []);
+    // Polling only in view mode
+    if (!isEditing) {
+      const interval = setInterval(fetchEstado, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [fetchEstado, isEditing]);
 
   const mesasFiltradas = useMemo(() =>
     selectedPiso ? mesas.filter(m => m.piso_id === selectedPiso) : mesas,
     [mesas, selectedPiso]
   );
 
+  // === Canvas handlers ===
+
   const handleMesaClick = async (mesa) => {
     if (mesa.sesion_id) {
       navigate(`/mesas/${mesa.id}`);
       return;
     }
-    // Open new session
-    setAbriendo(mesa.id);
     try {
       await api.post(`/mesas/${mesa.id}/abrir`, { comensales: 1 });
       navigate(`/mesas/${mesa.id}`);
     } catch (err) {
       toast.error(err?.response?.data?.error || 'Error al abrir mesa');
-      setAbriendo(null);
     }
   };
 
-  // Config modal state
-  const [configPisos, setConfigPisos] = useState([]);
-  const [configMesas, setConfigMesas] = useState([]);
-  const [newPisoNombre, setNewPisoNombre] = useState('');
-  const [savingConfig, setSavingConfig] = useState(false);
+  const handleCreateMesa = async ({ pos_x, pos_y, ancho, alto }) => {
+    if (!selectedPiso) return;
+    try {
+      const res = await api.post('/mesas', { piso_id: selectedPiso, pos_x, pos_y, ancho, alto });
+      const mesa = res?.data || res;
+      setMesas(prev => [...prev, mesa]);
+      toast.success(`Mesa ${mesa.numero} creada`);
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Error creando mesa');
+    }
+  };
+
+  const handleMoveMesa = async (id, { pos_x, pos_y }) => {
+    try {
+      const res = await api.put(`/mesas/${id}`, { pos_x, pos_y });
+      const updated = res?.data || res;
+      setMesas(prev => prev.map(m => m.id === id ? { ...m, ...updated } : m));
+    } catch {
+      toast.error('Error moviendo mesa');
+    }
+  };
+
+  const handleResizeMesa = async (id, { ancho, alto }) => {
+    try {
+      const res = await api.put(`/mesas/${id}`, { ancho, alto });
+      const updated = res?.data || res;
+      setMesas(prev => prev.map(m => m.id === id ? { ...m, ...updated } : m));
+    } catch {
+      toast.error('Error redimensionando mesa');
+    }
+  };
+
+  const handleDeleteMesa = async (id) => {
+    try {
+      await api.del(`/mesas/${id}`);
+      setMesas(prev => prev.filter(m => m.id !== id));
+      toast.success('Mesa eliminada');
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Error eliminando mesa');
+    }
+  };
+
+  // === Piso config ===
 
   const openConfig = async () => {
     try {
       const res = await api.get('/mesas/config');
       const data = res?.data || res;
       setConfigPisos(data.pisos || []);
-      setConfigMesas(data.mesas || []);
       setShowConfig(true);
     } catch {
       toast.error('Error cargando configuración');
@@ -107,6 +133,8 @@ export default function MesasPage() {
       const res = await api.post('/mesas/pisos', { nombre: newPisoNombre.trim() });
       const piso = res?.data || res;
       setConfigPisos(prev => [...prev, piso]);
+      setPisos(prev => [...prev, piso]);
+      if (!selectedPiso) setSelectedPiso(piso.id);
       setNewPisoNombre('');
       toast.success('Piso creado');
     } catch {
@@ -121,37 +149,12 @@ export default function MesasPage() {
     try {
       await api.del(`/mesas/pisos/${pisoId}`);
       setConfigPisos(prev => prev.filter(p => p.id !== pisoId));
-      setConfigMesas(prev => prev.filter(m => m.piso_id !== pisoId));
+      setPisos(prev => prev.filter(p => p.id !== pisoId));
+      setMesas(prev => prev.filter(m => m.piso_id !== pisoId));
+      if (selectedPiso === pisoId) setSelectedPiso(pisos.find(p => p.id !== pisoId)?.id || null);
       toast.success('Piso eliminado');
     } catch (err) {
       toast.error(err?.response?.data?.error || 'Error eliminando piso');
-    } finally {
-      setSavingConfig(false);
-    }
-  };
-
-  const setMesaCount = async (pisoId, count) => {
-    const current = configMesas.filter(m => m.piso_id === pisoId);
-    const diff = count - current.length;
-    if (diff === 0) return;
-    setSavingConfig(true);
-    try {
-      if (diff > 0) {
-        const res = await api.post('/mesas/batch', { piso_id: pisoId, cantidad: diff });
-        const newMesas = res?.data || res;
-        setConfigMesas(prev => [...prev, ...(Array.isArray(newMesas) ? newMesas : [])]);
-      } else {
-        // Remove from the end
-        const toRemove = current.slice(diff);
-        for (const mesa of toRemove) {
-          await api.del(`/mesas/${mesa.id}`);
-        }
-        const removeIds = new Set(toRemove.map(m => m.id));
-        setConfigMesas(prev => prev.filter(m => !removeIds.has(m.id)));
-      }
-      toast.success('Mesas actualizadas');
-    } catch (err) {
-      toast.error(err?.response?.data?.error || 'Error actualizando mesas');
     } finally {
       setSavingConfig(false);
     }
@@ -161,6 +164,8 @@ export default function MesasPage() {
     setShowConfig(false);
     fetchEstado();
   };
+
+  // === Render ===
 
   if (loading) {
     return (
@@ -172,16 +177,12 @@ export default function MesasPage() {
             <div className={cx.skeleton + ' h-10 w-32'} />
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-          {[1,2,3,4,5,6,7,8].map(i => (
-            <div key={i} className={cx.skeleton + ' aspect-square rounded-2xl'} />
-          ))}
-        </div>
+        <div className={cx.skeleton + ' rounded-xl'} style={{ height: 'calc(100vh - 220px)' }} />
       </div>
     );
   }
 
-  // No floors configured yet
+  // No floors configured
   if (pisos.length === 0) {
     return (
       <div className="max-w-7xl mx-auto">
@@ -196,9 +197,9 @@ export default function MesasPage() {
             <Settings size={28} className="text-stone-400" />
           </div>
           <p className="text-stone-600 font-medium mb-1">Configura tus mesas</p>
-          <p className="text-stone-400 text-sm mb-6">Crea pisos y define cuántas mesas tiene cada uno.</p>
+          <p className="text-stone-400 text-sm mb-6">Crea pisos y dibuja la distribución de tu local.</p>
           <button onClick={openConfig} className={cx.btnPrimary}>
-            Configurar mesas
+            Configurar pisos
           </button>
         </div>
         {showConfig && renderConfigModal()}
@@ -219,48 +220,25 @@ export default function MesasPage() {
             className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto p-6"
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-stone-800">Configurar mesas</h2>
+              <h2 className="text-lg font-bold text-stone-800">Pisos del local</h2>
               <button onClick={closeConfig} className={cx.btnIcon}><X size={18} /></button>
             </div>
 
-            {/* Existing floors */}
-            <div className="space-y-4 mb-6">
-              {configPisos.map(piso => {
-                const mesasDelPiso = configMesas.filter(m => m.piso_id === piso.id);
-                return (
-                  <div key={piso.id} className={cx.card + ' p-4'}>
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-semibold text-stone-800 text-sm">{piso.nombre}</span>
-                      <button
-                        onClick={() => deletePiso(piso.id)}
-                        className="text-stone-400 hover:text-rose-500 transition-colors"
-                        disabled={savingConfig}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <label className={cx.label + ' mb-0'}>Mesas</label>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setMesaCount(piso.id, Math.max(0, mesasDelPiso.length - 1))}
-                          disabled={savingConfig || mesasDelPiso.length === 0}
-                          className="w-8 h-8 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-600 flex items-center justify-center disabled:opacity-30 transition-colors"
-                        >−</button>
-                        <span className="w-8 text-center font-bold text-stone-800">{mesasDelPiso.length}</span>
-                        <button
-                          onClick={() => setMesaCount(piso.id, mesasDelPiso.length + 1)}
-                          disabled={savingConfig}
-                          className="w-8 h-8 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-600 flex items-center justify-center disabled:opacity-30 transition-colors"
-                        >+</button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+            <div className="space-y-3 mb-6">
+              {configPisos.map(piso => (
+                <div key={piso.id} className="flex items-center justify-between px-4 py-3 bg-stone-50 rounded-xl">
+                  <span className="font-medium text-stone-800 text-sm">{piso.nombre}</span>
+                  <button
+                    onClick={() => deletePiso(piso.id)}
+                    className="text-stone-400 hover:text-rose-500 transition-colors"
+                    disabled={savingConfig}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
             </div>
 
-            {/* Add new floor */}
             <div className="flex gap-2">
               <input
                 type="text"
@@ -287,21 +265,38 @@ export default function MesasPage() {
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
         <h1 className="text-xl font-bold text-stone-800">Mesas</h1>
         <div className="flex gap-2">
           <button onClick={openConfig} className={cx.btnGhost + ' flex items-center gap-1.5'}>
-            <Settings size={16} /> Configurar
+            <Settings size={16} /> Pisos
           </button>
-          <button onClick={() => navigate('/pos')} className={cx.btnSecondary + ' flex items-center gap-2'}>
-            <ShoppingCart size={16} /> Caja Rápida
-          </button>
+          {isEditing ? (
+            <button
+              onClick={() => setIsEditing(false)}
+              className={cx.btnPrimary + ' flex items-center gap-1.5'}
+            >
+              <Check size={16} /> Listo
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsEditing(true)}
+              className={cx.btnSecondary + ' flex items-center gap-1.5'}
+            >
+              <Pencil size={16} /> Editar
+            </button>
+          )}
+          {!isEditing && (
+            <button onClick={() => navigate('/pos')} className={cx.btnSecondary + ' flex items-center gap-2'}>
+              <ShoppingCart size={16} /> Caja Rápida
+            </button>
+          )}
         </div>
       </div>
 
       {/* Floor tabs */}
       {pisos.length > 1 && (
-        <div className="inline-flex bg-stone-200/70 rounded-full p-1 mb-5">
+        <div className="inline-flex bg-stone-200/70 rounded-full p-1 mb-4">
           {pisos.map(piso => {
             const isActive = piso.id === selectedPiso;
             return (
@@ -326,72 +321,16 @@ export default function MesasPage() {
         </div>
       )}
 
-      {/* Mesa grid */}
-      {mesasFiltradas.length === 0 ? (
-        <div className={cx.card + ' p-12 text-center'}>
-          <p className="text-stone-400 text-sm">No hay mesas en este piso. Usa Configurar para agregar.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-          {mesasFiltradas.map((mesa, index) => {
-            const ocupada = !!mesa.sesion_id;
-            const timer = ocupada ? formatTimer(mesa.abierta_at) : null;
-            const isAbriendo = abriendo === mesa.id;
-
-            return (
-              <motion.button
-                key={mesa.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => !isAbriendo && handleMesaClick(mesa)}
-                disabled={isAbriendo}
-                className={`relative rounded-2xl p-4 min-h-[120px] flex flex-col items-center justify-center text-center transition-colors duration-150 border-2 ${
-                  ocupada
-                    ? 'bg-emerald-50 border-emerald-400 shadow-sm'
-                    : 'bg-stone-50 border-stone-200 hover:border-stone-400 hover:bg-white'
-                } ${isAbriendo ? 'opacity-50' : ''}`}
-              >
-                {/* Mesa number */}
-                <span className={`text-2xl font-bold ${ocupada ? 'text-emerald-700' : 'text-stone-400'}`}>
-                  {mesa.numero}
-                </span>
-
-                {ocupada ? (
-                  <>
-                    {/* Timer */}
-                    <div className="flex items-center gap-1 mt-1.5">
-                      <Clock size={12} className="text-emerald-500" />
-                      <span className="text-xs font-medium text-emerald-600">{timer}</span>
-                    </div>
-                    {/* Partial total */}
-                    {parseFloat(mesa.total_parcial) > 0 && (
-                      <span className="text-sm font-bold text-emerald-700 mt-1">
-                        {formatCurrency(mesa.total_parcial)}
-                      </span>
-                    )}
-                    {/* Items count */}
-                    {parseInt(mesa.items_count) > 0 && (
-                      <span className="absolute top-2 right-2 bg-emerald-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                        {mesa.items_count}
-                      </span>
-                    )}
-                    {/* Pending badge */}
-                    {parseInt(mesa.items_pendientes) > 0 && (
-                      <span className="absolute top-2 left-2 bg-amber-400 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">
-                        {mesa.items_pendientes}
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <span className="text-[11px] text-stone-400 mt-1">Libre</span>
-                )}
-              </motion.button>
-            );
-          })}
-        </div>
-      )}
+      {/* Canvas */}
+      <MesaCanvas
+        mesas={mesasFiltradas}
+        isEditing={isEditing}
+        onCreateMesa={handleCreateMesa}
+        onMoveMesa={handleMoveMesa}
+        onResizeMesa={handleResizeMesa}
+        onDeleteMesa={handleDeleteMesa}
+        onMesaClick={handleMesaClick}
+      />
 
       {/* Config modal */}
       {showConfig && renderConfigModal()}
