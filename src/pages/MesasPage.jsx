@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import MesaCanvas from '../components/MesaCanvas';
-import { ShoppingCart, Settings, Plus, Trash2, X, Pencil, Check, LayoutGrid, ArrowRight, MousePointer2, Move, Sparkles, Users, Link2, Search } from 'lucide-react';
+import { ShoppingCart, Settings, Plus, Trash2, X, Pencil, Check, LayoutGrid, ArrowRight, MousePointer2, Move, Sparkles, Users, Link2, Search, Minus } from 'lucide-react';
 
 // Tutorial steps
 const STEPS = [
@@ -49,6 +49,7 @@ export default function MesasPage() {
   // Edit sidebar
   const [editMesaId, setEditMesaId] = useState(null);
   const [editForm, setEditForm] = useState({ numero: '', nombre: '', capacidad: '', redondeo: 15 });
+  const [editCollapsed, setEditCollapsed] = useState(false);
 
   // Config modal (for pisos)
   const [showConfig, setShowConfig] = useState(false);
@@ -815,40 +816,51 @@ export default function MesasPage() {
           return (
             <motion.div
               key="edit-sidebar"
+              drag
+              dragMomentum={false}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.2 }}
-              className="fixed right-4 top-1/4 z-30 w-72"
+              className="fixed right-4 bottom-4 z-30"
+              style={{ width: editCollapsed ? 'auto' : '260px' }}
             >
-              <div className="bg-white rounded-2xl border border-stone-200/80 p-5 shadow-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-stone-800">Mesa {mesa.numero}</h3>
-                  <button onClick={() => setEditMesaId(null)} className={cx.btnIcon + ' !p-1'}><X size={14} /></button>
+              <div className="bg-white rounded-2xl border border-stone-200/80 shadow-xl overflow-hidden">
+                {/* Header — always visible, acts as drag handle */}
+                <div className="flex items-center justify-between px-4 py-2.5 bg-stone-50 border-b border-stone-100 cursor-grab active:cursor-grabbing">
+                  <span className="text-xs font-bold text-stone-700">Mesa {mesa.numero}</span>
+                  <div className="flex items-center gap-1">
+                    <button onClick={(e) => { e.stopPropagation(); setEditCollapsed(!editCollapsed); }} className={cx.btnIcon + ' !p-1'}>
+                      {editCollapsed ? <Pencil size={12} /> : <Minus size={12} />}
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); setEditMesaId(null); }} className={cx.btnIcon + ' !p-1'}><X size={12} /></button>
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  <div>
-                    <label className={cx.label}>Número</label>
-                    <input type="number" value={editForm.numero} onChange={e => setEditForm(f => ({ ...f, numero: e.target.value }))}
-                      onBlur={saveEditMesa} className={cx.input + ' text-sm'} min="1" />
+                {/* Body — collapsible */}
+                {!editCollapsed && (
+                  <div className="p-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className={cx.label}>Número</label>
+                        <input type="number" value={editForm.numero} onChange={e => setEditForm(f => ({ ...f, numero: e.target.value }))}
+                          className={cx.input + ' text-sm'} min="1" />
+                      </div>
+                      <div>
+                        <label className={cx.label}>Capacidad</label>
+                        <input type="number" value={editForm.capacidad} onChange={e => setEditForm(f => ({ ...f, capacidad: e.target.value }))}
+                          className={cx.input + ' text-sm'} min="1" max="99" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className={cx.label}>Nombre (opcional)</label>
+                      <input type="text" value={editForm.nombre} onChange={e => setEditForm(f => ({ ...f, nombre: e.target.value }))}
+                        className={cx.input + ' text-sm'} placeholder="ej: Terraza 1" />
+                    </div>
+                    <button onClick={saveEditMesa} className={cx.btnPrimary + ' w-full min-h-[40px] text-sm'}>
+                      Guardar
+                    </button>
                   </div>
-                  <div>
-                    <label className={cx.label}>Nombre (opcional)</label>
-                    <input type="text" value={editForm.nombre} onChange={e => setEditForm(f => ({ ...f, nombre: e.target.value }))}
-                      onBlur={saveEditMesa} className={cx.input + ' text-sm'} placeholder="ej: Terraza 1" />
-                  </div>
-                  <div>
-                    <label className={cx.label}>Capacidad (personas)</label>
-                    <input type="number" value={editForm.capacidad} onChange={e => setEditForm(f => ({ ...f, capacidad: e.target.value }))}
-                      className={cx.input + ' text-sm'} min="1" max="99" />
-                  </div>
-                  <p className="text-[10px] text-stone-400 mt-1">
-                    Arrastra la esquina verde de la mesa para redondear
-                  </p>
-                  <button onClick={saveEditMesa} className={cx.btnPrimary + ' w-full mt-4 min-h-[44px]'}>
-                    Guardar mesa
-                  </button>
-                </div>
+                )}
               </div>
             </motion.div>
           );

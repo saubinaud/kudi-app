@@ -125,10 +125,12 @@ export default function MesaCanvas({
     }
     if (resizingRef.current) {
       const r = resizingRef.current;
-      setTempPos(prev => ({ ...prev, [r.mesa.id]: {
-        ancho: Math.max(MIN_SIZE, Math.min(COLS - (r.mesa.pos_x ?? 0), r.origW + col - r.startCol)),
-        alto: Math.max(MIN_SIZE, Math.min(ROWS - (r.mesa.pos_y ?? 0), r.origH + row - r.startRow)),
-      }}));
+      let newW = Math.max(MIN_SIZE, Math.min(COLS - (r.mesa.pos_x ?? 0), r.origW + col - r.startCol));
+      let newH = Math.max(MIN_SIZE, Math.min(ROWS - (r.mesa.pos_y ?? 0), r.origH + row - r.startRow));
+      // Circular mesa = force square (use larger dimension)
+      const red = tempRedondeo[r.mesa.id] ?? r.mesa.redondeo ?? 15;
+      if (red >= 45) { const size = Math.max(newW, newH); newW = size; newH = size; }
+      setTempPos(prev => ({ ...prev, [r.mesa.id]: { ancho: newW, alto: newH } }));
     }
   };
 
@@ -398,19 +400,21 @@ export default function MesaCanvas({
 
           {/* Floating: action buttons + rounding handle for selected mesa */}
           {isEditing && selectedMesa && (() => {
-            const smx = (selectedMesa.pos_x ?? 0) * CELL * zoom;
-            const smy = (selectedMesa.pos_y ?? 0) * CELL * zoom;
-            const smw = (selectedMesa.ancho ?? 3) * CELL * zoom;
+            // Use tempPos if being dragged, otherwise DB position
+            const tp = tempPos[selectedMesa.id];
+            const smx = (tp?.pos_x ?? selectedMesa.pos_x ?? 0) * CELL * zoom;
+            const smy = (tp?.pos_y ?? selectedMesa.pos_y ?? 0) * CELL * zoom;
+            const smw = (tp?.ancho ?? selectedMesa.ancho ?? 3) * CELL * zoom;
+            const smh = (tp?.alto ?? selectedMesa.alto ?? 2) * CELL * zoom;
             const red = tempRedondeo[selectedMesa.id] ?? selectedMesa.redondeo ?? 15;
-            // Corner handle position: offset from top-left corner by radius amount
-            const maxR = Math.min((selectedMesa.ancho ?? 3), (selectedMesa.alto ?? 2)) * CELL * zoom / 2;
+            const maxR = Math.min(smw, smh) / 2;
             const handleOffset = (red / 50) * maxR * 0.7;
 
             return (
               <>
-                {/* Action buttons — RIGHT side */}
-                <div style={{ position: 'absolute', right: CANVAS_W * zoom - smx - smw + 8, top: smy - 14, zIndex: 25, pointerEvents: 'auto' }}>
-                  <div className="flex gap-1 bg-white/95 backdrop-blur rounded-lg border border-stone-200/80 p-0.5 shadow-md">
+                {/* Action buttons — top-right of mesa */}
+                <div style={{ position: 'absolute', left: smx + smw - 60, top: smy - 14, zIndex: 25, pointerEvents: 'auto' }}>
+                  <div className="flex gap-0.5 bg-white/95 backdrop-blur rounded-lg border border-stone-200/80 p-0.5 shadow-md">
                     <button onClick={() => onDuplicar?.(selectedMesa.id)}
                       className="w-7 h-7 hover:bg-stone-100 text-stone-500 hover:text-[#16A34A] rounded-md flex items-center justify-center transition-colors" title="Duplicar">
                       <Copy size={13} />
@@ -422,7 +426,7 @@ export default function MesaCanvas({
                   </div>
                 </div>
 
-                {/* Rounding corner handle — top-left */}
+                {/* Rounding corner handle — top-left, follows mesa position */}
                 <div
                   style={{
                     position: 'absolute',
@@ -446,9 +450,12 @@ export default function MesaCanvas({
       </div>
 
       {isEditing && (
-        <p className="text-[10px] text-stone-400 mt-2 text-center">
-          Arrastra para crear · Click para seleccionar · Esquina verde para redondear · Ctrl+Scroll para zoom
-        </p>
+        <div className="flex items-center justify-center gap-4 mt-2 text-[10px] text-stone-400">
+          <span className="flex items-center gap-1"><span className="w-3 h-3 border border-dashed border-stone-400 rounded-sm inline-block" /> Arrastra para crear</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#16A34A] rounded-full inline-block" /> Esquina = redondear</span>
+          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#16A34A] rounded-full inline-block border border-white shadow-sm" /> Inferior = redimensionar</span>
+          <span>Ctrl+Scroll = zoom</span>
+        </div>
       )}
     </div>
   );
