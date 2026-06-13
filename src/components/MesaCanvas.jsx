@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { formatCurrency } from '../utils/format';
-import { Clock, ZoomIn, ZoomOut, Maximize2, Trash2 } from 'lucide-react';
+import { Clock, ZoomIn, ZoomOut, Maximize2, Trash2, Equal } from 'lucide-react';
 import { cx } from '../styles/tokens';
 
 const CELL = 24;
@@ -27,19 +27,20 @@ export default function MesaCanvas({
   onMoveMesa,
   onResizeMesa,
   onDeleteMesa,
+  onUniformar,
   onMesaClick,
 }) {
   const containerRef = useRef(null);
-  const canvasRef = useRef(null);
+  const overlayRef = useRef(null);
   const [zoom, setZoom] = useState(1);
   const [selectedId, setSelectedId] = useState(null);
 
-  // Drawing state
-  const [drawing, setDrawing] = useState(null);
-  // Dragging state
-  const [dragging, setDragging] = useState(null);
-  // Resizing state
-  const [resizing, setResizing] = useState(null);
+  // Interaction refs (use refs to avoid stale closures in pointer handlers)
+  const drawingRef = useRef(null);
+  const draggingRef = useRef(null);
+  const resizingRef = useRef(null);
+  const [, forceRender] = useState(0);
+
   // Temp positions during drag/resize
   const [tempPos, setTempPos] = useState({});
 
@@ -66,18 +67,6 @@ export default function MesaCanvas({
     };
   }, [zoom]);
 
-  // Check if a cell overlaps any existing mesa (exclude one by id)
-  const overlaps = useCallback((x, y, w, h, excludeId) => {
-    return mesas.some(m => {
-      if (m.id === excludeId) return false;
-      const mx = tempPos[m.id]?.pos_x ?? m.pos_x ?? 0;
-      const my = tempPos[m.id]?.pos_y ?? m.pos_y ?? 0;
-      const mw = tempPos[m.id]?.ancho ?? m.ancho ?? 3;
-      const mh = tempPos[m.id]?.alto ?? m.alto ?? 2;
-      return x < mx + mw && x + w > mx && y < my + mh && y + h > my;
-    });
-  }, [mesas, tempPos]);
-
   // Find mesa at grid position
   const mesaAtGrid = useCallback((col, row) => {
     return mesas.find(m => {
@@ -89,39 +78,39 @@ export default function MesaCanvas({
 
   // Pointer handlers
   const handlePointerDown = (e) => {
-    if (e.button !== 0) return; // left click only
+    if (e.button !== 0) return;
     e.preventDefault();
+    // Capture pointer so we get pointerUp even outside canvas
+    e.target.setPointerCapture(e.pointerId);
+
     const { col, row } = screenToGrid(e.clientX, e.clientY);
 
     if (isEditing) {
       const mesa = mesaAtGrid(col, row);
       if (mesa) {
-        // Check if clicking on resize handle (bottom-right 1x1 corner)
         const mx = mesa.pos_x ?? 0, my = mesa.pos_y ?? 0;
         const mw = mesa.ancho ?? 3, mh = mesa.alto ?? 2;
+        // Resize handle: bottom-right 1x1 corner
         if (col === mx + mw - 1 && row === my + mh - 1 && mw >= MIN_SIZE && mh >= MIN_SIZE) {
-          setResizing({ mesa, startCol: col, startRow: row, origW: mw, origH: mh });
+          resizingRef.current = { mesa, startCol: col, startRow: row, origW: mw, origH: mh };
           setSelectedId(mesa.id);
+          forceRender(n => n + 1);
           return;
         }
-        // Start dragging existing mesa
-        setDragging({
-          mesa,
-          startCol: col,
-          startRow: row,
-          origX: mx,
-          origY: my,
-        });
+        // Drag
+        draggingRef.current = { mesa, startCol: col, startRow: row, origX: mx, origY: my };
         setSelectedId(mesa.id);
+        forceRender(n => n + 1);
         return;
       }
-      // Start drawing new mesa
-      setDrawing({ startCol: col, startRow: row, endCol: col + 1, endRow: row + 1 });
+      // Draw new
+      drawingRef.current = { startCol: col, startRow: row, endCol: col + 1, endRow: row + 1 };
       setSelectedId(null);
+      forceRender(n => n + 1);
       return;
     }
 
-    // View mode: click mesa to open
+    // View mode
     const mesa = mesaAtGrid(col, row);
     if (mesa) onMesaClick?.(mesa);
   };
@@ -130,73 +119,74 @@ export default function MesaCanvas({
     if (!isEditing) return;
     const { col, row } = screenToGrid(e.clientX, e.clientY);
 
-    if (drawing) {
-      setDrawing(prev => ({
-        ...prev,
-        endCol: Math.max(prev.startCol + 1, Math.min(COLS, col + 1)),
-        endRow: Math.max(prev.startRow + 1, Math.min(ROWS, row + 1)),
-      }));
+    if (drawingRef.current) {
+      drawingRef.current = {
+        ...drawingRef.current,
+        endCol: Math.max(drawingRef.current.startCol + 1, Math.min(COLS, col + 1)),
+        endRow: Math.max(drawingRef.current.startRow + 1, Math.min(ROWS, row + 1)),
+      };
+      forceRender(n => n + 1);
     }
 
-    if (dragging) {
-      const dx = col - dragging.startCol;
-      const dy = row - dragging.startRow;
-      const newX = Math.max(0, Math.min(COLS - (dragging.mesa.ancho ?? 3), dragging.origX + dx));
-      const newY = Math.max(0, Math.min(ROWS - (dragging.mesa.alto ?? 2), dragging.origY + dy));
-      setTempPos(prev => ({
-        ...prev,
-        [dragging.mesa.id]: { pos_x: newX, pos_y: newY },
-      }));
+    if (draggingRef.current) {
+      const d = draggingRef.current;
+      const dx = col - d.startCol;
+      const dy = row - d.startRow;
+      const newX = Math.max(0, Math.min(COLS - (d.mesa.ancho ?? 3), d.origX + dx));
+      const newY = Math.max(0, Math.min(ROWS - (d.mesa.alto ?? 2), d.origY + dy));
+      setTempPos(prev => ({ ...prev, [d.mesa.id]: { pos_x: newX, pos_y: newY } }));
     }
 
-    if (resizing) {
-      const dw = col - resizing.startCol;
-      const dh = row - resizing.startRow;
-      const newW = Math.max(MIN_SIZE, Math.min(COLS - (resizing.mesa.pos_x ?? 0), resizing.origW + dw));
-      const newH = Math.max(MIN_SIZE, Math.min(ROWS - (resizing.mesa.pos_y ?? 0), resizing.origH + dh));
-      setTempPos(prev => ({
-        ...prev,
-        [resizing.mesa.id]: { ancho: newW, alto: newH },
-      }));
+    if (resizingRef.current) {
+      const r = resizingRef.current;
+      const dw = col - r.startCol + 1;
+      const dh = row - r.startRow + 1;
+      const newW = Math.max(MIN_SIZE, Math.min(COLS - (r.mesa.pos_x ?? 0), r.origW + dw - 1));
+      const newH = Math.max(MIN_SIZE, Math.min(ROWS - (r.mesa.pos_y ?? 0), r.origH + dh - 1));
+      setTempPos(prev => ({ ...prev, [r.mesa.id]: { ancho: newW, alto: newH } }));
     }
   };
 
-  const handlePointerUp = () => {
-    if (drawing) {
-      const x = Math.min(drawing.startCol, drawing.endCol - 1);
-      const y = Math.min(drawing.startRow, drawing.endRow - 1);
-      const w = Math.abs(drawing.endCol - drawing.startCol);
-      const h = Math.abs(drawing.endRow - drawing.startRow);
-      if (w >= MIN_SIZE && h >= MIN_SIZE && !overlaps(x, y, w, h, null)) {
+  const handlePointerUp = (e) => {
+    if (e) e.target.releasePointerCapture?.(e.pointerId);
+
+    if (drawingRef.current) {
+      const d = drawingRef.current;
+      const x = Math.min(d.startCol, d.endCol - 1);
+      const y = Math.min(d.startRow, d.endRow - 1);
+      const w = Math.abs(d.endCol - d.startCol);
+      const h = Math.abs(d.endRow - d.startRow);
+      drawingRef.current = null;
+      if (w >= MIN_SIZE && h >= MIN_SIZE) {
         onCreateMesa?.({ pos_x: x, pos_y: y, ancho: w, alto: h });
       }
-      setDrawing(null);
+      forceRender(n => n + 1);
     }
 
-    if (dragging) {
-      const pos = tempPos[dragging.mesa.id];
-      if (pos && (pos.pos_x !== (dragging.mesa.pos_x ?? 0) || pos.pos_y !== (dragging.mesa.pos_y ?? 0))) {
-        if (!overlaps(pos.pos_x, pos.pos_y, dragging.mesa.ancho ?? 3, dragging.mesa.alto ?? 2, dragging.mesa.id)) {
-          onMoveMesa?.(dragging.mesa.id, pos);
-        }
-      }
-      setDragging(null);
+    if (draggingRef.current) {
+      const d = draggingRef.current;
+      const pos = tempPos[d.mesa.id];
+      draggingRef.current = null;
       setTempPos({});
+      if (pos && (pos.pos_x !== d.origX || pos.pos_y !== d.origY)) {
+        onMoveMesa?.(d.mesa.id, pos);
+      }
+      forceRender(n => n + 1);
     }
 
-    if (resizing) {
-      const pos = tempPos[resizing.mesa.id];
+    if (resizingRef.current) {
+      const r = resizingRef.current;
+      const pos = tempPos[r.mesa.id];
+      resizingRef.current = null;
+      setTempPos({});
       if (pos) {
-        if (!overlaps(resizing.mesa.pos_x ?? 0, resizing.mesa.pos_y ?? 0, pos.ancho, pos.alto, resizing.mesa.id)) {
-          onResizeMesa?.(resizing.mesa.id, pos);
-        }
+        onResizeMesa?.(r.mesa.id, pos);
       }
-      setResizing(null);
-      setTempPos({});
+      forceRender(n => n + 1);
     }
   };
 
-  // Zoom controls
+  // Zoom
   const zoomIn = () => setZoom(z => Math.min(2, Math.round((z + 0.2) * 10) / 10));
   const zoomOut = () => setZoom(z => Math.max(0.4, Math.round((z - 0.2) * 10) / 10));
   const zoomFit = () => {
@@ -206,8 +196,6 @@ export default function MesaCanvas({
     const zy = (rect.height - 16) / CANVAS_H;
     setZoom(Math.round(Math.min(zx, zy, 1.5) * 10) / 10);
   };
-
-  // Wheel zoom
   const handleWheel = (e) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
@@ -216,7 +204,7 @@ export default function MesaCanvas({
     }
   };
 
-  // Keyboard: delete selected mesa
+  // Keyboard delete
   useEffect(() => {
     const handleKey = (e) => {
       if (!isEditing || !selectedId) return;
@@ -230,7 +218,8 @@ export default function MesaCanvas({
     return () => window.removeEventListener('keydown', handleKey);
   }, [isEditing, selectedId, onDeleteMesa]);
 
-  // Drawing preview rect
+  // Drawing preview
+  const drawing = drawingRef.current;
   const drawRect = drawing ? (() => {
     const x = Math.min(drawing.startCol, drawing.endCol - 1);
     const y = Math.min(drawing.startRow, drawing.endRow - 1);
@@ -242,53 +231,50 @@ export default function MesaCanvas({
 
   return (
     <div className="relative">
-      {/* Zoom controls */}
+      {/* Top toolbar */}
       <div className="absolute top-3 right-3 z-20 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-lg border border-stone-200 p-1 shadow-sm">
+        {isEditing && mesas.length > 1 && (
+          <>
+            <button
+              onClick={() => onUniformar?.()}
+              className={cx.btnIcon + ' !p-1.5'}
+              title="Igualar tamaño"
+            >
+              <Equal size={16} />
+            </button>
+            <div className="w-px h-4 bg-stone-200" />
+          </>
+        )}
         <button onClick={zoomOut} className={cx.btnIcon + ' !p-1.5'} title="Alejar"><ZoomOut size={16} /></button>
         <span className="text-[10px] font-mono text-stone-500 w-10 text-center">{Math.round(zoom * 100)}%</span>
         <button onClick={zoomIn} className={cx.btnIcon + ' !p-1.5'} title="Acercar"><ZoomIn size={16} /></button>
         <button onClick={zoomFit} className={cx.btnIcon + ' !p-1.5'} title="Ajustar"><Maximize2 size={16} /></button>
       </div>
 
-      {/* Delete button for selected mesa */}
-      {isEditing && selectedId && (
-        <div className="absolute top-3 left-3 z-20">
-          <button
-            onClick={() => { onDeleteMesa?.(selectedId); setSelectedId(null); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-600 text-xs font-medium rounded-lg border border-rose-200 hover:bg-rose-100 transition-colors"
-          >
-            <Trash2 size={14} /> Eliminar mesa {mesas.find(m => m.id === selectedId)?.numero}
-          </button>
-        </div>
-      )}
-
       {/* Canvas container */}
       <div
         ref={containerRef}
-        className="overflow-auto rounded-xl border border-stone-200 bg-stone-50"
+        className="overflow-auto rounded-xl border border-stone-200 bg-stone-50/80"
         style={{ height: 'calc(100vh - 220px)', minHeight: '400px' }}
         onWheel={handleWheel}
       >
-        {/* Outer wrapper (defines scrollable area based on zoom) */}
         <div style={{ width: CANVAS_W * zoom, height: CANVAS_H * zoom, position: 'relative' }}>
           {/* Scaled canvas */}
           <div
-            ref={canvasRef}
             style={{
               transform: `scale(${zoom})`,
               transformOrigin: '0 0',
               width: CANVAS_W,
               height: CANVAS_H,
               position: 'absolute',
-              top: 0,
-              left: 0,
+              top: 0, left: 0,
               backgroundImage: isEditing
-                ? `linear-gradient(to right, rgba(214,211,209,0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(214,211,209,0.4) 1px, transparent 1px)`
+                ? `linear-gradient(to right, rgba(214,211,209,0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(214,211,209,0.15) 1px, transparent 1px)`
                 : 'none',
               backgroundSize: `${CELL}px ${CELL}px`,
             }}
           >
-            {/* Rendered mesas */}
+            {/* Mesas */}
             {mesas.map(mesa => {
               const tp = tempPos[mesa.id];
               const px = (tp?.pos_x ?? mesa.pos_x ?? 0) * CELL;
@@ -297,42 +283,33 @@ export default function MesaCanvas({
               const ph = (tp?.alto ?? mesa.alto ?? 2) * CELL;
               const ocupada = !!mesa.sesion_id;
               const isSelected = selectedId === mesa.id;
-              const isDraggingThis = dragging?.mesa?.id === mesa.id;
-              const isResizingThis = resizing?.mesa?.id === mesa.id;
+              const isDragging = draggingRef.current?.mesa?.id === mesa.id;
 
               return (
                 <motion.div
                   key={mesa.id}
-                  layout={!isDraggingThis && !isResizingThis}
+                  layout={!isDragging && !resizingRef.current}
                   transition={{ type: 'spring', stiffness: 500, damping: 35, duration: 0.15 }}
-                  style={{
-                    position: 'absolute',
-                    left: px,
-                    top: py,
-                    width: pw,
-                    height: ph,
-                  }}
+                  style={{ position: 'absolute', left: px, top: py, width: pw, height: ph }}
                   className={`rounded-xl flex flex-col items-center justify-center text-center select-none transition-colors duration-100 ${
                     isEditing
                       ? isSelected
                         ? 'bg-sky-50 border-2 border-sky-500 shadow-md'
-                        : 'bg-white border-2 border-stone-300 hover:border-stone-400'
+                        : 'bg-white border-2 border-stone-200 hover:border-stone-300'
                       : ocupada
                         ? 'bg-emerald-50 border-2 border-emerald-400 shadow-sm'
-                        : 'bg-white border-2 border-stone-200 hover:border-stone-400 hover:shadow-sm'
-                  } ${isEditing ? 'cursor-grab' : 'cursor-pointer'} ${isDraggingThis ? 'cursor-grabbing opacity-80 shadow-lg' : ''}`}
+                        : 'bg-white border-2 border-stone-200 hover:border-stone-300 hover:shadow-sm'
+                  } ${isDragging ? 'opacity-80 shadow-lg' : ''}`}
                 >
-                  <span className={`font-bold leading-none ${
-                    pw < CELL * 3 ? 'text-sm' : 'text-xl'
-                  } ${
+                  <span className={`font-bold leading-none ${pw < CELL * 3 ? 'text-sm' : 'text-xl'} ${
                     isEditing
-                      ? isSelected ? 'text-sky-700' : 'text-stone-600'
+                      ? isSelected ? 'text-sky-700' : 'text-stone-500'
                       : ocupada ? 'text-emerald-700' : 'text-stone-400'
                   }`}>
                     {mesa.numero}
                   </span>
 
-                  {/* View mode: status info */}
+                  {/* View mode status */}
                   {!isEditing && ocupada && ph >= CELL * 2.5 && (
                     <>
                       <div className="flex items-center gap-0.5 mt-0.5">
@@ -354,9 +331,20 @@ export default function MesaCanvas({
                     </span>
                   )}
 
-                  {/* Resize handle (edit mode, selected) */}
+                  {/* Edit mode: delete button ON the mesa */}
                   {isEditing && isSelected && (
-                    <div className="absolute bottom-0 right-0 w-3 h-3 bg-sky-500 rounded-tl-md rounded-br-[10px] cursor-se-resize" />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDeleteMesa?.(mesa.id); setSelectedId(null); }}
+                      className="absolute -top-2.5 -right-2.5 w-6 h-6 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center shadow-sm z-20 transition-colors"
+                      style={{ pointerEvents: 'auto' }}
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  )}
+
+                  {/* Resize handle */}
+                  {isEditing && isSelected && (
+                    <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-sky-500 rounded-full cursor-se-resize shadow-sm" />
                   )}
                 </motion.div>
               );
@@ -365,35 +353,27 @@ export default function MesaCanvas({
             {/* Drawing preview */}
             {drawRect && (
               <div
-                style={{
-                  position: 'absolute',
-                  left: drawRect.x,
-                  top: drawRect.y,
-                  width: drawRect.w,
-                  height: drawRect.h,
-                }}
-                className={`rounded-xl border-2 border-dashed ${
-                  drawRect.valid
-                    ? 'border-emerald-400 bg-emerald-50/50'
-                    : 'border-rose-300 bg-rose-50/30'
-                } pointer-events-none`}
+                style={{ position: 'absolute', left: drawRect.x, top: drawRect.y, width: drawRect.w, height: drawRect.h }}
+                className={`rounded-xl border-2 border-dashed pointer-events-none ${
+                  drawRect.valid ? 'border-emerald-400 bg-emerald-50/50' : 'border-rose-300 bg-rose-50/30'
+                }`}
               />
             )}
           </div>
 
-          {/* Interaction overlay (captures all pointer events, unscaled coordinates) */}
+          {/* Interaction overlay */}
           <div
-            style={{ position: 'absolute', inset: 0, zIndex: 10 }}
+            ref={overlayRef}
+            style={{ position: 'absolute', inset: 0, zIndex: 10, touchAction: 'none' }}
             className={isEditing ? 'cursor-crosshair' : ''}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
-            onPointerLeave={handlePointerUp}
           />
         </div>
       </div>
 
-      {/* Edit mode hint */}
+      {/* Hint */}
       {isEditing && (
         <p className="text-[10px] text-stone-400 mt-2 text-center">
           Arrastra para crear mesas · Click para seleccionar · Ctrl+Scroll para zoom

@@ -135,6 +135,31 @@ export default function MesasPage() {
     }
   };
 
+  // Uniformar: all mesas same size as the most common
+  const handleUniformar = async () => {
+    const currentMesas = mesasFiltradas;
+    if (currentMesas.length < 2) return;
+    // Find most common size
+    const sizes = {};
+    for (const m of currentMesas) {
+      const key = `${m.ancho ?? 3}x${m.alto ?? 2}`;
+      sizes[key] = (sizes[key] || 0) + 1;
+    }
+    const [bestW, bestH] = Object.entries(sizes)
+      .sort((a, b) => b[1] - a[1])[0][0]
+      .split('x').map(Number);
+    // Apply to all
+    for (const m of currentMesas) {
+      if ((m.ancho ?? 3) !== bestW || (m.alto ?? 2) !== bestH) {
+        try {
+          await api.put(`/mesas/${m.id}`, { ancho: bestW, alto: bestH });
+        } catch {}
+      }
+    }
+    toast.success('Mesas uniformadas');
+    fetchEstado();
+  };
+
   // === Tutorial handlers ===
 
   const handleTutorialCreatePiso = async () => {
@@ -387,6 +412,7 @@ export default function MesasPage() {
                 onMoveMesa={handleMoveMesa}
                 onResizeMesa={handleResizeMesa}
                 onDeleteMesa={handleDeleteMesa}
+                onUniformar={handleUniformar}
                 onMesaClick={() => {}}
               />
             </motion.div>
@@ -552,6 +578,7 @@ export default function MesasPage() {
         onMoveMesa={handleMoveMesa}
         onResizeMesa={handleResizeMesa}
         onDeleteMesa={handleDeleteMesa}
+                onUniformar={handleUniformar}
         onMesaClick={handleMesaClick}
       />
 
