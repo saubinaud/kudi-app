@@ -224,16 +224,7 @@ export default function MesasPage() {
       if (num !== mesa.numero) updates.numero = num;
       if (editForm.nombre !== (mesa.nombre || '')) updates.nombre = editForm.nombre || null;
       if (cap !== (mesa.capacidad ?? 4)) updates.capacidad = cap;
-      const red = parseInt(editForm.redondeo) ?? 15;
-      if (red !== (mesa.redondeo ?? 15)) {
-        updates.redondeo = red;
-        // Full circle (50%) = force square
-        if (red >= 50) {
-          const size = Math.max(mesa.ancho ?? 3, mesa.alto ?? 2);
-          updates.ancho = size;
-          updates.alto = size;
-        }
-      }
+      // redondeo is handled by corner drag handle, not sidebar
       if (Object.keys(updates).length === 0) return;
       const res = await api.put(`/mesas/${editMesaId}`, updates);
       const updated = res?.data || res;
@@ -801,6 +792,11 @@ export default function MesasPage() {
         onResizeMesa={handleResizeMesa}
         onDeleteMesa={handleDeleteMesa}
         onUpdateCapacidad={handleUpdateCapacidad}
+        onUpdateRedondeo={async (id, val) => {
+          setMesas(prev => prev.map(m => m.id === id ? { ...m, redondeo: val, ...(val >= 50 ? { alto: m.ancho ?? 3 } : {}) } : m));
+          try { await api.put(`/mesas/${id}`, { redondeo: val, ...(val >= 50 ? { alto: (mesas.find(m => m.id === id)?.ancho ?? 3) } : {}) }); }
+          catch { toast.error('Error'); fetchEstado(); }
+        }}
         onDuplicar={handleDuplicarMesa}
         onUniformar={handleUniformar}
         onMesaClick={handleMesaClick}
@@ -846,26 +842,9 @@ export default function MesasPage() {
                     <input type="number" value={editForm.capacidad} onChange={e => setEditForm(f => ({ ...f, capacidad: e.target.value }))}
                       className={cx.input + ' text-sm'} min="1" max="99" />
                   </div>
-                  <div>
-                    <label className={cx.label}>Redondeo</label>
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-5 border-2 border-stone-400 flex-shrink-0" style={{ borderRadius: '2px' }} />
-                      <input
-                        type="range"
-                        min="0"
-                        max="50"
-                        value={editForm.redondeo}
-                        onChange={e => setEditForm(f => ({ ...f, redondeo: parseInt(e.target.value) }))}
-                        className="flex-1 accent-[#16A34A] h-1.5"
-                      />
-                      <div className="w-6 h-6 border-2 border-stone-400 flex-shrink-0 rounded-full" />
-                    </div>
-                    <div className="flex justify-between mt-1">
-                      <span className="text-[9px] text-stone-400">Recto</span>
-                      <span className="text-[9px] text-stone-500 font-medium">{editForm.redondeo}%</span>
-                      <span className="text-[9px] text-stone-400">Circular</span>
-                    </div>
-                  </div>
+                  <p className="text-[10px] text-stone-400 mt-1">
+                    Arrastra la esquina verde de la mesa para redondear
+                  </p>
                   <button onClick={saveEditMesa} className={cx.btnPrimary + ' w-full mt-4 min-h-[44px]'}>
                     Guardar mesa
                   </button>
