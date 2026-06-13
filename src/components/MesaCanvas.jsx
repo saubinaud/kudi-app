@@ -279,20 +279,40 @@ export default function MesaCanvas({
               : 'none',
             backgroundSize: `${CELL}px ${CELL}px`,
           }}>
-            {/* Connection lines between united mesas */}
+            {/* Connection bridge between united mesas — short connector at edges */}
             <svg style={{ position: 'absolute', inset: 0, width: CANVAS_W, height: CANVAS_H, pointerEvents: 'none', zIndex: 1 }}>
               {mesas.filter(m => m.sesion_principal_id).map(secondary => {
                 const primary = mesas.find(m => m.sesion_id === secondary.sesion_principal_id);
                 if (!primary) return null;
-                const sx = (secondary.pos_x ?? 0) * CELL + ((secondary.ancho ?? 3) * CELL) / 2;
-                const sy = (secondary.pos_y ?? 0) * CELL + ((secondary.alto ?? 2) * CELL) / 2;
-                const px = (primary.pos_x ?? 0) * CELL + ((primary.ancho ?? 3) * CELL) / 2;
-                const py = (primary.pos_y ?? 0) * CELL + ((primary.alto ?? 2) * CELL) / 2;
+                // Calculate nearest edges between the two mesas
+                const pLeft = (primary.pos_x ?? 0) * CELL, pTop = (primary.pos_y ?? 0) * CELL;
+                const pW = (primary.ancho ?? 3) * CELL, pH = (primary.alto ?? 2) * CELL;
+                const sLeft = (secondary.pos_x ?? 0) * CELL, sTop = (secondary.pos_y ?? 0) * CELL;
+                const sW = (secondary.ancho ?? 3) * CELL, sH = (secondary.alto ?? 2) * CELL;
+                const pCx = pLeft + pW / 2, pCy = pTop + pH / 2;
+                const sCx = sLeft + sW / 2, sCy = sTop + sH / 2;
+                // Find the closest edge points
+                let x1, y1, x2, y2;
+                if (Math.abs(pCx - sCx) > Math.abs(pCy - sCy)) {
+                  // Horizontal connection
+                  if (pCx < sCx) { x1 = pLeft + pW; x2 = sLeft; } else { x1 = pLeft; x2 = sLeft + sW; }
+                  const overlapTop = Math.max(pTop, sTop);
+                  const overlapBot = Math.min(pTop + pH, sTop + sH);
+                  const midY = overlapTop < overlapBot ? (overlapTop + overlapBot) / 2 : (pCy + sCy) / 2;
+                  y1 = midY; y2 = midY;
+                } else {
+                  // Vertical connection
+                  if (pCy < sCy) { y1 = pTop + pH; y2 = sTop; } else { y1 = pTop; y2 = sTop + sH; }
+                  const overlapL = Math.max(pLeft, sLeft);
+                  const overlapR = Math.min(pLeft + pW, sLeft + sW);
+                  const midX = overlapL < overlapR ? (overlapL + overlapR) / 2 : (pCx + sCx) / 2;
+                  x1 = midX; x2 = midX;
+                }
                 return (
                   <g key={`link-${secondary.id}`}>
-                    <line x1={px} y1={py} x2={sx} y2={sy} stroke="#f59e0b" strokeWidth="3" strokeDasharray="6 4" opacity="0.7" />
-                    <circle cx={(px + sx) / 2} cy={(py + sy) / 2} r="6" fill="#f59e0b" />
-                    <circle cx={(px + sx) / 2} cy={(py + sy) / 2} r="3" fill="white" />
+                    <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#f59e0b" strokeWidth="4" strokeLinecap="round" />
+                    <circle cx={x1} cy={y1} r="5" fill="#f59e0b" />
+                    <circle cx={x2} cy={y2} r="5" fill="#f59e0b" />
                   </g>
                 );
               })}
@@ -363,12 +383,7 @@ export default function MesaCanvas({
                     </>
                   )}
 
-                  {/* Linked badge — small indicator, line does the heavy lifting */}
-                  {!isEditing && linkedLabel && (
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 z-10 bg-amber-500 text-white px-1.5 py-0.5 rounded-full shadow-sm">
-                      <Link2 size={10} />
-                    </div>
-                  )}
+                  {/* Linked — amber border handled by className above, bridge line handles visual */}
 
                   {/* Multi-select checkmark */}
                   {multiSelect && isMultiSelected && (
