@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
@@ -22,6 +22,7 @@ export default function MesasPage() {
   const toast = useToast();
   const navigate = useNavigate();
 
+  const initialLoadDone = useRef(false);
   const [pisos, setPisos] = useState([]);
   const [mesas, setMesas] = useState([]);
   const [selectedPiso, setSelectedPiso] = useState(null);
@@ -49,10 +50,11 @@ export default function MesasPage() {
       if (!selectedPiso && data.pisos?.length > 0) {
         setSelectedPiso(data.pisos[0].id);
       }
-      // Determine if we should show tutorial
-      if (data.pisos?.length === 0 && data.mesas?.length === 0) {
+      // Determine if we should show tutorial (only on first load)
+      if (!initialLoadDone.current && data.pisos?.length === 0 && data.mesas?.length === 0) {
         setTutorialStep(0); // welcome
       }
+      initialLoadDone.current = true;
     } catch (err) {
       console.error('Fetch mesas estado:', err);
     } finally {
