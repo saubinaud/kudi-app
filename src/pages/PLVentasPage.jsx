@@ -8,6 +8,7 @@ import SearchableSelect from '../components/SearchableSelect';
 import CustomSelect from '../components/CustomSelect';
 import PeriodoSelector from '../components/PeriodoSelector';
 import ConfirmDialog from '../components/ConfirmDialog';
+import SegmentedControl from '../components/SegmentedControl';
 import {
   Plus, Minus, X, Trash2, Pencil, ChevronDown, ChevronUp, ChevronRight,
   DollarSign, TrendingUp, Package, ShoppingCart, FileText,
@@ -811,22 +812,18 @@ export default function PLVentasPage() {
       {/* Section tabs */}
       {!loadingVentas && ventas.length > 0 && (
         <>
-          <div className="flex gap-1 mb-4">
-            {[
-              { value: 'todas', label: 'Total ordenes' },
-              { value: 'directo', label: 'Directo' },
-              { value: 'contra_entrega', label: 'Contra entrega' },
-            ].map(t => {
-              const count = t.value === 'todas' ? ventas.length : ventas.filter(v => v.tipo_venta === t.value).length;
-              return (
-                <button key={t.value} onClick={() => setSeccionTab(t.value)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-100 ${
-                    seccionTab === t.value ? 'bg-[#0A2F24] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                  }`}>
-                  {t.label} ({count})
-                </button>
-              );
-            })}
+          <div className="mb-4">
+            <SegmentedControl
+              options={[
+                { key: 'todas', label: `Total (${ventas.length})` },
+                { key: 'directo', label: `Directo (${ventas.filter(v => v.tipo_venta === 'directo').length})` },
+                { key: 'contra_entrega', label: `Contra entrega (${ventas.filter(v => v.tipo_venta === 'contra_entrega').length})` },
+              ]}
+              value={seccionTab}
+              onChange={setSeccionTab}
+              layoutId="ventas-seccion"
+              size="sm"
+            />
           </div>
           {/* Estado filter tabs */}
           <div className="flex gap-1 mb-4 flex-wrap">

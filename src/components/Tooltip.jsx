@@ -1,20 +1,31 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
  * Tooltip — aparece después de un delay al mantener el mouse sobre el children.
- *
- * @param {string} text — texto del tooltip
- * @param {number} delay — ms antes de mostrar (default 1500)
- * @param {'top'|'bottom'|'left'|'right'} position — dirección del tooltip
- * @param {ReactNode} children — elemento que activa el tooltip
+ * Usa portal + fixed positioning para nunca cortarse por overflow.
  */
 export default function Tooltip({ text, delay = 1500, position = 'top', children }) {
   const [show, setShow] = useState(false);
+  const [coords, setCoords] = useState({ x: 0, y: 0 });
   const timerRef = useRef(null);
+  const triggerRef = useRef(null);
+
+  const calcPosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const pos = {
+      top: { x: rect.left + rect.width / 2, y: rect.top - 8 },
+      bottom: { x: rect.left + rect.width / 2, y: rect.bottom + 8 },
+      left: { x: rect.left - 8, y: rect.top + rect.height / 2 },
+      right: { x: rect.right + 8, y: rect.top + rect.height / 2 },
+    };
+    setCoords(pos[position] || pos.top);
+  }, [position]);
 
   const handleEnter = () => {
-    timerRef.current = setTimeout(() => setShow(true), delay);
+    timerRef.current = setTimeout(() => { calcPosition(); setShow(true); }, delay);
   };
 
   const handleLeave = () => {
@@ -22,14 +33,14 @@ export default function Tooltip({ text, delay = 1500, position = 'top', children
     setShow(false);
   };
 
-  const posStyles = {
-    top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
-    bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
-    left: 'right-full top-1/2 -translate-y-1/2 mr-2',
-    right: 'left-full top-1/2 -translate-y-1/2 ml-2',
+  const transformOrigin = {
+    top: '-translate-x-1/2 -translate-y-full',
+    bottom: '-translate-x-1/2',
+    left: '-translate-x-full -translate-y-1/2',
+    right: '-translate-y-1/2',
   };
 
-  const motionOrigin = {
+  const motionProps = {
     top: { initial: { opacity: 0, y: 4 }, animate: { opacity: 1, y: 0 } },
     bottom: { initial: { opacity: 0, y: -4 }, animate: { opacity: 1, y: 0 } },
     left: { initial: { opacity: 0, x: 4 }, animate: { opacity: 1, x: 0 } },
@@ -39,21 +50,27 @@ export default function Tooltip({ text, delay = 1500, position = 'top', children
   if (!text) return children;
 
   return (
-    <span className="relative inline-flex" onMouseEnter={handleEnter} onMouseLeave={handleLeave} onFocus={handleEnter} onBlur={handleLeave}>
-      {children}
-      <AnimatePresence>
-        {show && (
-          <motion.span
-            className={`absolute z-[100] px-2.5 py-1.5 rounded-lg bg-[#0A2F24] text-white text-[11px] font-medium whitespace-nowrap pointer-events-none shadow-lg ${posStyles[position]}`}
-            initial={motionOrigin[position].initial}
-            animate={motionOrigin[position].animate}
-            exit={motionOrigin[position].initial}
-            transition={{ duration: 0.12 }}
-          >
-            {text}
-          </motion.span>
-        )}
-      </AnimatePresence>
-    </span>
+    <>
+      <span ref={triggerRef} className="inline-flex" onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
+        {children}
+      </span>
+      {createPortal(
+        <AnimatePresence>
+          {show && (
+            <motion.span
+              className={`fixed z-[9999] px-2.5 py-1.5 rounded-lg bg-[#0A2F24] text-white text-[11px] font-medium whitespace-nowrap pointer-events-none shadow-lg ${transformOrigin[position]}`}
+              style={{ left: coords.x, top: coords.y }}
+              initial={motionProps[position].initial}
+              animate={motionProps[position].animate}
+              exit={motionProps[position].initial}
+              transition={{ duration: 0.12 }}
+            >
+              {text}
+            </motion.span>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+    </>
   );
 }
