@@ -66,7 +66,7 @@ function SidebarLink({ to, action, label, icon: Icon, onClick, collapsed, end, d
       <button
         onClick={() => { action(); onClick?.(); }}
         title={collapsed ? label : undefined}
-        className={`w-full flex items-center ${collapsed ? 'justify-center' : 'gap-2.5'} ${collapsed ? 'px-0 py-2.5' : 'px-3 py-2'} rounded-lg text-[13px] font-medium transition-colors duration-100 text-white/55 hover:text-white hover:bg-white/5 relative`}
+        className={`w-full flex items-center ${collapsed ? 'justify-center' : 'gap-2.5'} ${collapsed ? 'px-0 py-2.5' : 'px-3 py-2'} rounded-lg text-[13px] font-medium transition-colors duration-100 text-white/55 hover:text-white hover:bg-white/5 relative outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-white/20`}
       >
         <Icon size={collapsed ? 20 : 16} strokeWidth={1.5} />
         {!collapsed && <span className="flex-1 text-left">{label}</span>}
@@ -84,7 +84,7 @@ function SidebarLink({ to, action, label, icon: Icon, onClick, collapsed, end, d
       onClick={onClick}
       title={collapsed ? label : undefined}
       className={({ isActive }) =>
-        `flex items-center ${collapsed ? 'justify-center' : 'gap-2.5'} ${collapsed ? 'px-0 py-2.5' : 'px-3 py-2'} rounded-lg text-[13px] font-medium transition-colors duration-100 ${
+        `flex items-center ${collapsed ? 'justify-center' : 'gap-2.5'} ${collapsed ? 'px-0 py-2.5' : 'px-3 py-2'} rounded-lg text-[13px] font-medium transition-colors duration-100 outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-white/20 ${
           isActive
             ? 'bg-white/10 text-[#4ADE80]'
             : 'text-white/55 hover:text-white hover:bg-white/5'

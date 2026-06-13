@@ -1009,11 +1009,17 @@ export default function POSPage() {
 
         {/* Banner abrir caja — dismissable */}
         {!caja && !cajaDismissed && (
-          <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-xs text-amber-700">
-            <span>No has abierto caja hoy. Puedes vender sin abrir caja, pero no se hará cuadre.</span>
-            <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-              <button onClick={() => setShowAbrirCaja(true)} className="px-2.5 py-1 bg-amber-600 text-white rounded-lg font-semibold hover:bg-amber-700 transition-colors duration-100">Abrir</button>
-              <button onClick={() => setCajaDismissed(true)} className="text-amber-400 hover:text-amber-600"><X size={14} /></button>
+          <div className="flex items-center gap-3 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3">
+            <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center flex-shrink-0">
+              <DollarSign size={16} className="text-stone-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-stone-700">Caja no abierta</p>
+              <p className="text-[11px] text-stone-400">Puedes vender, pero no se registrara el cuadre de caja</p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button onClick={() => setShowAbrirCaja(true)} className={cx.btnPrimary + ' text-xs px-3 py-1.5'}>Abrir caja</button>
+              <button onClick={() => setCajaDismissed(true)} className="text-stone-300 hover:text-stone-500 transition-colors duration-150"><X size={16} /></button>
             </div>
           </div>
         )}
