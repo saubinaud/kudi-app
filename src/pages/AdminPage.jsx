@@ -1253,8 +1253,10 @@ function MensajesTab() {
   const [replyText, setReplyText] = useState('');
 
   // Form
-  const [modo, setModo] = useState('directo'); // 'directo' | 'broadcast'
+  const [modo, setModo] = useState('directo'); // 'directo' | 'broadcast' | 'email'
   const [destino, setDestino] = useState('');
+  const [emailManual, setEmailManual] = useState('');
+  const [nombreManual, setNombreManual] = useState('');
   const [asunto, setAsunto] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [enviarEmail, setEnviarEmail] = useState(true);
@@ -1278,7 +1280,17 @@ function MensajesTab() {
     setSending(true);
     setBroadcastResult(null);
     try {
-      if (modo === 'broadcast') {
+      if (modo === 'email') {
+        if (!emailManual.trim() || !emailManual.includes('@')) { toast.error('Ingresa un email valido'); setSending(false); return; }
+        const res = await api.post('/admin/mensajes/send-email', {
+          email: emailManual.trim(),
+          nombre: nombreManual.trim() || emailManual.split('@')[0],
+          asunto: asunto.trim() || null,
+          mensaje: mensaje.trim(),
+        });
+        toast.success('Email enviado a ' + emailManual);
+        setEmailManual(''); setNombreManual('');
+      } else if (modo === 'broadcast') {
         const res = await api.post('/admin/mensajes/broadcast-email', {
           asunto: asunto.trim() || 'Mensaje de Kudi',
           mensaje: mensaje.trim(),
@@ -1375,6 +1387,12 @@ function MensajesTab() {
               }`}>
               Difusion
             </button>
+            <button onClick={() => setModo('email')}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                modo === 'email' ? 'bg-white text-[#0A2F24] shadow-sm' : 'text-white/60 hover:text-white/90'
+              }`}>
+              Email libre
+            </button>
           </div>
         </div>
 
@@ -1390,6 +1408,17 @@ function MensajesTab() {
                     <option key={u.id} value={u.id}>{u.nombre || u.email} ({u.email})</option>
                   ))}
                 </select>
+              </div>
+            ) : modo === 'email' ? (
+              <div className="space-y-3">
+                <div>
+                  <label className={cx.label}>Email del destinatario</label>
+                  <input type="email" value={emailManual} onChange={e => setEmailManual(e.target.value)} className={cx.input} placeholder="ejemplo@gmail.com" />
+                </div>
+                <div>
+                  <label className={cx.label}>Nombre (opcional)</label>
+                  <input type="text" value={nombreManual} onChange={e => setNombreManual(e.target.value)} className={cx.input} placeholder="Juan Pérez" />
+                </div>
               </div>
             ) : (
               <div>
