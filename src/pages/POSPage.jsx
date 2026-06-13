@@ -9,6 +9,7 @@ import CustomSelect from '../components/CustomSelect';
 import SegmentedControl from '../components/SegmentedControl';
 import UbigeoSelect from '../components/UbigeoSelect';
 import { X, Package, CheckCircle, Minus, Plus, ShoppingCart, Banknote, CreditCard, Smartphone, ArrowLeft, Trash2, MapPin, Store, Truck as TruckIcon, User, ChevronRight, AlertTriangle, Lock, DollarSign, Clock } from 'lucide-react';
+import Tooltip from '../components/Tooltip';
 import ProductGrid from '../components/ProductGrid';
 
 function todayStr() {
@@ -536,9 +537,11 @@ export default function POSPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-1">
                         <p className="text-sm font-medium text-stone-800 truncate leading-tight">{item.nombre}</p>
-                        <button onClick={() => removeFromCart(i)} className="text-stone-300 hover:text-rose-500 transition-colors duration-100 opacity-0 group-hover:opacity-100 -mt-0.5 flex-shrink-0">
-                          <Trash2 size={13} />
-                        </button>
+                        <Tooltip text="Quitar" position="left">
+                          <button onClick={() => removeFromCart(i)} className="text-stone-300 hover:text-rose-500 transition-colors duration-100 opacity-0 group-hover:opacity-100 -mt-0.5 flex-shrink-0">
+                            <Trash2 size={13} />
+                          </button>
+                        </Tooltip>
                       </div>
                       {item.variante_nombre && <p className="text-[10px] text-stone-400 -mt-0.5">{item.variante_nombre}</p>}
                       <div className="flex items-center justify-between mt-1.5">

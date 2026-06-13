@@ -9,10 +9,11 @@ import CustomSelect from '../components/CustomSelect';
 import PeriodoSelector from '../components/PeriodoSelector';
 import ConfirmDialog from '../components/ConfirmDialog';
 import {
-  Plus, X, Trash2, Pencil, ChevronDown, ChevronUp, ChevronRight,
+  Plus, Minus, X, Trash2, Pencil, ChevronDown, ChevronUp, ChevronRight,
   DollarSign, TrendingUp, Package, ShoppingCart, FileText,
   Ban,
 } from 'lucide-react';
+import Tooltip from '../components/Tooltip';
 
 // Badge-style dropdown — uses fixed positioning to escape overflow:hidden
 function StatusBadge({ value, options, onChange, colorMap = {} }) {
@@ -297,15 +298,53 @@ export default function PLVentasPage() {
 
   const updateItem = (id, field, value) => setVentaItems(prev => prev.map(i => i._id === id ? { ...i, [field]: value } : i));
 
+  const updateItemQty = (index, delta) => {
+    setVentaItems(prev => {
+      const next = [...prev];
+      const newQty = Math.max(1, (parseFloat(next[index].cantidad) || 1) + delta);
+      next[index] = { ...next[index], cantidad: newQty };
+      return next;
+    });
+  };
+
+  // Helper to get product image from enrichedProductos
+  const getProductImage = (productoId) => {
+    const prod = enrichedProductos.find(p => p.id === productoId || p.value === productoId);
+    return prod?.imagen_url || null;
+  };
+
   const selectProducto = (itemId, producto) => {
     const hasVariants = producto.variantes && producto.variantes.length > 0;
+    let precio = parseFloat(producto.precio_final) || '';
+    if (!hasVariants && canalId) {
+      const cp = (producto.precios_canal || []).find(pc => pc.canal_id === canalId);
+      if (cp) precio = parseFloat(cp.precio_override) || precio;
+    }
     setVentaItems(prev => prev.map(i => i._id === itemId ? {
       ...i,
       producto_id: producto.id,
       producto_nombre: producto.nombre,
       variante_id: null,
-      precio_unitario: hasVariants ? '' : (parseFloat(producto.precio_final) || ''),
+      precio_unitario: hasVariants ? '' : precio,
     } : i));
+  };
+
+  // When canal changes, recalculate all item prices
+  const handleCanalChange = (newCanalId) => {
+    setCanalId(newCanalId);
+    setVentaItems(prev => prev.map(item => {
+      const product = productos.find(p => p.id === item.producto_id);
+      if (!product) return item;
+      // Skip items with variants — variant price takes precedence
+      const hasVariants = product.variantes && product.variantes.length > 0;
+      if (hasVariants && item.variante_id) return item;
+      let precio = parseFloat(product.precio_final) || 0;
+      if (newCanalId) {
+        const canalPrecio = (product.precios_canal || []).find(pc => pc.canal_id === newCanalId);
+        if (canalPrecio) precio = parseFloat(canalPrecio.precio_override) || precio;
+      }
+      return { ...item, precio_unitario: precio };
+    }));
   };
 
   // Helper to get variants for a product
@@ -931,10 +970,16 @@ export default function PLVentasPage() {
                     <td className={cx.td} onClick={e => e.stopPropagation()}>
                       <div className="flex items-center gap-1 justify-end">
                         {v.estado_pago !== 'cancelado' && (
-                          <button onClick={() => setCancelTarget(v)} className={cx.btnIcon + ' hover:text-rose-600'} title="Cancelar venta"><Ban size={14} /></button>
+                          <Tooltip text="Cancelar venta" position="top">
+                            <button onClick={() => setCancelTarget(v)} className={cx.btnIcon + ' hover:text-rose-600'}><Ban size={14} /></button>
+                          </Tooltip>
                         )}
-                        <button onClick={() => openEditVenta(v)} className={cx.btnIcon}><Pencil size={14} /></button>
-                        <button onClick={() => setDeleteTarget(v)} className={cx.btnIcon + ' hover:text-rose-600'}><Trash2 size={14} /></button>
+                        <Tooltip text="Editar" position="top">
+                          <button onClick={() => openEditVenta(v)} className={cx.btnIcon}><Pencil size={14} /></button>
+                        </Tooltip>
+                        <Tooltip text="Eliminar" position="top">
+                          <button onClick={() => setDeleteTarget(v)} className={cx.btnIcon + ' hover:text-rose-600'}><Trash2 size={14} /></button>
+                        </Tooltip>
                         <ChevronRight size={14} className="text-stone-300" />
                       </div>
                     </td>
@@ -1128,54 +1173,76 @@ export default function PLVentasPage() {
                 {/* Products list */}
                 <div className="space-y-2">
                   <label className={cx.label}>Productos</label>
-                  {ventaItems.map((item, idx) => (
-                    <div key={item._id} className="bg-stone-50 rounded-lg p-2 space-y-2">
-                      <div className="space-y-2">
-                        <SearchableSelect
-                          options={enrichedProductos}
-                          value={item.producto_id}
-                          onChange={(prod) => selectProducto(item._id, prod)}
-                          placeholder="Producto..."
-                        />
-                        <div className="flex flex-wrap gap-2 items-center">
-                          <input type="number" value={item.cantidad} min="1" step={user?.stock_entero ? "1" : "0.01"}
-                            onChange={e => updateItem(item._id, 'cantidad', user?.stock_entero ? (parseInt(e.target.value) || 1) : (parseFloat(e.target.value) || 1))}
-                            className="w-16 bg-white rounded-lg px-2 py-2 text-sm text-center border border-stone-200"
-                            placeholder="Cant" />
-                          <input type="number" value={item.precio_unitario} readOnly
-                            className="w-24 bg-stone-50 cursor-not-allowed rounded-lg px-2 py-2 text-sm text-center border border-stone-200"
-                            placeholder="Precio" />
-                          <div className="flex items-center gap-1">
-                            <select value={item.descuento_tipo || 'monto'}
-                              onChange={e => updateItem(item._id, 'descuento_tipo', e.target.value)}
-                              className="text-xs border rounded px-1 py-1 bg-stone-50">
-                              <option value="pct">%</option>
-                              <option value="monto">S/</option>
-                            </select>
-                            <input type="number" min="0" step="0.01"
-                              value={item.descuento_tipo === 'pct' ? (item.descuento_pct || '') : (item.descuento || '')}
-                              onChange={e => {
-                                const val = parseFloat(e.target.value) || 0;
-                                if (item.descuento_tipo === 'pct') {
-                                  const monto = (parseFloat(item.precio_unitario) || 0) * (parseInt(item.cantidad) || 1) * val / 100;
-                                  updateItem(item._id, 'descuento_pct', val);
-                                  updateItem(item._id, 'descuento', Math.round(monto * 100) / 100);
-                                } else {
-                                  updateItem(item._id, 'descuento', val);
-                                  updateItem(item._id, 'descuento_pct', 0);
-                                }
-                              }}
-                              className={cx.input + ' w-16 text-sm'} placeholder="0" />
-                          </div>
-                          <span className="text-sm font-medium text-stone-700 ml-auto text-right">
-                            {formatCurrency((parseFloat(item.precio_unitario) || 0) * (parseInt(item.cantidad) || 1) - (parseFloat(item.descuento) || 0))}
-                          </span>
-                          {ventaItems.length > 1 && (
-                            <button onClick={() => removeItem(item._id)} className={cx.btnIcon + ' hover:text-rose-600'}>
-                              <Trash2 size={14} />
-                            </button>
+                  {ventaItems.map((item, idx) => {
+                    const itemImage = item.producto_id ? getProductImage(item.producto_id) : null;
+                    return (
+                    <div key={item._id} className="bg-white rounded-xl border border-stone-200 p-3 space-y-2.5">
+                      <div className="flex items-start gap-2.5">
+                        {/* Product image thumbnail */}
+                        <div className="flex-shrink-0 mt-1">
+                          {itemImage ? (
+                            <img src={itemImage} className="w-10 h-10 rounded-lg object-cover" alt="" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center">
+                              <Package size={16} className="text-stone-400" />
+                            </div>
                           )}
                         </div>
+                        {/* Product select + delete */}
+                        <div className="flex-1 min-w-0">
+                          <SearchableSelect
+                            options={enrichedProductos}
+                            value={item.producto_id}
+                            onChange={(prod) => selectProducto(item._id, prod)}
+                            placeholder="Producto..."
+                          />
+                        </div>
+                        {ventaItems.length > 1 && (
+                          <button onClick={() => removeItem(item._id)} className={cx.btnIcon + ' hover:text-rose-600 flex-shrink-0 mt-1'}>
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2 items-center">
+                        {/* +/- quantity buttons */}
+                        <div className="flex items-center gap-0 bg-stone-100 rounded-lg">
+                          <button type="button" onClick={() => updateItemQty(idx, -1)} className="w-7 h-7 flex items-center justify-center text-stone-500 hover:text-stone-800 transition-colors rounded-l-lg hover:bg-stone-50">
+                            <Minus size={12} />
+                          </button>
+                          <span className="text-sm font-bold w-7 text-center text-stone-800">{item.cantidad}</span>
+                          <button type="button" onClick={() => updateItemQty(idx, 1)} className="w-7 h-7 flex items-center justify-center text-stone-500 hover:text-stone-800 transition-colors rounded-r-lg hover:bg-stone-50">
+                            <Plus size={12} />
+                          </button>
+                        </div>
+                        <span className="text-xs text-stone-400">x</span>
+                        <input type="number" value={item.precio_unitario} readOnly
+                          className="w-20 bg-stone-50 cursor-not-allowed rounded-lg px-2 py-1.5 text-sm text-center border border-stone-200"
+                          placeholder="Precio" />
+                        <div className="flex items-center gap-1">
+                          <select value={item.descuento_tipo || 'monto'}
+                            onChange={e => updateItem(item._id, 'descuento_tipo', e.target.value)}
+                            className="text-xs border rounded px-1 py-1 bg-stone-50">
+                            <option value="pct">%</option>
+                            <option value="monto">S/</option>
+                          </select>
+                          <input type="number" min="0" step="0.01"
+                            value={item.descuento_tipo === 'pct' ? (item.descuento_pct || '') : (item.descuento || '')}
+                            onChange={e => {
+                              const val = parseFloat(e.target.value) || 0;
+                              if (item.descuento_tipo === 'pct') {
+                                const monto = (parseFloat(item.precio_unitario) || 0) * (parseInt(item.cantidad) || 1) * val / 100;
+                                updateItem(item._id, 'descuento_pct', val);
+                                updateItem(item._id, 'descuento', Math.round(monto * 100) / 100);
+                              } else {
+                                updateItem(item._id, 'descuento', val);
+                                updateItem(item._id, 'descuento_pct', 0);
+                              }
+                            }}
+                            className={cx.input + ' w-16 text-sm'} placeholder="0" />
+                        </div>
+                        <span className="text-sm font-bold text-stone-800 ml-auto text-right">
+                          {formatCurrency((parseFloat(item.precio_unitario) || 0) * (parseInt(item.cantidad) || 1) - (parseFloat(item.descuento) || 0))}
+                        </span>
                       </div>
                       {item.producto_id && getProductVariantes(item.producto_id)?.length > 0 && (
                         <div>
@@ -1189,37 +1256,44 @@ export default function PLVentasPage() {
                         </div>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                   <button onClick={addItem} className={cx.btnGhost + ' text-xs flex items-center gap-1'}>
                     <Plus size={13} /> Agregar producto
                   </button>
                 </div>
 
                 {/* Subtotal + descuento global */}
-                <div className="border-t border-stone-200 pt-3 mt-3 space-y-2">
+                <div className="bg-stone-50 rounded-xl p-4 space-y-1.5">
                   <div className="flex justify-between text-sm">
-                    <span className="text-stone-500">Subtotal</span>
-                    <span className="text-stone-800 font-medium">{formatCurrency(subtotal)}</span>
+                    <span className="text-stone-400">Subtotal</span>
+                    <span className="text-stone-600">{formatCurrency(subtotal)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <label className={cx.label + ' mb-0'}>Descuento global</label>
+                    <span className="text-stone-400 text-sm">Descuento global</span>
                     <input type="number" step="0.01" value={descuentoGlobal}
                       onChange={e => setDescuentoGlobal(parseFloat(e.target.value) || 0)}
-                      className="w-24 bg-white rounded-lg px-2 py-2 text-sm text-right border border-stone-200" />
+                      className="w-24 bg-white rounded-lg px-2 py-1.5 text-sm text-right border border-stone-200" />
                   </div>
-                  {tipoDelivery === 'delivery_propio' && parseFloat(costoEnvio) > 0 ? (
-                    <div className="text-xs text-stone-500 space-y-0.5">
-                      <div className="flex justify-between"><span>Productos</span><span>{formatCurrency(subtotal - descuentoGlobal)}</span></div>
-                      <div className="flex justify-between"><span>Delivery</span><span>{formatCurrency(parseFloat(costoEnvio))}</span></div>
-                      <div className="flex justify-between font-bold text-lg text-stone-900"><span>Total cliente</span><span className="text-[var(--accent)]">{formatCurrency(total)}</span></div>
-                      <p className="text-[10px] text-amber-600">La boleta se emite por S/{(subtotal - descuentoGlobal).toFixed(2)} (productos). El delivery genera un ticket aparte.</p>
-                    </div>
-                  ) : (
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Total</span>
-                      <span className="text-[var(--accent)]">{formatCurrency(total)}</span>
+                  {parseFloat(descuentoGlobal) > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-stone-400">Descuento</span>
+                      <span className="text-rose-500">-{formatCurrency(descuentoGlobal)}</span>
                     </div>
                   )}
+                  {tipoDelivery === 'delivery_propio' && parseFloat(costoEnvio) > 0 && (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-stone-400">Envio</span>
+                        <span className="text-stone-600">{formatCurrency(costoEnvio)}</span>
+                      </div>
+                      <p className="text-[10px] text-amber-600">La boleta se emite por S/{(subtotal - descuentoGlobal).toFixed(2)} (productos). El delivery genera un ticket aparte.</p>
+                    </>
+                  )}
+                  <div className="flex justify-between items-baseline pt-1.5 border-t border-stone-200">
+                    <span className="text-stone-500 text-sm">Total</span>
+                    <span className="text-2xl font-bold text-[#0A2F24]">{formatCurrency(total)}</span>
+                  </div>
                 </div>
 
                 {/* Date */}
@@ -1272,12 +1346,16 @@ export default function PLVentasPage() {
                 {canales.length > 0 && (
                   <div>
                     <label className={cx.label}>Canal de venta (opcional)</label>
-                    <CustomSelect
-                      value={canalId}
-                      onChange={setCanalId}
-                      options={[{ value: '', label: 'Venta directa (sin canal)' }, ...canales.map(c => ({ value: c.id, label: c.nombre }))]}
-                      placeholder="Venta directa"
-                    />
+                    {editingVenta?.facturado ? (
+                      <p className="text-xs text-stone-400 mt-1">No se puede cambiar el canal de una venta facturada</p>
+                    ) : (
+                      <CustomSelect
+                        value={canalId}
+                        onChange={handleCanalChange}
+                        options={[{ value: '', label: 'Venta directa (sin canal)' }, ...canales.map(c => ({ value: c.id, label: c.nombre }))]}
+                        placeholder="Venta directa"
+                      />
+                    )}
                   </div>
                 )}
 

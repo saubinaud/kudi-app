@@ -28,6 +28,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { useTerminos } from '../context/TerminosContext';
+import Tooltip from '../components/Tooltip';
 
 function normU(u) { if (!u) return ''; if (u === 'l') return 'L'; return u; }
 const FACTORES = { 'g→kg': 0.001, 'kg→g': 1000, 'g→oz': 0.03527, 'oz→g': 28.3495, 'kg→oz': 35.274, 'oz→kg': 0.02835, 'ml→L': 0.001, 'L→ml': 1000 };
@@ -380,25 +381,27 @@ export default function DashboardPage() {
             options={[{ key: 'gallery', label: '', icon: Grid3X3 }, { key: 'table', label: '', icon: LayoutList }]}
             value={viewMode} onChange={setViewMode} layoutId="dash-view" size="sm"
           />
-          <button
-            onClick={() => {
-              const next = mobileColumns === 2 ? 1 : 2;
-              setMobileColumns(next);
-              localStorage.setItem('kudi_mobile_cols', String(next));
-            }}
-            className={`${cx.btnIcon} sm:hidden`}
-            title={mobileColumns === 2 ? 'Una columna' : 'Dos columnas'}
-          >
-            {mobileColumns === 2 ? <Square size={18} /> : <Columns2 size={18} />}
-          </button>
-          <button
-            onClick={exportExcel}
-            disabled={exporting}
-            className={cx.btnSecondary + ' flex items-center gap-2'}
-            title="Exportar recetas completas"
-          >
-            {exporting ? <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" /> : <Download size={16} />}
-          </button>
+          <Tooltip text={mobileColumns === 2 ? 'Una columna' : 'Dos columnas'} position="bottom">
+            <button
+              onClick={() => {
+                const next = mobileColumns === 2 ? 1 : 2;
+                setMobileColumns(next);
+                localStorage.setItem('kudi_mobile_cols', String(next));
+              }}
+              className={`${cx.btnIcon} sm:hidden`}
+            >
+              {mobileColumns === 2 ? <Square size={18} /> : <Columns2 size={18} />}
+            </button>
+          </Tooltip>
+          <Tooltip text="Exportar recetas" position="bottom">
+            <button
+              onClick={exportExcel}
+              disabled={exporting}
+              className={cx.btnSecondary + ' flex items-center gap-2'}
+            >
+              {exporting ? <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" /> : <Download size={16} />}
+            </button>
+          </Tooltip>
           {(() => {
             const isTrialAtLimit = user?.plan === 'trial' && user?.rol !== 'admin' && products.filter(p => !p.locked).length >= (user?.max_productos || 2);
             return (
@@ -531,15 +534,21 @@ export default function DashboardPage() {
                 </div>
                 {/* Action buttons — hover on desktop */}
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                  <Link to={`/ficha-tecnica/${p.id}`} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-[var(--accent)]" title="Ficha técnica">
-                    <Package size={13} />
-                  </Link>
-                  <button onClick={() => setDuplicateTarget(p)} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-blue-600" title="Duplicar">
-                    <Copy size={14} />
-                  </button>
-                  <button onClick={() => setDeleteTarget(p)} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-rose-600" title="Eliminar">
-                    <Trash2 size={13} />
-                  </button>
+                  <Tooltip text="Ficha técnica" position="bottom">
+                    <Link to={`/ficha-tecnica/${p.id}`} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-[var(--accent)]">
+                      <Package size={13} />
+                    </Link>
+                  </Tooltip>
+                  <Tooltip text="Duplicar" position="bottom">
+                    <button onClick={() => setDuplicateTarget(p)} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-blue-600">
+                      <Copy size={14} />
+                    </button>
+                  </Tooltip>
+                  <Tooltip text="Eliminar" position="bottom">
+                    <button onClick={() => setDeleteTarget(p)} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-rose-600">
+                      <Trash2 size={13} />
+                    </button>
+                  </Tooltip>
                 </div>
               </div>
             ))}
@@ -580,12 +589,16 @@ export default function DashboardPage() {
                   <button onClick={() => openCanalesModal(p)} className={cx.btnGhost + ' flex-1 min-w-[4rem] flex items-center justify-center gap-1 text-xs'}>
                     <Truck size={12} /> Canales
                   </button>
-                  <button onClick={() => setDuplicateTarget(p)} className={cx.btnGhost + ' flex items-center justify-center p-2'} title="Duplicar">
-                    <Copy size={12} />
-                  </button>
-                  <button onClick={() => setDeleteTarget(p)} className={cx.btnDanger + ' flex items-center justify-center p-2'}>
-                    <Trash2 size={12} />
-                  </button>
+                  <Tooltip text="Duplicar" position="top">
+                    <button onClick={() => setDuplicateTarget(p)} className={cx.btnGhost + ' flex items-center justify-center p-2'}>
+                      <Copy size={12} />
+                    </button>
+                  </Tooltip>
+                  <Tooltip text="Eliminar" position="top">
+                    <button onClick={() => setDeleteTarget(p)} className={cx.btnDanger + ' flex items-center justify-center p-2'}>
+                      <Trash2 size={12} />
+                    </button>
+                  </Tooltip>
                 </div>
               </div>
             ))}
@@ -625,24 +638,36 @@ export default function DashboardPage() {
                     <td className={cx.td + ' text-stone-400'}>{formatDate(p.updated_at)}</td>
                     <td className={cx.td + ' text-right'}>
                       <div className="flex justify-end gap-1">
-                        <button onClick={() => navigate(`/cotizador/${p.id}`)} className={cx.btnIcon} title="Editar">
-                          <Pencil size={15} />
-                        </button>
-                        <Link to={`/ficha-tecnica/${p.id}`} className={cx.btnIcon + ' text-[var(--accent)]'} title="Ficha tecnica">
-                          <Package size={15} />
-                        </Link>
-                        <button onClick={() => openCanalesModal(p)} className={cx.btnIcon + ' text-sky-500'} title="Canales">
-                          <Truck size={15} />
-                        </button>
-                        <button onClick={() => setDuplicateTarget(p)} className={cx.btnIcon} title="Duplicar">
-                          <Copy size={15} />
-                        </button>
-                        <button onClick={() => handleHistory(p)} className={cx.btnIcon} title="Historial">
-                          <History size={15} />
-                        </button>
-                        <button onClick={() => setDeleteTarget(p)} className={cx.btnIcon + ' hover:text-rose-600'} title="Eliminar">
-                          <Trash2 size={15} />
-                        </button>
+                        <Tooltip text="Editar" position="top">
+                          <button onClick={() => navigate(`/cotizador/${p.id}`)} className={cx.btnIcon}>
+                            <Pencil size={15} />
+                          </button>
+                        </Tooltip>
+                        <Tooltip text="Ficha técnica" position="top">
+                          <Link to={`/ficha-tecnica/${p.id}`} className={cx.btnIcon + ' text-[var(--accent)]'}>
+                            <Package size={15} />
+                          </Link>
+                        </Tooltip>
+                        <Tooltip text="Canales" position="top">
+                          <button onClick={() => openCanalesModal(p)} className={cx.btnIcon + ' text-sky-500'}>
+                            <Truck size={15} />
+                          </button>
+                        </Tooltip>
+                        <Tooltip text="Duplicar" position="top">
+                          <button onClick={() => setDuplicateTarget(p)} className={cx.btnIcon}>
+                            <Copy size={15} />
+                          </button>
+                        </Tooltip>
+                        <Tooltip text="Historial" position="top">
+                          <button onClick={() => handleHistory(p)} className={cx.btnIcon}>
+                            <History size={15} />
+                          </button>
+                        </Tooltip>
+                        <Tooltip text="Eliminar" position="top">
+                          <button onClick={() => setDeleteTarget(p)} className={cx.btnIcon + ' hover:text-rose-600'}>
+                            <Trash2 size={15} />
+                          </button>
+                        </Tooltip>
                       </div>
                     </td>
                   </tr>

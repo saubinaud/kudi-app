@@ -24,6 +24,7 @@ import {
   Grid3X3,
   LayoutList,
 } from 'lucide-react';
+import Tooltip from '../components/Tooltip';
 
 function StatusBadge({ stock, minimo }) {
   if (stock === 0) {
@@ -524,18 +525,19 @@ export default function StockPage() {
                         </td>
                         <td className={cx.td}>
                           <div className="flex items-center gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setAjusteProducto(prod);
-                                setAjusteCantidad(String(stock));
-                                setAjusteNota('');
-                              }}
-                              className={cx.btnGhost + ' text-xs py-1 px-2'}
-                              title="Ajustar stock"
-                            >
-                              <SlidersHorizontal size={13} />
-                            </button>
+                            <Tooltip text="Ajustar stock" position="top">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setAjusteProducto(prod);
+                                  setAjusteCantidad(String(stock));
+                                  setAjusteNota('');
+                                }}
+                                className={cx.btnGhost + ' text-xs py-1 px-2'}
+                              >
+                                <SlidersHorizontal size={13} />
+                              </button>
+                            </Tooltip>
                             {isExpanded ? (
                               <ChevronUp size={14} className="text-stone-400" />
                             ) : (
@@ -618,17 +620,19 @@ export default function StockPage() {
                         <p className="text-lg font-bold text-stone-800">{stock}</p>
                         <p className="text-[10px] text-stone-400">min: {minimo}</p>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setAjusteProducto(prod);
-                          setAjusteCantidad(String(stock));
-                          setAjusteNota('');
-                        }}
-                        className={cx.btnGhost + ' text-xs py-1 px-2'}
-                      >
-                        <SlidersHorizontal size={13} />
-                      </button>
+                      <Tooltip text="Ajustar stock" position="top">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAjusteProducto(prod);
+                            setAjusteCantidad(String(stock));
+                            setAjusteNota('');
+                          }}
+                          className={cx.btnGhost + ' text-xs py-1 px-2'}
+                        >
+                          <SlidersHorizontal size={13} />
+                        </button>
+                      </Tooltip>
                       {isExpanded ? (
                         <ChevronUp size={14} className="text-stone-400" />
                       ) : (
