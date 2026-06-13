@@ -434,8 +434,9 @@ export default function MesaCanvas({
         const color = ocupada ? '#16A34A' : '#78716c';
         return chairs.map((ch, i) => {
           const len = 10;
-          const dx = Math.cos((ch.rot - 90) * Math.PI / 180) * len;
-          const dy = Math.sin((ch.rot - 90) * Math.PI / 180) * len;
+          // Parallel to the edge (rotate 90° from perpendicular)
+          const dx = Math.cos(ch.rot * Math.PI / 180) * len;
+          const dy = Math.sin(ch.rot * Math.PI / 180) * len;
           return (
             <line key={`ch-${mesa.id}-${i}`}
               x1={ch.x - dx * 0.5} y1={ch.y - dy * 0.5}
