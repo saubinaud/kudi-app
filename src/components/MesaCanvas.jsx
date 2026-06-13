@@ -59,11 +59,12 @@ export default function MesaCanvas({
         maxY = Math.max(maxY, (m.pos_y ?? 0) + (m.alto ?? 2));
       }
       if (maxX === 0) return;
-      const pad = 2;
+      const pad = 1;
       const cW = (maxX - minX + pad * 2) * CELL;
       const cH = (maxY - minY + pad * 2) * CELL;
       const r = containerRef.current.getBoundingClientRect();
-      const z = Math.min(r.width / cW, r.height / cH, 2);
+      // Fit to container but cap at a reasonable max so mesas don't get huge
+      const z = Math.min(r.width / cW, r.height / cH, 1.5);
       const ox = (r.width - cW * z) / 2 - (minX - pad) * CELL * z;
       const oy = (r.height - cH * z) / 2 - (minY - pad) * CELL * z;
       setViewTx({ zoom: z, ox, oy });
