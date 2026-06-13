@@ -673,17 +673,18 @@ export default function MesasPage() {
   const totalMesas = mesasFiltradas.length;
   const personasOcupadas = mesasFiltradas.filter(m => m.sesion_id).reduce((s, m) => s + (parseInt(m.comensales) || 0), 0);
 
+  const libres = totalMesas - ocupadas;
+
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
+        <div>
           <h1 className="text-xl font-bold text-stone-800">Mesas</h1>
           {!isEditing && !unirMode && totalMesas > 0 && (
-            <span className="text-xs text-stone-400">
-              {ocupadas}/{totalMesas} ocupadas
-              {currentPiso?.aforo ? ` · Aforo: ${personasOcupadas}/${currentPiso.aforo}` : ''}
-            </span>
+            <p className="text-xs text-stone-400 mt-0.5">
+              {currentPiso?.nombre || 'Tu local'}{currentPiso?.aforo ? ` · Aforo ${currentPiso.aforo}` : ''}
+            </p>
           )}
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -692,11 +693,8 @@ export default function MesasPage() {
               <button onClick={() => { setUnirMode(false); setUnirSelected([]); }} className={cx.btnGhost + ' flex items-center gap-1.5'}>
                 <X size={16} /> Cancelar
               </button>
-              <button
-                onClick={handleConfirmarUnion}
-                disabled={unirSelected.length < 2}
-                className={cx.btnPrimary + ' flex items-center gap-1.5'}
-              >
+              <button onClick={handleConfirmarUnion} disabled={unirSelected.length < 2}
+                className={cx.btnPrimary + ' flex items-center gap-1.5'}>
                 <Link2 size={16} /> Unir {unirSelected.length} mesas
               </button>
             </>
@@ -711,19 +709,13 @@ export default function MesasPage() {
             </>
           ) : (
             <>
-              <button
-                onClick={() => setShowDisponibles(!showDisponibles)}
-                className={cx.btnGhost + ' flex items-center gap-1.5' + (showDisponibles ? ' bg-stone-100' : '')}
-              >
-                <Search size={16} /> Disponibles
-              </button>
               <button onClick={() => { setUnirMode(true); setUnirSelected([]); }} className={cx.btnGhost + ' flex items-center gap-1.5'}>
                 <Link2 size={16} /> Unir
               </button>
               <button onClick={() => setIsEditing(true)} className={cx.btnSecondary + ' flex items-center gap-1.5'}>
                 <Pencil size={16} /> Editar
               </button>
-              <button onClick={() => navigate('/pos')} className={cx.btnSecondary + ' flex items-center gap-2'}>
+              <button onClick={() => navigate('/pos')} className={cx.btnPrimary + ' flex items-center gap-2'}>
                 <ShoppingCart size={16} /> Caja Rápida
               </button>
             </>
@@ -731,48 +723,61 @@ export default function MesasPage() {
         </div>
       </div>
 
-      {/* Disponibles filter bar */}
-      {showDisponibles && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          className={cx.card + ' p-3 mb-4 flex items-center gap-3 border-sky-200 bg-sky-50/50'}
-        >
-          <Users size={16} className="text-sky-600 flex-shrink-0" />
-          <span className="text-sm text-stone-700">Mesa para</span>
-          <input
-            type="number"
-            value={disponiblesPersonas}
-            onChange={e => updateDisponibles(e.target.value)}
-            className="w-16 px-2 py-1.5 border border-stone-300 rounded-lg text-sm text-center"
-            placeholder="4"
-            min="1"
-            autoFocus
-          />
-          <span className="text-sm text-stone-700">personas</span>
+      {/* Stats bar — Kudi style */}
+      {!isEditing && !unirMode && totalMesas > 0 && (
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-5 flex-1">
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#0A2F24]" />
+              <span className="text-sm font-semibold text-stone-800">{ocupadas}</span>
+              <span className="text-xs text-stone-400">ocupadas</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 rounded-full bg-stone-200 border border-stone-300" />
+              <span className="text-sm font-semibold text-stone-800">{libres}</span>
+              <span className="text-xs text-stone-400">libres</span>
+            </div>
+            {ocupadas > 0 && (
+              <div className="h-4 w-px bg-stone-200" />
+            )}
+            {ocupadas > 0 && (
+              <span className="text-xs text-stone-500">{personasOcupadas} personas</span>
+            )}
+          </div>
+
+          {/* Buscar disponible — inline compact */}
+          <div className="flex items-center gap-2 bg-white border border-stone-200 rounded-full px-3 py-1.5">
+            <Search size={14} className="text-stone-400" />
+            <input
+              type="number"
+              value={disponiblesPersonas}
+              onChange={e => updateDisponibles(e.target.value)}
+              className="w-10 text-sm text-center bg-transparent outline-none placeholder:text-stone-300"
+              placeholder="4"
+              min="1"
+            />
+            <span className="text-xs text-stone-400">pers.</span>
           {highlightIds && (
-            <span className="text-xs text-sky-600 font-medium">
-              {highlightIds.length} mesa{highlightIds.length !== 1 ? 's' : ''} disponible{highlightIds.length !== 1 ? 's' : ''}
-            </span>
-          )}
-          <button onClick={clearDisponibles} className={cx.btnIcon + ' !p-1 ml-auto'}>
-            <X size={14} />
-          </button>
-        </motion.div>
+              <span className="text-[10px] font-semibold text-[#16A34A]">{highlightIds.length}</span>
+            )}
+            {disponiblesPersonas && (
+              <button onClick={clearDisponibles} className="text-stone-300 hover:text-stone-500"><X size={12} /></button>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Unir mode banner */}
       {unirMode && (
-        <div className={cx.card + ' p-3 mb-4 flex items-center gap-3 border-violet-200 bg-violet-50/50'}>
+        <div className="flex items-center gap-3 mb-4 px-4 py-3 bg-violet-50 border border-violet-200 rounded-xl">
           <Link2 size={16} className="text-violet-600" />
-          <span className="text-sm text-stone-700">Selecciona las mesas que deseas unir en una sola cuenta</span>
+          <span className="text-sm text-violet-800 font-medium">Selecciona las mesas a unir</span>
         </div>
       )}
 
       {/* Floor tabs */}
       {pisos.length > 1 && (
-        <div className="inline-flex bg-stone-200/70 rounded-full p-1 mb-4">
+        <div className="inline-flex bg-stone-100 rounded-full p-1 mb-4">
           {pisos.map(piso => {
             const isActive = piso.id === selectedPiso;
             return (
