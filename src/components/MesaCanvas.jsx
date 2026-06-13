@@ -480,7 +480,6 @@ export default function MesaCanvas({
               backgroundImage: `radial-gradient(circle, rgba(168,162,158,0.22) 1px, transparent 1px)`,
               backgroundSize: `${CELL}px ${CELL}px`,
             }}>
-              {renderChairs()}
               {renderLinks()}
               {mesas.map(mesa => {
                 const tp = tempPos[mesa.id];
@@ -550,7 +549,6 @@ export default function MesaCanvas({
               width: CANVAS_W, height: CANVAS_H,
               position: 'absolute', top: 0, left: 0,
             }}>
-              {renderChairs()}
               {renderLinks()}
               {mesas.map(mesa => {
                 const px = (mesa.pos_x ?? 0) * CELL, py = (mesa.pos_y ?? 0) * CELL;
