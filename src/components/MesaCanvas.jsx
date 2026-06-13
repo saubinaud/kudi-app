@@ -198,6 +198,9 @@ export default function MesaCanvas({
   useEffect(() => {
     const handleKey = (e) => {
       if (!isEditing || !selectedId) return;
+      // Don't intercept when typing in inputs
+      const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
         onDeleteMesa?.(selectedId);
@@ -332,12 +335,12 @@ export default function MesaCanvas({
                     </>
                   )}
 
-                  {/* Linked indicator */}
+                  {/* Linked indicator — large, visible */}
                   {!isEditing && linkedLabel && (
-                    <div className="flex items-center gap-0.5 mt-0.5">
-                      <Link2 size={8} className="text-amber-500" />
-                      <span className="text-[9px] font-medium text-amber-600">
-                        {isLinked ? `→${linkedLabel}` : `+${linkedLabel}`}
+                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10 bg-amber-500 text-white px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm whitespace-nowrap">
+                      <Link2 size={12} />
+                      <span className="text-xs font-bold">
+                        {isLinked ? `Mesa ${linkedLabel}` : `+${linkedLabel}`}
                       </span>
                     </div>
                   )}

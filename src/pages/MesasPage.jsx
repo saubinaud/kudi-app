@@ -208,12 +208,17 @@ export default function MesasPage() {
 
   const saveEditMesa = async () => {
     if (!editMesaId) return;
+    const mesa = mesas.find(m => m.id === editMesaId);
+    if (!mesa) return;
+    // Validate — don't send if fields are empty (user is still typing)
+    const num = parseInt(editForm.numero);
+    const cap = parseInt(editForm.capacidad);
+    if (!num || num < 1 || !cap || cap < 1) return;
     try {
       const updates = {};
-      const mesa = mesas.find(m => m.id === editMesaId);
-      if (editForm.numero && parseInt(editForm.numero) !== mesa?.numero) updates.numero = parseInt(editForm.numero);
-      if (editForm.nombre !== (mesa?.nombre || '')) updates.nombre = editForm.nombre || null;
-      if (editForm.capacidad && parseInt(editForm.capacidad) !== (mesa?.capacidad ?? 4)) updates.capacidad = parseInt(editForm.capacidad);
+      if (num !== mesa.numero) updates.numero = num;
+      if (editForm.nombre !== (mesa.nombre || '')) updates.nombre = editForm.nombre || null;
+      if (cap !== (mesa.capacidad ?? 4)) updates.capacidad = cap;
       if (Object.keys(updates).length === 0) return;
       const res = await api.put(`/mesas/${editMesaId}`, updates);
       const updated = res?.data || res;
