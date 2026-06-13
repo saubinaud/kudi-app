@@ -13,6 +13,7 @@ input[type="number"] {
 
 body {
   overflow-x: clip;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
 
 #root {
