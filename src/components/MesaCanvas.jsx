@@ -20,6 +20,63 @@ function formatTimer(abiertaAt) {
   return `${m}m`;
 }
 
+// Chair positions around a mesa
+function getChairs(mesa, cell) {
+  const x = (mesa.pos_x ?? 0) * cell;
+  const y = (mesa.pos_y ?? 0) * cell;
+  const w = (mesa.ancho ?? 3) * cell;
+  const h = (mesa.alto ?? 2) * cell;
+  const cap = mesa.capacidad ?? 4;
+  const red = mesa.redondeo ?? 15;
+  const isCircle = red >= 45;
+  const chairGap = 4;
+  const chairs = [];
+
+  if (isCircle) {
+    const cx = x + w / 2, cy = y + h / 2;
+    const radius = w / 2 + 8;
+    for (let i = 0; i < cap; i++) {
+      const a = (i / cap) * Math.PI * 2 - Math.PI / 2;
+      chairs.push({ x: cx + radius * Math.cos(a), y: cy + radius * Math.sin(a), rot: (a * 180 / Math.PI) + 90 });
+    }
+  } else {
+    // Distribute along perimeter proportionally
+    const sides = [
+      { len: w, dir: 'top' }, { len: h, dir: 'right' },
+      { len: w, dir: 'bottom' }, { len: h, dir: 'left' },
+    ];
+    const perim = 2 * (w + h);
+    let counts = sides.map(s => Math.round(cap * s.len / perim));
+    let total = counts.reduce((a, b) => a + b, 0);
+    // Fix rounding — prefer long sides
+    const sorted = [0,1,2,3].sort((a, b) => sides[b].len - sides[a].len);
+    while (total < cap) { counts[sorted[total % 4]]++; total++; }
+    while (total > cap) {
+      for (let i = sorted.length - 1; i >= 0; i--) {
+        if (counts[sorted[i]] > 0 && total > cap) { counts[sorted[i]]--; total--; }
+      }
+    }
+    sides.forEach((s, si) => {
+      const n = counts[si];
+      if (n === 0) return;
+      const spacing = s.len / (n + 1);
+      for (let i = 0; i < n; i++) {
+        const pos = spacing * (i + 1);
+        switch (s.dir) {
+          case 'top': chairs.push({ x: x + pos, y: y - 8, rot: 180 }); break;
+          case 'bottom': chairs.push({ x: x + pos, y: y + h + 8, rot: 0 }); break;
+          case 'left': chairs.push({ x: x - 8, y: y + pos, rot: 90 }); break;
+          case 'right': chairs.push({ x: x + w + 8, y: y + pos, rot: 270 }); break;
+        }
+      }
+    });
+  }
+  return chairs;
+}
+
+// SVG chair path (U-shape seat facing up = toward table)
+const CHAIR_PATH = 'M-5,3 C-5,-2 -3,-4 0,-4 C3,-4 5,-2 5,3';
+
 export default function MesaCanvas({
   mesas, isEditing,
   onCreateMesa, onMoveMesa, onResizeMesa, onDeleteMesa, onDuplicar,
@@ -276,7 +333,7 @@ export default function MesaCanvas({
           className={`font-bold leading-none tracking-tight ${
             multiSelect ? (selectedMesaIds.includes(mesa.id) ? 'text-violet-700' : 'text-stone-400')
             : isEditing ? (selectedId === mesa.id ? 'text-[#0A2F24]' : 'text-stone-400')
-            : ocupada ? 'text-[#0A2F24]' : 'text-stone-400'
+            : ocupada ? 'text-[#0A2F24]' : 'text-stone-600'
           }`}>{mesa.numero}</span>
 
         {ph >= CELL * 2 && (
@@ -329,12 +386,12 @@ export default function MesaCanvas({
     }
     if (isEditing) {
       return isSelected ? 'bg-white border-2 border-[#16A34A]'
-        : 'bg-white border border-stone-200/80 hover:border-stone-300';
+        : 'bg-stone-50 border border-stone-300 hover:border-stone-400';
     }
     if (ocupada) {
-      return 'bg-gradient-to-br from-emerald-50/70 via-emerald-50/30 to-white border border-emerald-200/60 border-l-4 border-l-[#16A34A]';
+      return 'bg-gradient-to-br from-emerald-50 via-emerald-50/40 to-white border-2 border-emerald-400/70';
     }
-    return 'bg-white border border-stone-200';
+    return 'bg-stone-50 border border-stone-300';
   };
 
   const getMesaShadow = (mesa) => {
@@ -343,8 +400,8 @@ export default function MesaCanvas({
     const isHighlighted = highlightIds && highlightIds.includes(mesa.id);
     if (isHighlighted) return '0 0 0 3px rgba(22,163,74,0.25), 0 2px 12px rgba(22,163,74,0.15)';
     if (selectedId === mesa.id) return '0 0 0 4px rgba(22,163,74,0.1)';
-    if (ocupada) return '0 2px 12px rgba(22,163,74,0.08), 0 1px 4px rgba(0,0,0,0.04)';
-    return '0 1px 3px rgba(0,0,0,0.02)';
+    if (ocupada) return '0 2px 12px rgba(22,163,74,0.12), 0 1px 4px rgba(0,0,0,0.06)';
+    return '0 1px 4px rgba(0,0,0,0.06)';
   };
 
   // Link lines renderer
@@ -373,6 +430,24 @@ export default function MesaCanvas({
             <circle cx={x2} cy={y2} r="5" fill="#16A34A" /><circle cx={x2} cy={y2} r="2" fill="white" />
           </g>
         );
+      })}
+    </svg>
+  );
+
+  // Chairs SVG layer
+  const renderChairs = () => (
+    <svg style={{ position: 'absolute', inset: 0, width: CANVAS_W, height: CANVAS_H, pointerEvents: 'none', zIndex: 0 }}>
+      {mesas.map(mesa => {
+        const hasItems = parseInt(mesa.items_count) > 0;
+        const ocupada = !!mesa.sesion_id && hasItems;
+        const tp = tempPos[mesa.id];
+        const m = tp ? { ...mesa, pos_x: tp.pos_x ?? mesa.pos_x, pos_y: tp.pos_y ?? mesa.pos_y, ancho: tp.ancho ?? mesa.ancho, alto: tp.alto ?? mesa.alto } : mesa;
+        const chairs = getChairs(m, CELL);
+        return chairs.map((ch, i) => (
+          <g key={`chair-${mesa.id}-${i}`} transform={`translate(${ch.x},${ch.y}) rotate(${ch.rot})`}>
+            <path d={CHAIR_PATH} fill={ocupada ? '#16A34A' : '#d6d3d1'} stroke={ocupada ? '#15803D' : '#a8a29e'} strokeWidth="1.5" strokeLinecap="round" />
+          </g>
+        ));
       })}
     </svg>
   );
@@ -408,6 +483,7 @@ export default function MesaCanvas({
               backgroundImage: `radial-gradient(circle, rgba(168,162,158,0.22) 1px, transparent 1px)`,
               backgroundSize: `${CELL}px ${CELL}px`,
             }}>
+              {renderChairs()}
               {renderLinks()}
               {mesas.map(mesa => {
                 const tp = tempPos[mesa.id];
@@ -477,6 +553,7 @@ export default function MesaCanvas({
               width: CANVAS_W, height: CANVAS_H,
               position: 'absolute', top: 0, left: 0,
             }}>
+              {renderChairs()}
               {renderLinks()}
               {mesas.map(mesa => {
                 const px = (mesa.pos_x ?? 0) * CELL, py = (mesa.pos_y ?? 0) * CELL;
