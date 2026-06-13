@@ -402,17 +402,13 @@ export default function DashboardPage() {
               {exporting ? <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" /> : <Download size={16} />}
             </button>
           </Tooltip>
-          {(() => {
-            return (
-              <button
-                onClick={() => navigate('/cotizador')}
-                className={cx.btnPrimary + ' flex items-center gap-2'}
-              >
-                {isTrialAtLimit ? <Lock size={16} /> : <Plus size={16} />}
-                Nuevo
-              </button>
-            );
-          })()}
+          <button
+            onClick={() => navigate('/cotizador')}
+            className={cx.btnPrimary + ' flex items-center gap-2'}
+          >
+            <Plus size={16} />
+            Nuevo
+          </button>
         </div>
       </div>
 
