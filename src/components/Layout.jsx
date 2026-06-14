@@ -39,6 +39,7 @@ import {
   Bell,
   Sparkles,
   LayoutGrid,
+  Check,
 } from 'lucide-react';
 import NotificacionesSidebar from './NotificacionesSidebar';
 import UpdateBanner from './UpdateBanner';
@@ -237,6 +238,7 @@ export default function Layout() {
   })();
 
   const [showPayModal, setShowPayModal] = useState(false);
+  const [payStep, setPayStep] = useState('plans'); // 'plans' or 'payment'
   const [payPlan, setPayPlan] = useState('emprendedor');
   const [payComprobante, setPayComprobante] = useState('');
   const [payUploading, setPayUploading] = useState(false);
@@ -248,6 +250,33 @@ export default function Layout() {
     emprendedor: { label: 'Emprendedor', precio: 100 },
     empresario: { label: 'Empresario', precio: 180 },
   };
+
+  const PAY_PLANS_FULL = [
+    { key: 'independiente', name: 'Independiente', price: 80, desc: 'Para empezar a costear tu negocio', features: [
+      { text: 'Hasta 20 productos', included: true },
+      { text: 'Costeo de producción', included: true },
+      { text: 'Control de stock básico', included: true },
+      { text: '1 usuario', included: true },
+      { text: 'Facturación SUNAT', included: false },
+      { text: 'Caja', included: false },
+    ]},
+    { key: 'emprendedor', name: 'Emprendedor', price: 100, desc: 'Para negocios que facturan y venden', highlighted: true, features: [
+      { text: 'Productos ilimitados', included: true },
+      { text: 'Costeo de producción', included: true },
+      { text: 'Control de stock completo', included: true },
+      { text: 'Hasta 3 usuarios', included: true },
+      { text: 'Facturación SUNAT', included: true },
+      { text: 'Caja', included: true },
+    ]},
+    { key: 'empresario', name: 'Empresario', price: 180, desc: 'Para equipos y múltiples sedes', features: [
+      { text: 'Todo de Emprendedor', included: true },
+      { text: 'Usuarios ilimitados', included: true },
+      { text: 'Módulo de Mesas', included: true },
+      { text: 'Comisiones por vendedor', included: true },
+      { text: 'Soporte dedicado', included: true },
+      { text: 'Onboarding personalizado', included: true },
+    ]},
+  ];
 
   const handlePayUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -482,7 +511,7 @@ export default function Layout() {
               <span>{trialBanner.text}</span>
             </div>
             <button
-              onClick={() => setShowPayModal(true)}
+              onClick={() => { setPayStep('plans'); setShowPayModal(true); }}
               className="px-3 py-1 bg-[#16A34A] text-white text-xs font-semibold rounded-lg hover:bg-[#15803D] transition-colors duration-100 whitespace-nowrap"
             >
               Pagar plan
@@ -501,7 +530,7 @@ export default function Layout() {
             <p className="text-rose-800 font-semibold mb-2">Tu prueba gratis ha terminado</p>
             <p className="text-rose-600 text-sm mb-3">Activa un plan para seguir usando Kudi con todas las funcionalidades.</p>
             <button
-              onClick={() => setShowPayModal(true)}
+              onClick={() => { setPayStep('plans'); setShowPayModal(true); }}
               className="px-6 py-2.5 bg-[#16A34A] text-white text-sm font-semibold rounded-lg hover:bg-[#15803D] transition-colors"
             >
               Activar plan ahora
@@ -536,7 +565,7 @@ export default function Layout() {
       {showPayModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !paySaving && setShowPayModal(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+          <div className={`relative bg-white rounded-2xl shadow-2xl w-full p-6 transition-all duration-200 ${payStep === 'plans' && !paySuccess ? 'max-w-2xl' : 'max-w-md'}`}>
             {paySuccess ? (
               <div className="text-center py-4">
                 <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
@@ -556,32 +585,78 @@ export default function Layout() {
                   Comenzar a usar Kudi Pro
                 </button>
               </div>
-            ) : (
+            ) : payStep === 'plans' ? (
               <>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-stone-900">Pagar plan</h3>
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-stone-900">Elige tu plan</h3>
+                    <p className="text-sm text-stone-500 mt-0.5">Selecciona el plan que mejor se adapte a tu negocio</p>
+                  </div>
                   <button onClick={() => setShowPayModal(false)} className="text-stone-400 hover:text-stone-600">
                     <X size={18} />
                   </button>
                 </div>
 
-                {/* Plan selector */}
-                <div className="grid grid-cols-3 gap-1.5 mb-4">
-                  {Object.entries(PAY_PLANS).map(([key, p]) => (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {PAY_PLANS_FULL.map((plan) => (
                     <button
-                      key={key}
-                      onClick={() => setPayPlan(key)}
-                      className={`py-2 px-1 rounded-lg border text-center transition-colors duration-100 ${
-                        payPlan === key
-                          ? 'border-[#16A34A] bg-emerald-50 text-[#16A34A]'
-                          : 'border-stone-200 text-stone-500 hover:border-stone-300'
+                      key={plan.key}
+                      onClick={() => { setPayPlan(plan.key); setPayStep('payment'); }}
+                      className={`relative text-left rounded-xl border-2 p-4 transition-all duration-150 hover:shadow-md ${
+                        plan.highlighted
+                          ? 'border-[#16A34A] bg-emerald-50/50'
+                          : 'border-stone-200 hover:border-stone-300'
                       }`}
                     >
-                      <p className="text-[10px] font-medium">{p.label}</p>
-                      <p className="text-sm font-bold">S/{p.precio}</p>
+                      {plan.highlighted && (
+                        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#16A34A] text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full whitespace-nowrap">
+                          Más popular
+                        </span>
+                      )}
+                      <p className="text-sm font-semibold text-stone-900">{plan.name}</p>
+                      <p className="text-2xl font-bold text-stone-900 mt-1">
+                        S/{plan.price}<span className="text-xs font-normal text-stone-400"> / mes</span>
+                      </p>
+                      <p className="text-xs text-stone-500 mt-1 mb-3">{plan.desc}</p>
+                      <ul className="space-y-1.5">
+                        {plan.features.map((f, i) => (
+                          <li key={i} className="flex items-start gap-1.5 text-xs">
+                            {f.included ? (
+                              <Check size={13} className="text-[#16A34A] mt-0.5 shrink-0" />
+                            ) : (
+                              <X size={13} className="text-stone-300 mt-0.5 shrink-0" />
+                            )}
+                            <span className={f.included ? 'text-stone-700' : 'text-stone-400'}>{f.text}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className={`mt-4 w-full py-2 rounded-lg text-center text-sm font-semibold transition-colors ${
+                        plan.highlighted
+                          ? 'bg-[#16A34A] text-white'
+                          : 'bg-stone-100 text-stone-700 group-hover:bg-stone-200'
+                      }`}>
+                        Elegir plan
+                      </div>
                     </button>
                   ))}
                 </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setPayStep('plans')} className="text-stone-400 hover:text-stone-600 text-sm flex items-center gap-1">
+                      ← Cambiar plan
+                    </button>
+                  </div>
+                  <button onClick={() => setShowPayModal(false)} className="text-stone-400 hover:text-stone-600">
+                    <X size={18} />
+                  </button>
+                </div>
+
+                <h3 className="text-lg font-bold text-stone-900 mb-4 text-center">
+                  Pagar plan {PAY_PLANS[payPlan]?.label}
+                </h3>
 
                 {/* QR */}
                 <div className="flex justify-center mb-3">
