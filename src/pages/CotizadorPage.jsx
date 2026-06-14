@@ -2060,8 +2060,16 @@ export default function CotizadorPage() {
               const catData = categoriasMargenes.find(c => c.id === categoriaMargerId);
               const moderado = catData ? parseFloat(catData.margen_moderado) : Math.round(margenObjetivo * 0.85);
               const optimo = parseFloat(margenObjetivo);
-              const precioModerado = Math.round(costos.costoNeto / (1 - moderado / 100) * 100) / 100;
-              const precioOptimo = Math.round(costos.costoNeto / (1 - optimo / 100) * 100) / 100;
+              // Redondeo comercial: fracción < 0.05 → entero abajo, < 0.5 → .50, >= 0.5 → entero arriba
+              const redondeoComercial = (v) => {
+                const entero = Math.floor(v);
+                const frac = v - entero;
+                if (frac < 0.05) return entero;
+                if (frac < 0.5) return entero + 0.5;
+                return entero + 1;
+              };
+              const precioModerado = redondeoComercial(costos.costoNeto / (1 - moderado / 100));
+              const precioOptimo = redondeoComercial(costos.costoNeto / (1 - optimo / 100));
 
               return (
                 <div className={cx.card + ' p-4 mt-3'}>
