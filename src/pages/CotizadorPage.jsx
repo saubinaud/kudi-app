@@ -419,6 +419,8 @@ export default function CotizadorPage() {
 
   const [editingMargen, setEditingMargen] = useState(null);
   const [editingMargenPorcion, setEditingMargenPorcion] = useState(null);
+  const [categoriaMargerId, setCategoriaMargenId] = useState(null);
+  const [categoriasMargenes, setCategoriasMargenes] = useState([]);
 
   const costosRaw = useCalculadorCostos(preparaciones, materiales, precioFinal, igvRate, tipoPresentacion, unidadesPorProducto, precioFinalPorcion, incluirComision ? comisionPosPct : 0);
 
@@ -514,6 +516,8 @@ export default function CotizadorPage() {
     api.get('/productos').then((d) => {
       setInventarioProductos((d.data || []).filter(p => p.tipo_producto === 'no_transformable' && p.disponible_venta));
     }).catch(() => toast.error('Error cargando productos'));
+    // Load margin categories for category selector
+    api.get('/margenes/categorias').then(r => setCategoriasMargenes(r?.data || r || [])).catch(() => {});
   }, []);
 
   // Load product for edit mode
@@ -539,6 +543,7 @@ export default function CotizadorPage() {
         setStockMinimo(p.stock_minimo != null ? String(parseFloat(p.stock_minimo)) : '');
         setPrecioGuardado(parseFloat(p.precio_final) || 0);
         setCostoGuardado(parseFloat(p.costo_neto) || parseFloat(p.costo_compra) || 0);
+        if (p.categoria_margen_id) setCategoriaMargenId(p.categoria_margen_id);
         if (p.variantes) setVariantes(p.variantes);
 
         if (p.preparaciones?.length) {
@@ -902,6 +907,7 @@ export default function CotizadorPage() {
           })),
         ...costos,
         precioFinal,  // siempre el precio exacto del usuario
+        categoria_margen_id: categoriaMargerId || null,
       };
 
       if (tipoProducto === 'no_transformable' && selectedInventarioId) {
@@ -1770,6 +1776,20 @@ export default function CotizadorPage() {
             transition={{ duration: 0.2 }}
             className={`${cx.card} p-4`}>
             <h3 className="text-lg font-semibold text-stone-900 mb-4">Resumen<InfoTip text="El costo neto incluye insumos + empaque. El margen define tu ganancia." /></h3>
+
+            {/* Categoría de margen */}
+            {categoriasMargenes.length > 0 && (
+              <div className="mb-4">
+                <label className={cx.label}>Categoría de margen</label>
+                <CustomSelect
+                  options={[{ value: null, label: 'Sin categoría' }, ...categoriasMargenes.map(c => ({ value: c.id, label: c.nombre }))]}
+                  value={categoriaMargerId}
+                  onChange={setCategoriaMargenId}
+                  placeholder="Seleccionar categoría"
+                  compact
+                />
+              </div>
+            )}
 
             {/* Pack sin items: mostrar mensaje */}
             {tipoProducto === 'pack' && costos.costoNeto === 0 && packCosto === 0 && (
