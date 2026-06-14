@@ -2052,7 +2052,8 @@ export default function CotizadorPage() {
 
             {/* Margen objetivo — tarjeta debajo del guardar */}
             {margenObjetivo && costos.costoNeto > 0 && (() => {
-              const margenActual = Math.round((costos.margen || 0) * 100) / 100;
+              // costos.margen ya es porcentaje (65 = 65%)
+              const margenActual = parseFloat(costos.margen) || 0;
               // Tolerancia: si está a menos de 1% del objetivo, no mostrar
               if (margenActual >= margenObjetivo - 1) return null;
 
