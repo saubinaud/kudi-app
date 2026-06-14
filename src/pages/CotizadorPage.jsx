@@ -1771,7 +1771,7 @@ export default function CotizadorPage() {
         </div>
 
         {/* ── Right column: Resumen — premium sticky card ── */}
-        <div className="lg:col-span-1 lg:self-start lg:sticky lg:top-6">
+        <div className="lg:col-span-1 lg:self-start lg:sticky lg:top-6 max-h-[calc(100vh-48px)] overflow-y-auto">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -2061,7 +2061,7 @@ export default function CotizadorPage() {
               const catData = categoriasMargenes.find(c => c.id === categoriaMargerId);
               const moderado = catData ? parseFloat(catData.margen_moderado) : Math.round(margenObjetivo * 0.85);
               const optimo = parseFloat(margenObjetivo);
-              // Redondeo comercial: fracción < 0.05 → entero abajo, < 0.5 → .50, >= 0.5 → entero arriba
+              // Calcula precio final incluyendo IGV y comisión (misma lógica que handleMargenChange)
               const redondeoComercial = (v) => {
                 const entero = Math.floor(v);
                 const frac = v - entero;
@@ -2069,8 +2069,16 @@ export default function CotizadorPage() {
                 if (frac < 0.5) return entero + 0.5;
                 return entero + 1;
               };
-              const precioModerado = redondeoComercial(costos.costoNeto / (1 - moderado / 100));
-              const precioOptimo = redondeoComercial(costos.costoNeto / (1 - optimo / 100));
+              const calcPrecio = (margenPct) => {
+                const pv = costos.costoNeto / (1 - margenPct / 100);
+                const igvDec = igvRate / 100;
+                const comDec = incluirComision ? comisionPosPct / 100 : 0;
+                const conIgv = pv * (1 + igvDec);
+                const conComision = comDec > 0 ? conIgv / (1 - comDec) : conIgv;
+                return redondeoComercial(conComision);
+              };
+              const precioModerado = calcPrecio(moderado);
+              const precioOptimo = calcPrecio(optimo);
 
               return (
                 <div className={cx.card + ' p-4 mt-3'}>
