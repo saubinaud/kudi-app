@@ -40,7 +40,9 @@ import ShopifyPage from './pages/ShopifyPage';
 import POSPage from './pages/POSPage';
 import MesasPage from './pages/MesasPage';
 import MesaDetailPage from './pages/MesaDetailPage';
+import MargenesPage from './pages/MargenesPage';
 import FeedbackPage from './pages/FeedbackPage';
+import KudiDemo from './pages/KudiDemo';
 import NovedadesPage from './pages/NovedadesPage';
 import LandingPage from './pages/LandingPage';
 
@@ -89,6 +91,7 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/kudi-demo" element={<KudiDemo />} />
             <Route path="/" element={<Navigate to="/planes" replace />} />
 
             {/* Protected routes with layout */}
@@ -123,6 +126,7 @@ export default function App() {
               <Route path="/comprobantes" element={<ComprobantesPage />} />
               <Route path="/ficha-tecnica/:id" element={<FichaTecnicaPage />} />
               <Route path="/analisis" element={<AnalisisPage />} />
+              <Route path="/margenes" element={<MargenesPage />} />
               <Route path="/stock" element={<StockPage />} />
               <Route path="/comisiones" element={<ComisionesPage />} />
               <Route path="/proveedores" element={<ProveedoresPage />} />

@@ -135,6 +135,7 @@ export default function Layout() {
         { to: '/empaques-predeterminados', label: 'Empaques predet.', icon: BoxSelect, perm: 'empaques' },
         { to: '/stock', label: 'Inventario', icon: Package, perm: 'dashboard' },
         { to: '/canales', label: 'Canales y Envío', icon: Truck, perm: 'canales' },
+        { to: '/margenes', label: 'Márgenes', icon: TrendingUp, perm: 'dashboard' },
       ],
     },
     {
