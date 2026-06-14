@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
@@ -8,6 +9,7 @@ import {
   BarChart3, CreditCard, Clock, TrendingUp, AlertCircle, Eye,
   Check, XCircle, Filter, MessageSquare, AlertTriangle, Bell, Send,
   ShieldCheck, FileText, Package, ShoppingCart, ChevronDown, ChevronUp,
+  MessageCircle, Mail,
 } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
 import CustomSelect from '../components/CustomSelect';
@@ -656,48 +658,54 @@ function UsuariosTab() {
 
       {/* Mobile cards */}
       <div className="space-y-3 lg:hidden">
-        {users.map(u => (
-          <div key={u.id} className={`${cx.card} p-5`}>
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="text-stone-800 font-medium text-sm">{u.nombre || u.email}</h3>
-                <p className="text-stone-500 text-xs mt-0.5">{u.email}</p>
+        {sorted.map((u, index) => (
+          <motion.div
+            key={u.id}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: Math.min(index, 10) * 0.03 }}
+            className="bg-white rounded-xl border border-stone-200 p-4 space-y-2"
+          >
+            <div className="flex justify-between items-start gap-2">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-stone-800 font-medium text-sm truncate">{u.nombre || u.email}</h3>
+                <p className="text-stone-500 text-xs mt-0.5 truncate">{u.email}</p>
                 <p className="text-stone-500 text-xs mt-1">{u.empresa_nombre || '-'}{u.giro_nombre ? ` · ${u.giro_nombre}` : ''}</p>
-                {u.empresa_ruc && <p className="text-stone-400 text-[10px] mt-0.5">RUC: {u.empresa_ruc}</p>}
-                {u.empresa_telefono && <p className="text-stone-400 text-[10px]">Tel: {u.empresa_telefono}</p>}
+                {u.empresa_ruc && <p className="text-stone-400 text-xs mt-0.5">RUC: {u.empresa_ruc}</p>}
+                {u.empresa_telefono && <p className="text-stone-400 text-xs">Tel: {u.empresa_telefono}</p>}
               </div>
-              <div className="flex flex-col items-end gap-1">
-                <div className="flex items-center gap-1">
-                  {u.rol === 'admin' && <span className={cx.badge('bg-violet-50 text-violet-600')}>admin</span>}
-                  <span className={cx.badge(u.estado === 'activo' ? 'bg-[var(--accent-light)] text-[var(--success)]' : u.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')}>{u.estado}</span>
-                  <span className={cx.badge(PLAN_COLORS[u.plan] || 'bg-stone-100 text-stone-600')}>{PLAN_LABEL[u.plan] || u.plan}</span>
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <div className="flex items-center gap-1 flex-wrap justify-end">
+                  {u.rol === 'admin' && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-violet-50 text-violet-600">admin</span>}
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${u.estado === 'activo' ? 'bg-emerald-50 text-emerald-600' : u.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'}`}>{u.estado}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${PLAN_COLORS[u.plan] || 'bg-stone-100 text-stone-600'}`}>{PLAN_LABEL[u.plan] || u.plan}</span>
                 </div>
-                <span className="text-[10px] text-stone-400">{timeAgo(u.created_at)}</span>
+                <span className="text-xs text-stone-400">{timeAgo(u.created_at)}</span>
               </div>
             </div>
             {/* Activity stats */}
-            <div className="flex flex-wrap gap-3 mt-3 text-[10px] text-stone-500">
-              <span><Package size={10} className="inline mr-0.5" />{u.total_productos || 0} prod</span>
-              <span><ShoppingCart size={10} className="inline mr-0.5" />{u.total_ventas || 0} ventas</span>
-              {u.total_comprobantes > 0 && <span><FileText size={10} className="inline mr-0.5" />{u.total_comprobantes} boletas</span>}
-              {u.certificado_subido && <span className="text-violet-600"><ShieldCheck size={10} className="inline mr-0.5" />Cert .p12</span>}
-              {u.facturacion_habilitada && <span className="text-teal-600"><FileText size={10} className="inline mr-0.5" />Fact. activa</span>}
-              {u.ultima_venta && <span>Última venta: {timeAgo(u.ultima_venta)}</span>}
+            <div className="flex flex-wrap gap-3 text-xs text-stone-500">
+              <span className="flex items-center gap-1"><Package size={12} />{u.total_productos || 0} prod</span>
+              <span className="flex items-center gap-1"><ShoppingCart size={12} />{u.total_ventas || 0} ventas</span>
+              {u.total_comprobantes > 0 && <span className="flex items-center gap-1"><FileText size={12} />{u.total_comprobantes} boletas</span>}
+              {u.certificado_subido && <span className="flex items-center gap-1 text-violet-600"><ShieldCheck size={12} />Cert .p12</span>}
+              {u.facturacion_habilitada && <span className="flex items-center gap-1 text-teal-600"><FileText size={12} />Fact. activa</span>}
+              {u.ultima_venta && <span>Ultima venta: {timeAgo(u.ultima_venta)}</span>}
             </div>
             {u.estado === 'pendiente' && u.onboarding_token && (
-              <div className="mt-2 flex gap-2 items-center">
-                <input type="text" readOnly value={`${window.location.href.split('#')[0]}#/onboarding?token=${u.onboarding_token}`} className={cx.input + ' text-[10px] flex-1'} />
-                <button onClick={() => { navigator.clipboard.writeText(`${window.location.href.split('#')[0]}#/onboarding?token=${u.onboarding_token}`); toast.success('Link copiado'); }} className={cx.btnSecondary + ' text-xs flex items-center gap-1'}><Copy size={12} /> Copiar</button>
+              <div className="flex gap-2 items-center">
+                <input type="text" readOnly value={`${window.location.href.split('#')[0]}#/onboarding?token=${u.onboarding_token}`} className={cx.input + ' text-xs flex-1'} />
+                <button onClick={() => { navigator.clipboard.writeText(`${window.location.href.split('#')[0]}#/onboarding?token=${u.onboarding_token}`); toast.success('Link copiado'); }} className={cx.btnSecondary + ' min-h-[44px] text-xs flex items-center gap-1'}><Copy size={14} /> Copiar</button>
               </div>
             )}
-            <div className="flex gap-2 mt-3 border-t border-stone-200 pt-3">
-              <button onClick={() => startEditPermisos(u)} className={cx.btnGhost + ' flex-1 flex items-center justify-center gap-1'}><Settings size={13} /> Permisos</button>
-              <button onClick={() => toggleStatus(u)} className={`${u.estado === 'activo' ? cx.btnDanger : cx.btnGhost + ' text-[var(--success)]'} flex-1 flex items-center justify-center gap-1`}>
-                {u.estado === 'activo' ? <><Ban size={13} /> Suspender</> : <><CheckCircle size={13} /> Reactivar</>}
+            <div className="flex flex-col gap-2 border-t border-stone-200 pt-3">
+              <button onClick={() => startEditPermisos(u)} className={cx.btnGhost + ' w-full min-h-[44px] flex items-center justify-center gap-1.5 text-sm'}><Settings size={15} /> Permisos</button>
+              <button onClick={() => toggleStatus(u)} className={`${u.estado === 'activo' ? cx.btnDanger : cx.btnGhost + ' text-[var(--success)]'} w-full min-h-[44px] flex items-center justify-center gap-1.5 text-sm`}>
+                {u.estado === 'activo' ? <><Ban size={15} /> Suspender</> : <><CheckCircle size={15} /> Reactivar</>}
               </button>
-              <button onClick={() => setDeleteTarget(u)} className={cx.btnDanger + ' flex items-center justify-center gap-1'}><Trash2 size={13} /></button>
+              <button onClick={() => setDeleteTarget(u)} className={cx.btnDanger + ' w-full min-h-[44px] flex items-center justify-center gap-1.5 text-sm'}><Trash2 size={15} /> Eliminar</button>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
@@ -979,14 +987,14 @@ function PagosTab() {
   return (
     <div>
       {/* Filter pills */}
-      <div className="flex items-center gap-2 mb-4">
-        <Filter size={14} className="text-stone-400" />
+      <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+        <Filter size={14} className="text-stone-400 shrink-0" />
         {['todos', 'pendiente', 'aprobado', 'rechazado'].map(f => (
           <button key={f} onClick={() => setFiltro(f)}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${filtro === f ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'}`}>
+            className={`px-3 py-2 min-h-[44px] lg:min-h-0 lg:py-1.5 rounded-full text-xs font-semibold transition-colors whitespace-nowrap ${filtro === f ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-500 hover:bg-stone-200'}`}>
             {f.charAt(0).toUpperCase() + f.slice(1)}
             {f === 'pendiente' && pagos.filter(p => p.estado === 'pendiente').length > 0 && (
-              <span className="ml-1.5 w-4 h-4 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[9px] font-bold">
+              <span className="ml-1.5 w-4 h-4 inline-flex items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-bold">
                 {pagos.filter(p => p.estado === 'pendiente').length}
               </span>
             )}
@@ -1003,53 +1011,59 @@ function PagosTab() {
         <>
           {/* Mobile cards */}
           <div className="space-y-3 lg:hidden">
-            {filtered.map(p => (
-              <div key={p.id} className={`${cx.card} p-5`}>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-stone-800 font-medium text-sm">{p.usuario_nombre || '-'}</p>
-                    <p className="text-stone-400 text-xs">{p.usuario_email || '-'}</p>
+            {filtered.map((p, index) => (
+              <motion.div
+                key={p.id}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(index, 10) * 0.03 }}
+                className="bg-white rounded-xl border border-stone-200 p-4 space-y-2"
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-stone-800 font-medium text-sm truncate">{p.usuario_nombre || '-'}</p>
+                    <p className="text-stone-400 text-xs truncate">{p.usuario_email || '-'}</p>
                     {p.empresa_nombre && <p className="text-stone-500 text-xs mt-0.5">Empresa: {p.empresa_nombre}</p>}
-                    <p className="text-stone-400 text-[10px] mt-1">{formatDate(p.created_at)}</p>
+                    <p className="text-stone-400 text-xs mt-1">{formatDate(p.created_at)}</p>
                   </div>
-                  <div className="text-right">
-                    <span className={estadoBadge(p.estado)}>{p.estado}</span>
-                    <p className="text-stone-800 font-semibold text-sm mt-1">{formatCurrency(p.monto)}</p>
+                  <div className="text-right shrink-0">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${p.estado === 'aprobado' ? 'bg-emerald-50 text-emerald-600' : p.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'}`}>{p.estado}</span>
+                    <p className="text-stone-800 font-semibold text-sm mt-1.5">{formatCurrency(p.monto)}</p>
                   </div>
                 </div>
                 {p.comprobante_url && (
-                  <button onClick={() => setImageModal(p.comprobante_url)} className={cx.btnGhost + ' text-xs flex items-center gap-1 mt-2'}>
-                    <Eye size={13} /> Ver comprobante
+                  <button onClick={() => setImageModal(p.comprobante_url)} className={cx.btnGhost + ' min-h-[44px] text-sm flex items-center gap-1.5 w-full justify-center'}>
+                    <Eye size={15} /> Ver comprobante
                   </button>
                 )}
-                {p.referencia_pago && <p className="text-[10px] text-emerald-600 mt-1">Ref: {p.referencia_pago}</p>}
-                {p.nota && <p className="text-[10px] text-rose-500 mt-1">Nota: {p.nota}</p>}
+                {p.referencia_pago && <p className="text-xs text-emerald-600">Ref: {p.referencia_pago}</p>}
+                {p.nota && <p className="text-xs text-rose-500">Nota: {p.nota}</p>}
                 {p.estado === 'pendiente' && (
-                  <div className="flex gap-2 mt-3 border-t border-stone-200 pt-3">
+                  <div className="flex flex-col gap-2 border-t border-stone-200 pt-3">
                     {actionRow?.id === p.id ? (
-                      <div className="flex-1 space-y-2">
+                      <div className="space-y-2">
                         <input type="text" value={actionValue} onChange={e => setActionValue(e.target.value)}
                           placeholder={actionRow.type === 'aprobar' ? 'Referencia de pago' : 'Motivo de rechazo'}
-                          className={cx.input + ' text-xs'} autoFocus />
+                          className={cx.input + ' text-sm'} autoFocus />
                         <div className="flex gap-2">
                           <button disabled={submitting} onClick={() => actionRow.type === 'aprobar' ? handleAprobar(p.id) : handleRechazar(p.id)}
-                            className={`${actionRow.type === 'aprobar' ? cx.btnPrimary : cx.btnDanger} text-xs flex-1`}>
+                            className={`${actionRow.type === 'aprobar' ? cx.btnPrimary : cx.btnDanger} text-sm min-h-[44px] flex-1`}>
                             {submitting ? 'Procesando...' : actionRow.type === 'aprobar' ? 'Confirmar' : 'Confirmar rechazo'}
                           </button>
-                          <button onClick={() => { setActionRow(null); setActionValue(''); }} className={cx.btnGhost + ' text-xs'}>Cancelar</button>
+                          <button onClick={() => { setActionRow(null); setActionValue(''); }} className={cx.btnGhost + ' text-sm min-h-[44px]'}>Cancelar</button>
                         </div>
                       </div>
                     ) : (
                       <>
                         <button onClick={() => { setActionRow({ id: p.id, type: 'aprobar' }); setActionValue(''); }}
-                          className={cx.btnPrimary + ' text-xs flex-1 flex items-center justify-center gap-1'}><Check size={13} /> Aprobar</button>
+                          className={cx.btnPrimary + ' text-sm min-h-[44px] w-full flex items-center justify-center gap-1.5'}><Check size={15} /> Aprobar</button>
                         <button onClick={() => { setActionRow({ id: p.id, type: 'rechazar' }); setActionValue(''); }}
-                          className={cx.btnDanger + ' text-xs flex-1 flex items-center justify-center gap-1'}><XCircle size={13} /> Rechazar</button>
+                          className={cx.btnDanger + ' text-sm min-h-[44px] w-full flex items-center justify-center gap-1.5'}><XCircle size={15} /> Rechazar</button>
                       </>
                     )}
                   </div>
                 )}
-              </div>
+              </motion.div>
             ))}
           </div>
 
@@ -1167,35 +1181,91 @@ function RegistrosTab() {
   }
 
   return (
-    <div className="space-y-2">
-      {registros.map((r, i) => (
-        <div key={r.id || i} className={`${cx.card} px-5 py-4 flex items-center gap-4`}>
-          {/* Avatar */}
-          <div className="w-9 h-9 rounded-full bg-stone-100 flex items-center justify-center text-xs font-bold text-stone-500 shrink-0">
-            {(r.nombre || r.email || '?').charAt(0).toUpperCase()}
-          </div>
-          {/* Info */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-sm font-medium text-stone-800 truncate">{r.nombre || '-'}</p>
-              <span className={cx.badge(PLAN_COLORS[r.plan] || (r.plan && r.plan !== 'trial' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'))}>
-                {PLAN_LABEL[r.plan] || r.plan || 'Trial'}
-              </span>
-              {r.estado && (
-                <span className={cx.badge(r.estado === 'activo' ? 'bg-[var(--accent-light)] text-[var(--success)]' : r.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')}>
-                  {r.estado}
-                </span>
-              )}
+    <div>
+      {/* Mobile cards */}
+      <div className="space-y-3 lg:hidden">
+        {registros.map((r, index) => (
+          <motion.div
+            key={r.id || index}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: Math.min(index, 10) * 0.03 }}
+            className="bg-white rounded-xl border border-stone-200 p-4 space-y-2"
+          >
+            <div className="flex items-start gap-3">
+              {/* Avatar */}
+              <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-sm font-bold text-stone-500 shrink-0">
+                {(r.nombre || r.email || '?').charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-stone-800 truncate">{r.nombre || '-'}</p>
+                <p className="text-xs text-stone-400 truncate">{r.email}</p>
+                {(r.giro || r.empresa) && (
+                  <p className="text-xs text-stone-400 mt-0.5">{r.giro || r.empresa}</p>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-stone-400 truncate">{r.email}</p>
-            {(r.giro || r.empresa) && (
-              <p className="text-xs text-stone-400 mt-0.5">{r.giro || r.empresa}</p>
-            )}
-          </div>
-          {/* Timestamp */}
-          <p className="text-xs text-stone-400 shrink-0">{timeAgo(r.created_at || r.fecha)}</p>
-        </div>
-      ))}
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${PLAN_COLORS[r.plan] || (r.plan && r.plan !== 'trial' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600')}`}>
+                  {PLAN_LABEL[r.plan] || r.plan || 'Trial'}
+                </span>
+                {r.estado && (
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${r.estado === 'activo' ? 'bg-emerald-50 text-emerald-600' : r.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'}`}>
+                    {r.estado}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-stone-400 shrink-0">{timeAgo(r.created_at || r.fecha)}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className={`${cx.card} hidden lg:block overflow-x-auto`}>
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-stone-200">
+              <th className={cx.th}>Usuario</th>
+              <th className={cx.th}>Email</th>
+              <th className={cx.th}>Giro / Empresa</th>
+              <th className={cx.th}>Plan</th>
+              <th className={cx.th}>Estado</th>
+              <th className={cx.th + ' text-right'}>Registro</th>
+            </tr>
+          </thead>
+          <tbody>
+            {registros.map((r, i) => (
+              <tr key={r.id || i} className={cx.tr}>
+                <td className={cx.td}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-xs font-bold text-stone-500 shrink-0">
+                      {(r.nombre || r.email || '?').charAt(0).toUpperCase()}
+                    </div>
+                    <p className="text-sm font-medium text-stone-800">{r.nombre || '-'}</p>
+                  </div>
+                </td>
+                <td className={cx.td + ' text-stone-400 text-xs'}>{r.email}</td>
+                <td className={cx.td + ' text-stone-500 text-sm'}>{r.giro || r.empresa || '-'}</td>
+                <td className={cx.td}>
+                  <span className={cx.badge(PLAN_COLORS[r.plan] || (r.plan && r.plan !== 'trial' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'))}>
+                    {PLAN_LABEL[r.plan] || r.plan || 'Trial'}
+                  </span>
+                </td>
+                <td className={cx.td}>
+                  {r.estado && (
+                    <span className={cx.badge(r.estado === 'activo' ? 'bg-emerald-50 text-emerald-600' : r.estado === 'pendiente' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600')}>
+                      {r.estado}
+                    </span>
+                  )}
+                </td>
+                <td className={cx.td + ' text-right text-stone-400 text-xs'}>{timeAgo(r.created_at || r.fecha)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -1251,9 +1321,18 @@ function MensajesTab() {
   const [replyText, setReplyText] = useState('');
 
   // Form
-  const [destino, setDestino] = useState(''); // userId or '' for broadcast
+  const [modo, setModo] = useState('directo'); // 'directo' | 'broadcast' | 'email'
+  const [destino, setDestino] = useState('');
+  const [emailManual, setEmailManual] = useState('');
+  const [nombreManual, setNombreManual] = useState('');
   const [asunto, setAsunto] = useState('');
   const [mensaje, setMensaje] = useState('');
+  const [enviarEmail, setEnviarEmail] = useState(true);
+  const [filtroPlan, setFiltroPlan] = useState('');
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [previewHtml, setPreviewHtml] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -1265,21 +1344,81 @@ function MensajesTab() {
     }).catch(() => toast.error('Error cargando datos')).finally(() => setLoading(false));
   }, []);
 
+  // Auto-select all matching users when filtroPlan changes
+  const filteredUsers = filtroPlan
+    ? usuarios.filter(u => (u.plan || 'trial') === filtroPlan)
+    : usuarios;
+
+  useEffect(() => {
+    if (modo === 'broadcast') {
+      setSelectedUserIds(filteredUsers.map(u => u.id));
+    }
+  }, [filtroPlan, usuarios, modo]);
+
+  const toggleUserId = (id) => {
+    setSelectedUserIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleAllUsers = () => {
+    if (selectedUserIds.length === filteredUsers.length) {
+      setSelectedUserIds([]);
+    } else {
+      setSelectedUserIds(filteredUsers.map(u => u.id));
+    }
+  };
+
   const handleSend = async () => {
     if (!mensaje.trim()) return;
     setSending(true);
+    setBroadcastResult(null);
     try {
-      await api.post('/admin/mensajes', {
-        para_usuario_id: destino ? parseInt(destino) : null,
-        asunto: asunto.trim() || null,
-        mensaje: mensaje.trim(),
-      });
-      toast.success(destino ? 'Mensaje enviado' : 'Mensaje enviado a todos');
+      if (modo === 'email') {
+        if (!emailManual.trim() || !emailManual.includes('@')) { toast.error('Ingresa un email valido'); setSending(false); return; }
+        const res = await api.post('/admin/mensajes/send-email', {
+          email: emailManual.trim(),
+          nombre: nombreManual.trim() || emailManual.split('@')[0],
+          asunto: asunto.trim() || null,
+          mensaje: mensaje.trim(),
+        });
+        toast.success('Email enviado a ' + emailManual);
+        setEmailManual(''); setNombreManual('');
+      } else if (modo === 'broadcast') {
+        const res = await api.post('/admin/mensajes/broadcast-email', {
+          asunto: asunto.trim() || 'Mensaje de Kudi',
+          mensaje: mensaje.trim(),
+          filtro_plan: filtroPlan || undefined,
+          filtro_ids: selectedUserIds.length > 0 ? selectedUserIds : undefined,
+        });
+        const r = res.data || res;
+        setBroadcastResult(r);
+        toast.success(`Enviado a ${r.sent} usuario${r.sent !== 1 ? 's' : ''}${r.failed > 0 ? ` (${r.failed} fallaron)` : ''}`);
+      } else {
+        await api.post('/admin/mensajes', {
+          para_usuario_id: destino ? parseInt(destino) : null,
+          asunto: asunto.trim() || null,
+          mensaje: mensaje.trim(),
+        });
+        toast.success(destino ? 'Mensaje enviado + email' : 'Mensaje enviado a todos (sin email)');
+      }
       setAsunto(''); setMensaje(''); setDestino('');
       const r = await api.get('/admin/mensajes');
       setMensajes(r.data || []);
     } catch (err) { toast.error(err.message); }
     finally { setSending(false); }
+  };
+
+  const handlePreview = async () => {
+    if (!mensaje.trim()) return;
+    try {
+      const res = await api.post('/admin/mensajes/preview', {
+        asunto: asunto.trim() || 'Mensaje de Kudi',
+        mensaje: mensaje.trim(),
+      });
+      setPreviewHtml(res.data?.html || res.html || '');
+      setShowPreview(true);
+    } catch (err) { toast.error('Error generando preview'); }
   };
 
   const handleExpand = async (id) => {
@@ -1304,108 +1443,424 @@ function MensajesTab() {
     } catch (err) { toast.error(err.message); }
   };
 
+  const variables = ['{nombre}', '{empresa}', '{email}', '{plan}'];
+  const insertVariable = (v) => setMensaje(prev => prev + v);
+
+  // Helper: get avatar color from name
+  const avatarColor = (name) => {
+    const colors = ['#16A34A','#0A2F24','#D97706','#2563EB','#7C3AED','#DC2626','#0891B2','#4F46E5'];
+    const idx = (name || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) % colors.length;
+    return colors[idx];
+  };
+
   if (loading) return <div className="space-y-3">{[1,2,3].map(i => <div key={i} className={cx.skeleton + ' h-16'} />)}</div>;
 
   return (
     <div className="space-y-6">
-      {/* Send form */}
-      <div className={cx.card + ' p-5'}>
-        <h3 className="text-sm font-semibold text-stone-800 mb-3 flex items-center gap-2"><Send size={14} /> Enviar mensaje</h3>
-        <div className="space-y-3">
-          <div>
-            <label className={cx.label}>Destinatario</label>
-            <select
-              value={destino}
-              onChange={e => setDestino(e.target.value)}
-              className={cx.input}
-            >
-              <option value="">Todos los usuarios</option>
-              {usuarios.map(u => (
-                <option key={u.id} value={u.id}>{u.nombre || u.email} ({u.email})</option>
-              ))}
-            </select>
+      {/* ── Compose section ── */}
+      <div className="rounded-xl overflow-hidden shadow-lg">
+        {/* Dark gradient header */}
+        <div style={{ background: 'linear-gradient(135deg, #0A2F24 0%, #0F3D2E 100%)' }}
+          className="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+              <Mail size={16} className="text-white/80" />
+            </div>
+            <h3 className="text-sm font-semibold text-white tracking-wide">Nuevo mensaje</h3>
           </div>
-          <div>
-            <label className={cx.label}>Asunto</label>
-            <input type="text" value={asunto} onChange={e => setAsunto(e.target.value)} className={cx.input} placeholder="Ej: Bienvenido a Kudi" />
+          {/* Pill toggle */}
+          <div className="inline-flex bg-white/10 backdrop-blur-sm rounded-full p-0.5">
+            <button onClick={() => setModo('directo')}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                modo === 'directo' ? 'bg-white text-[#0A2F24] shadow-sm' : 'text-white/60 hover:text-white/90'
+              }`}>
+              Directo
+            </button>
+            <button onClick={() => setModo('broadcast')}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                modo === 'broadcast' ? 'bg-white text-[#0A2F24] shadow-sm' : 'text-white/60 hover:text-white/90'
+              }`}>
+              Difusion
+            </button>
+            <button onClick={() => setModo('email')}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ${
+                modo === 'email' ? 'bg-white text-[#0A2F24] shadow-sm' : 'text-white/60 hover:text-white/90'
+              }`}>
+              Email libre
+            </button>
           </div>
-          <div>
-            <label className={cx.label}>Mensaje</label>
-            <textarea value={mensaje} onChange={e => setMensaje(e.target.value)} className={cx.input + ' min-h-[80px] resize-y'} placeholder="Escribe tu mensaje..." rows={3} />
-          </div>
-          <button onClick={handleSend} disabled={sending || !mensaje.trim()} className={cx.btnPrimary + ' flex items-center gap-2'}>
-            {sending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Send size={14} /> Enviar</>}
-          </button>
         </div>
-      </div>
 
-      {/* Messages list */}
-      <div>
-        <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wider mb-3">Mensajes enviados</h3>
-        {mensajes.length === 0 ? (
-          <div className={cx.card + ' p-8 text-center'}>
-            <Bell size={32} className="text-stone-300 mx-auto mb-2" />
-            <p className="text-stone-400 text-sm">No hay mensajes aún</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {mensajes.map(m => (
-              <div key={m.id} className={cx.card + ' overflow-hidden'}>
-                <button onClick={() => handleExpand(m.id)} className="w-full text-left p-4 hover:bg-stone-50 transition-colors duration-100">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        {m.de_admin && <span className="text-[9px] px-1.5 py-0.5 bg-[#0A2F24] text-white rounded font-semibold">Admin</span>}
-                        {!m.de_admin && <span className="text-[9px] px-1.5 py-0.5 bg-stone-200 text-stone-600 rounded">{m.de_nombre || m.de_email}</span>}
-                        <span className="text-[10px] text-stone-400">{m.para_nombre ? `→ ${m.para_nombre}` : m.de_admin ? '→ Todos' : '→ Soporte'}</span>
-                      </div>
-                      <p className="text-sm font-medium text-stone-800 truncate">{m.asunto || 'Sin asunto'}</p>
-                      <p className="text-xs text-stone-400 truncate">{m.mensaje.slice(0, 100)}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {parseInt(m.respuestas) > 0 && (
-                        <span className="text-[9px] px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-full font-semibold">{m.respuestas}</span>
-                      )}
-                      <span className="text-[10px] text-stone-400">{formatDate(m.created_at)}</span>
-                    </div>
+        {/* White form body */}
+        <div className="bg-white border border-t-0 border-stone-200 rounded-b-xl p-5">
+          <div className="space-y-4">
+            {modo === 'directo' ? (
+              <div>
+                <label className={cx.label}>Destinatario</label>
+                <select value={destino} onChange={e => setDestino(e.target.value)} className={cx.input}>
+                  <option value="">Todos los usuarios (in-app, sin email)</option>
+                  {usuarios.map(u => (
+                    <option key={u.id} value={u.id}>{u.nombre || u.email} ({u.email})</option>
+                  ))}
+                </select>
+              </div>
+            ) : modo === 'email' ? (
+              <div className="space-y-3">
+                <div>
+                  <label className={cx.label}>Email del destinatario</label>
+                  <input type="email" value={emailManual} onChange={e => setEmailManual(e.target.value)} className={cx.input} placeholder="ejemplo@gmail.com" />
+                </div>
+                <div>
+                  <label className={cx.label}>Nombre (opcional)</label>
+                  <input type="text" value={nombreManual} onChange={e => setNombreManual(e.target.value)} className={cx.input} placeholder="Juan Pérez" />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <label className={cx.label}>Filtrar por plan</label>
+                  <select value={filtroPlan} onChange={e => setFiltroPlan(e.target.value)} className={cx.input}>
+                    <option value="">Todos los usuarios activos</option>
+                    <option value="trial">Solo Trial</option>
+                    <option value="independiente">Solo Independiente (S/80)</option>
+                    <option value="emprendedor">Solo Emprendedor (S/100)</option>
+                    <option value="empresario">Solo Empresario (S/180)</option>
+                  </select>
+                </div>
+
+                {/* User checklist */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className={cx.label + ' !mb-0'}>
+                      Destinatarios
+                      <span className="text-stone-400 font-normal ml-1.5">
+                        {selectedUserIds.length} de {filteredUsers.length} seleccionados
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={toggleAllUsers}
+                      className="text-xs text-emerald-600 hover:text-emerald-700 font-medium transition-colors duration-150"
+                    >
+                      {selectedUserIds.length === filteredUsers.length ? 'Deseleccionar todos' : 'Seleccionar todos'}
+                    </button>
                   </div>
-                </button>
-                {expandedId === m.id && (
-                  <div className="px-4 pb-4 border-t border-stone-100 bg-stone-50/50">
-                    <div className="py-3">
-                      <p className="text-sm text-stone-700 whitespace-pre-wrap">{m.mensaje}</p>
-                    </div>
-                    {(respuestas[m.id] || []).map(r => (
-                      <div key={r.id} className={`mb-2 p-3 rounded-lg ${r.de_admin ? 'bg-[#0A2F24]/5' : 'bg-white border border-stone-200'}`}>
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-[10px] font-medium text-stone-500">{r.de_admin ? 'Admin' : (r.de_nombre || r.de_email)}</span>
-                          <span className="text-[10px] text-stone-400">{formatDate(r.created_at)}</span>
-                        </div>
-                        <p className="text-xs text-stone-700">{r.mensaje}</p>
+
+                  <div className="border border-stone-200 rounded-lg max-h-[200px] overflow-y-auto">
+                    {filteredUsers.length === 0 ? (
+                      <div className="px-3 py-4 text-center text-xs text-stone-400">
+                        No hay usuarios con este filtro
                       </div>
-                    ))}
-                    {/* Reply input */}
-                    <div className="flex gap-2 mt-3 pt-3 border-t border-stone-200">
-                      <input
-                        type="text"
-                        value={expandedId === m.id ? replyText : ''}
-                        onChange={e => setReplyText(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleReply(m.id)}
-                        className={cx.input + ' text-sm flex-1'}
-                        placeholder="Responder..."
-                      />
-                      <button
-                        onClick={() => handleReply(m.id)}
-                        disabled={!replyText.trim()}
-                        className={cx.btnPrimary + ' !px-3 flex items-center gap-1'}
-                      >
-                        <Send size={14} />
+                    ) : (
+                      filteredUsers.map(u => {
+                        const checked = selectedUserIds.includes(u.id);
+                        const plan = u.plan || 'trial';
+                        const planColors = {
+                          trial: 'bg-amber-50 text-amber-600',
+                          independiente: 'bg-blue-50 text-blue-600',
+                          emprendedor: 'bg-emerald-50 text-emerald-600',
+                          empresario: 'bg-purple-50 text-purple-600',
+                        };
+                        return (
+                          <label
+                            key={u.id}
+                            className={`flex items-center gap-2.5 px-3 py-2 cursor-pointer transition-colors duration-100 border-b border-stone-100 last:border-b-0 ${
+                              checked ? 'bg-emerald-50/40' : 'hover:bg-stone-50'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleUserId(u.id)}
+                              className="w-3.5 h-3.5 rounded border-stone-300 text-emerald-600 focus:ring-emerald-500 focus:ring-offset-0 flex-shrink-0"
+                            />
+                            <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-medium text-stone-700 truncate">
+                                {u.nombre || u.email.split('@')[0]}
+                              </span>
+                              <span className="text-xs text-stone-400 truncate">
+                                {u.email}
+                              </span>
+                            </div>
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${planColors[plan] || 'bg-stone-100 text-stone-500'}`}>
+                              {plan}
+                            </span>
+                          </label>
+                        );
+                      })
+                    )}
+                  </div>
+                  <p className="text-[11px] text-stone-400 mt-1">Cada usuario recibira el email personalizado con sus datos</p>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className={cx.label}>Asunto</label>
+              <input type="text" value={asunto} onChange={e => setAsunto(e.target.value)} className={cx.input}
+                placeholder={modo === 'broadcast' ? 'Ej: Hola {empresa}, tenemos novedades' : 'Ej: Bienvenido a Kudi'} />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className={cx.label + ' !mb-0'}>Mensaje</label>
+                {modo === 'broadcast' && (
+                  <div className="flex gap-1 flex-wrap">
+                    {variables.map(v => (
+                      <button key={v} onClick={() => insertVariable(v)}
+                        className="text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded font-mono hover:bg-emerald-100 transition-colors duration-150">
+                        {v}
                       </button>
-                    </div>
+                    ))}
                   </div>
                 )}
               </div>
-            ))}
+              <textarea value={mensaje} onChange={e => setMensaje(e.target.value)}
+                className={cx.input + ' min-h-[100px] resize-y'}
+                placeholder={modo === 'broadcast'
+                  ? 'Hola {nombre}, tu negocio {empresa} tiene acceso a nuevas funcionalidades...'
+                  : 'Escribe tu mensaje...'}
+                rows={4} />
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
+              <motion.button
+                onClick={handleSend}
+                disabled={sending || !mensaje.trim()}
+                className={cx.btnPrimary + ' flex items-center justify-center gap-2 flex-1 sm:flex-none'}
+                whileTap={{ scale: 0.96 }}
+              >
+                {sending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  : <><Send size={16} /> {modo === 'broadcast' ? 'Enviar difusion' : 'Enviar'}</>}
+              </motion.button>
+              <button onClick={handlePreview} disabled={!mensaje.trim()} className={cx.btnSecondary + ' flex items-center justify-center gap-2 flex-1 sm:flex-none'}>
+                <Eye size={16} /> Preview email
+              </button>
+            </div>
+
+            {/* Broadcast result banner */}
+            <AnimatePresence>
+              {broadcastResult && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  transition={{ duration: 0.25, ease: 'easeOut' }}
+                  style={{ background: 'linear-gradient(135deg, #0A2F24 0%, #16A34A 100%)' }}
+                  className="rounded-xl p-4 flex items-center gap-3"
+                >
+                  <div className="w-9 h-9 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0">
+                    <CheckCircle size={18} className="text-white" />
+                  </div>
+                  <div className="text-sm text-white">
+                    Enviado a <strong>{broadcastResult.sent}</strong> usuario{broadcastResult.sent !== 1 ? 's' : ''}
+                    {broadcastResult.failed > 0 && <span className="text-rose-300 ml-1">({broadcastResult.failed} fallaron)</span>}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Email Preview Modal ── */}
+      <AnimatePresence>
+        {showPreview && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowPreview(false)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200">
+                <h4 className="text-sm font-semibold text-stone-800">Preview del email</h4>
+                <button onClick={() => setShowPreview(false)} className="text-stone-400 hover:text-stone-600 transition-colors"><X size={16} /></button>
+              </div>
+              <div className="overflow-auto max-h-[75vh]">
+                <iframe
+                  srcDoc={previewHtml}
+                  className="w-full border-0"
+                  style={{ minHeight: '500px' }}
+                  title="Email preview"
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Messages list ── */}
+      <div>
+        <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wider mb-3">Conversaciones</h3>
+        {mensajes.length === 0 ? (
+          <div className="bg-white border border-stone-200 rounded-xl py-16 text-center">
+            <MessageCircle size={40} className="text-stone-300 mx-auto mb-3" strokeWidth={1.5} />
+            <p className="text-stone-400 text-sm">No hay mensajes aun</p>
+            <p className="text-stone-300 text-xs mt-1">Los mensajes enviados apareceran aqui</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {mensajes.map((m, idx) => {
+              const isAdmin = m.de_admin;
+              const senderName = isAdmin ? 'Admin' : (m.de_nombre || m.de_email || '?');
+              const senderInitial = senderName.charAt(0).toUpperCase();
+              const isExpanded = expandedId === m.id;
+
+              return (
+                <motion.div
+                  key={m.id}
+                  initial={{ opacity: 0, y: -12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, delay: Math.min(idx, 10) * 0.03, ease: 'easeOut' }}
+                  className="group"
+                >
+                  {/* Message bubble row */}
+                  <div className={`flex gap-3 ${isAdmin ? 'flex-row-reverse' : 'flex-row'}`}>
+                    {/* Avatar */}
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold text-white mt-0.5"
+                      style={{ backgroundColor: isAdmin ? '#0A2F24' : avatarColor(senderName) }}
+                    >
+                      {senderInitial}
+                    </div>
+
+                    {/* Bubble + meta */}
+                    <div className={`flex-1 min-w-0 max-w-[85%] ${isAdmin ? 'flex flex-col items-end' : ''}`}>
+                      {/* Sender line */}
+                      <div className={`flex items-center gap-2 mb-1 ${isAdmin ? 'flex-row-reverse' : ''}`}>
+                        <span className="text-[11px] font-semibold text-stone-600">{senderName}</span>
+                        <span className="text-[10px] text-stone-400">
+                          {m.para_nombre ? `\u2192 ${m.para_nombre}` : isAdmin ? '\u2192 Todos' : '\u2192 Soporte'}
+                        </span>
+                      </div>
+
+                      {/* Bubble */}
+                      <button
+                        onClick={() => handleExpand(m.id)}
+                        className={`text-left w-full rounded-2xl px-4 py-3 transition-all duration-150 cursor-pointer ${
+                          isAdmin
+                            ? 'bg-[#0A2F24] text-white rounded-tr-md hover:bg-[#0C3829]'
+                            : 'bg-white border border-stone-200 text-stone-800 rounded-tl-md hover:shadow-sm hover:border-stone-300'
+                        }`}
+                      >
+                        {m.asunto && (
+                          <p className={`text-xs font-semibold mb-1 ${isAdmin ? 'text-white/70' : 'text-stone-500'}`}>
+                            {m.asunto}
+                          </p>
+                        )}
+                        <p className={`text-sm leading-relaxed ${isAdmin ? 'text-white/90' : 'text-stone-700'}`}>
+                          {m.mensaje.length > 120 && !isExpanded ? m.mensaje.slice(0, 120) + '...' : m.mensaje}
+                        </p>
+                        {/* Expand indicator */}
+                        <div className={`flex items-center gap-1.5 mt-2 ${isAdmin ? 'justify-end' : ''}`}>
+                          {parseInt(m.respuestas) > 0 && (
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                              isAdmin ? 'bg-white/15 text-white/80' : 'bg-emerald-50 text-emerald-600'
+                            }`}>
+                              {m.respuestas} respuesta{parseInt(m.respuestas) !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                          <ChevronDown
+                            size={14}
+                            className={`transition-transform duration-200 ${
+                              isAdmin ? 'text-white/40' : 'text-stone-400'
+                            } ${isExpanded ? 'rotate-180' : ''}`}
+                          />
+                        </div>
+                      </button>
+
+                      {/* Timestamp */}
+                      <p className={`text-[10px] text-stone-400 mt-1 ${isAdmin ? 'text-right' : ''}`}>
+                        {formatDate(m.created_at)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* ── Thread expansion ── */}
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.15, ease: 'easeOut' }}
+                        className="overflow-hidden"
+                      >
+                        <div className={`mt-2 ml-11 ${isAdmin ? 'mr-11 ml-0' : ''} space-y-2`}>
+                          {/* Full message if truncated */}
+                          {m.mensaje.length > 120 && (
+                            <div className={`rounded-xl p-3 text-sm leading-relaxed ${
+                              isAdmin ? 'bg-[#0A2F24]/5 text-stone-700' : 'bg-stone-50 text-stone-700'
+                            }`}>
+                              <p className="whitespace-pre-wrap">{m.mensaje}</p>
+                            </div>
+                          )}
+
+                          {/* Replies */}
+                          {(respuestas[m.id] || []).map((r, rIdx) => {
+                            const rIsAdmin = r.de_admin;
+                            const rName = rIsAdmin ? 'Admin' : (r.de_nombre || r.de_email || '?');
+                            const rInitial = rName.charAt(0).toUpperCase();
+                            return (
+                              <motion.div
+                                key={r.id}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.12, delay: rIdx * 0.03 }}
+                                className={`flex gap-2.5 ${rIsAdmin ? 'flex-row-reverse' : 'flex-row'}`}
+                              >
+                                <div
+                                  className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-white"
+                                  style={{ backgroundColor: rIsAdmin ? '#0A2F24' : avatarColor(rName) }}
+                                >
+                                  {rInitial}
+                                </div>
+                                <div className={`flex-1 min-w-0 ${rIsAdmin ? 'flex flex-col items-end' : ''}`}>
+                                  <div className={`rounded-2xl px-3.5 py-2.5 ${
+                                    rIsAdmin
+                                      ? 'bg-[#0A2F24] text-white/90 rounded-tr-md'
+                                      : 'bg-white border border-stone-200 text-stone-700 rounded-tl-md'
+                                  }`}>
+                                    <p className="text-xs leading-relaxed">{r.mensaje}</p>
+                                  </div>
+                                  <div className={`flex items-center gap-1.5 mt-0.5 ${rIsAdmin ? 'flex-row-reverse' : ''}`}>
+                                    <span className="text-[10px] font-medium text-stone-400">{rName}</span>
+                                    <span className="text-[10px] text-stone-300">{formatDate(r.created_at)}</span>
+                                  </div>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+
+                          {/* Reply input */}
+                          <div className="flex gap-2 items-center pt-2">
+                            <input
+                              type="text"
+                              value={replyText}
+                              onChange={e => setReplyText(e.target.value)}
+                              onKeyDown={e => e.key === 'Enter' && handleReply(m.id)}
+                              className="flex-1 px-4 py-2 bg-white border border-stone-200 rounded-full text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:border-stone-400 transition-colors duration-150"
+                              placeholder="Escribe una respuesta..."
+                            />
+                            <motion.button
+                              onClick={() => handleReply(m.id)}
+                              disabled={!replyText.trim()}
+                              whileTap={{ scale: 0.9 }}
+                              className="w-9 h-9 rounded-full bg-[#16A34A] hover:bg-[#15803D] disabled:opacity-30 flex items-center justify-center transition-colors duration-150"
+                            >
+                              <Send size={14} className="text-white ml-0.5" />
+                            </motion.button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </div>
