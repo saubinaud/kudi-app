@@ -409,7 +409,7 @@ export default function DashboardPage() {
                 onClick={() => navigate('/cotizador')}
                 className={cx.btnPrimary + ' flex items-center gap-2'}
               >
-                {isTrialAtLimit ? <Lock size={16} /> : <Plus size={16} />}
+                <Plus size={16} />
                 Nuevo
               </button>
             );
