@@ -38,6 +38,8 @@ export default function MargenesPage() {
   const [configCats, setConfigCats] = useState([]);
   const [savingConfig, setSavingConfig] = useState(false);
   const [newCatName, setNewCatName] = useState('');
+  const [catalogo, setCatalogo] = useState([]);
+  const [showSugerencias, setShowSugerencias] = useState(false);
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -50,6 +52,7 @@ export default function MargenesPage() {
   }, []); // eslint-disable-line
 
   useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
+  useEffect(() => { api.get('/margenes/catalogo').then(r => setCatalogo(r?.data || r || [])).catch(() => {}); }, []); // eslint-disable-line
 
   // Auto-categorizar
   const handleAutoCategorizar = async () => {
@@ -71,9 +74,10 @@ export default function MargenesPage() {
     } catch { toast.error('Error'); }
   };
 
-  // Mejorar margen — navega al cotizador para editar precio
-  const handleMejorarMargen = (productoId) => {
-    navigate(`/cotizador/${productoId}`);
+  // Mejorar margen — navega al cotizador con margen óptimo como objetivo
+  const handleMejorarMargen = (producto) => {
+    const targetMargen = producto.margen_optimo || 60;
+    navigate(`/cotizador/${producto.id}?margenObjetivo=${targetMargen}`);
   };
 
   // Config: save
@@ -269,7 +273,7 @@ export default function MargenesPage() {
                       </div>
                       <div className="flex justify-center">
                         {isBad ? (
-                          <button onClick={() => handleMejorarMargen(p.id)}
+                          <button onClick={() => handleMejorarMargen(p)}
                             className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-full transition-colors">
                             <ArrowUpRight size={12} /> Mejorar
                           </button>
@@ -326,12 +330,63 @@ export default function MargenesPage() {
             </div>
           )}
 
-          <div className="flex gap-2 mb-5">
-            <input type="text" value={newCatName} onChange={e => setNewCatName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleAddCat()}
-              className={cx.input + ' text-sm flex-1'} placeholder="Nueva categoría..." />
-            <button onClick={handleAddCat} disabled={!newCatName.trim()}
-              className={cx.btnGhost + ' flex items-center gap-1'}><Plus size={14} /> Agregar</button>
+          {/* Agregar categoría con sugerencias del catálogo */}
+          <div className="relative mb-5">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <input type="text" value={newCatName}
+                  onChange={e => { setNewCatName(e.target.value); setShowSugerencias(true); }}
+                  onFocus={() => setShowSugerencias(true)}
+                  onKeyDown={e => e.key === 'Enter' && handleAddCat()}
+                  className={cx.input + ' text-sm'} placeholder="Buscar o crear categoría..." />
+                {/* Sugerencias dropdown */}
+                {showSugerencias && newCatName.length > 0 && (() => {
+                  const existentes = configCats.map(c => c.nombre.toLowerCase());
+                  const q = newCatName.toLowerCase();
+                  const matches = catalogo.filter(c =>
+                    c.nombre.toLowerCase().includes(q) && !existentes.includes(c.nombre.toLowerCase())
+                  ).slice(0, 6);
+                  if (matches.length === 0) return null;
+                  return (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-stone-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                      {matches.map(m => (
+                        <button key={m.nombre}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setNewCatName(m.nombre);
+                            setShowSugerencias(false);
+                            // Auto-add with suggested margins
+                            api.post('/margenes/categorias', {
+                              nombre: m.nombre,
+                              margen_minimo: m.min,
+                              margen_moderado: m.mod,
+                              margen_optimo: m.opt,
+                            }).then(r => {
+                              setConfigCats(prev => [...prev, r?.data || r]);
+                              setNewCatName('');
+                              toast.success(`${m.nombre} agregada con márgenes sugeridos`);
+                            }).catch(() => toast.error('Error'));
+                          }}
+                          className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-stone-50 text-left transition-colors border-b border-stone-100 last:border-0"
+                        >
+                          <div>
+                            <span className="text-sm font-medium text-stone-800">{m.nombre}</span>
+                            <span className="text-[10px] text-stone-400 ml-2">{m.keywords_count} productos</span>
+                          </div>
+                          <div className="flex gap-2 text-[10px]">
+                            <span className="text-rose-500">{m.min}%</span>
+                            <span className="text-amber-500">{m.mod}%</span>
+                            <span className="text-emerald-500">{m.opt}%</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+              <button onClick={handleAddCat} disabled={!newCatName.trim()}
+                className={cx.btnGhost + ' flex items-center gap-1 flex-shrink-0'}><Plus size={14} /> Crear</button>
+            </div>
           </div>
 
           <button onClick={handleSaveConfig} disabled={savingConfig}

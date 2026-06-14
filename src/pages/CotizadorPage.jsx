@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
@@ -372,6 +372,8 @@ const emptyMaterial = (tipo = 'entero') => ({
 
 export default function CotizadorPage() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const margenObjetivo = searchParams.get('margenObjetivo') ? Number(searchParams.get('margenObjetivo')) : null;
   const navigate = useNavigate();
   const api = useApi();
   const { user } = useAuth();
@@ -1790,6 +1792,28 @@ export default function CotizadorPage() {
                 />
               </div>
             )}
+
+            {/* Margen objetivo — sugerencia desde Márgenes */}
+            {margenObjetivo && costos.costoNeto > 0 && (() => {
+              const precioSugerido = Math.round(costos.costoNeto / (1 - margenObjetivo / 100) * 100) / 100;
+              const margenActual = Math.round((costos.margen || 0) * 100) / 100;
+              const necesitaMejora = margenActual < margenObjetivo;
+              if (!necesitaMejora) return null;
+              return (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-4">
+                  <p className="text-xs font-semibold text-emerald-800 mb-1">Margen objetivo: {margenObjetivo}%</p>
+                  <p className="text-xs text-emerald-700 mb-2">
+                    Margen actual: {margenActual.toFixed(1)}% · Precio sugerido: {formatCurrency(precioSugerido)}
+                  </p>
+                  <button
+                    onClick={() => setPrecioFinal(precioSugerido)}
+                    className="text-xs font-semibold text-white bg-[#16A34A] hover:bg-[#15803D] px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    Aplicar precio sugerido
+                  </button>
+                </div>
+              );
+            })()}
 
             {/* Pack sin items: mostrar mensaje */}
             {tipoProducto === 'pack' && costos.costoNeto === 0 && packCosto === 0 && (
