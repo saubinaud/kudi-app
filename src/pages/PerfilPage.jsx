@@ -5,7 +5,7 @@ import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
-import { User, Lock, Save, Pencil, X, Upload, Loader2, Settings, CreditCard, Building2, Activity, Users } from 'lucide-react';
+import { User, Lock, Save, Pencil, X, Upload, Loader2, Settings, CreditCard, Building2, Activity, Users, Plus, ToggleLeft, ToggleRight, RotateCcw } from 'lucide-react';
 import CustomSelect from '../components/CustomSelect';
 import { PAISES, getPaisByCode } from '../config/paises';
 import { API_BASE } from '../config/api';
@@ -398,6 +398,9 @@ export default function PerfilPage() {
         </div>
       )}
 
+      {/* Márgenes por categoría */}
+      {tab === 'ajustes' && <MargenesConfig api={api} toast={toast} />}
+
       {/* ══════ Tab: Equipo ══════ */}
       {tab === 'equipo' && <EquipoPage />}
 
@@ -555,6 +558,130 @@ export default function PerfilPage() {
         </>
       )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+// ── Márgenes por categoría ──
+function MargenesConfig({ api, toast }) {
+  const [cats, setCats] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [newCat, setNewCat] = useState('');
+
+  useEffect(() => {
+    api.get('/margenes/categorias')
+      .then(r => setCats((r?.data || r || []).sort((a, b) => a.orden - b.orden)))
+      .finally(() => setLoading(false));
+  }, []); // eslint-disable-line
+
+  const handleSave = async () => {
+    // Validate
+    for (const c of cats) {
+      if (c.activo && (c.margen_minimo >= c.margen_moderado || c.margen_moderado >= c.margen_optimo)) {
+        toast.error(`${c.nombre}: mínimo < moderado < óptimo`);
+        return;
+      }
+    }
+    setSaving(true);
+    try {
+      await api.put('/margenes/categorias', { categorias: cats });
+      toast.success('Márgenes guardados');
+    } catch { toast.error('Error guardando'); }
+    finally { setSaving(false); }
+  };
+
+  const handleAdd = async () => {
+    if (!newCat.trim()) return;
+    try {
+      const r = await api.post('/margenes/categorias', { nombre: newCat.trim(), margen_minimo: 30, margen_moderado: 45, margen_optimo: 60 });
+      setCats(prev => [...prev, r?.data || r]);
+      setNewCat('');
+    } catch { toast.error('Error creando categoría'); }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await api.del(`/margenes/categorias/${id}`);
+      setCats(prev => prev.filter(c => c.id !== id));
+    } catch { toast.error('Error eliminando'); }
+  };
+
+  const update = (id, field, value) => {
+    setCats(prev => prev.map(c => c.id === id ? { ...c, [field]: value } : c));
+  };
+
+  if (loading) return <div className={cx.skeleton + ' h-48 rounded-xl mt-4'} />;
+
+  return (
+    <div className={cx.card + ' p-5 mt-4'}>
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-lg font-semibold text-stone-900">Márgenes por categoría</h3>
+      </div>
+      <p className="text-xs text-stone-400 mb-4">Define los márgenes objetivo para evaluar la rentabilidad de tus productos.</p>
+
+      {cats.length === 0 ? (
+        <p className="text-sm text-stone-400 py-4 text-center">No hay categorías configuradas</p>
+      ) : (
+        <div className="space-y-2 mb-4">
+          {/* Header */}
+          <div className="grid grid-cols-[auto_1fr_72px_72px_72px_32px] gap-2 items-center px-2">
+            <div className="w-8" />
+            <span className={cx.th}>Categoría</span>
+            <span className={cx.th + ' text-center'}>🔴 Mín</span>
+            <span className={cx.th + ' text-center'}>🟡 Mod</span>
+            <span className={cx.th + ' text-center'}>🟢 Ópt</span>
+            <div />
+          </div>
+
+          {cats.map(c => (
+            <div key={c.id}
+              className={`grid grid-cols-[auto_1fr_72px_72px_72px_32px] gap-2 items-center px-2 py-2 rounded-lg transition-opacity ${c.activo ? '' : 'opacity-40'}`}>
+              {/* Toggle */}
+              <button onClick={() => update(c.id, 'activo', !c.activo)} className="w-8 text-stone-400 hover:text-[#16A34A]">
+                {c.activo ? <ToggleRight size={20} className="text-[#16A34A]" /> : <ToggleLeft size={20} />}
+              </button>
+              {/* Name */}
+              <span className="text-sm font-medium text-stone-700 truncate">{c.nombre}</span>
+              {/* Min */}
+              <input type="number" min="0" max="99" step="1"
+                value={c.margen_minimo} onChange={e => update(c.id, 'margen_minimo', Number(e.target.value))}
+                className="w-full text-center text-sm px-1 py-1.5 rounded-lg border border-rose-200 bg-rose-50/50 text-rose-700 focus:outline-none focus:border-rose-400"
+                disabled={!c.activo} />
+              {/* Mod */}
+              <input type="number" min="0" max="99" step="1"
+                value={c.margen_moderado} onChange={e => update(c.id, 'margen_moderado', Number(e.target.value))}
+                className="w-full text-center text-sm px-1 py-1.5 rounded-lg border border-amber-200 bg-amber-50/50 text-amber-700 focus:outline-none focus:border-amber-400"
+                disabled={!c.activo} />
+              {/* Opt */}
+              <input type="number" min="0" max="99" step="1"
+                value={c.margen_optimo} onChange={e => update(c.id, 'margen_optimo', Number(e.target.value))}
+                className="w-full text-center text-sm px-1 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50/50 text-emerald-700 focus:outline-none focus:border-emerald-400"
+                disabled={!c.activo} />
+              {/* Delete */}
+              <button onClick={() => handleDelete(c.id)} className="text-stone-300 hover:text-rose-500 transition-colors">
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add custom */}
+      <div className="flex gap-2 mb-4">
+        <input type="text" value={newCat} onChange={e => setNewCat(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          className={cx.input + ' text-sm flex-1'} placeholder="Nueva categoría..." />
+        <button onClick={handleAdd} disabled={!newCat.trim()} className={cx.btnGhost + ' flex items-center gap-1'}>
+          <Plus size={14} /> Agregar
+        </button>
+      </div>
+
+      {/* Save */}
+      <button onClick={handleSave} disabled={saving} className={cx.btnPrimary + ' flex items-center gap-2'}>
+        {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={16} />}
+        Guardar márgenes
+      </button>
     </div>
   );
 }
