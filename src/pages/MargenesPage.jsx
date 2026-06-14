@@ -300,33 +300,49 @@ export default function MargenesPage() {
           <p className="text-xs text-stone-400 mb-5">Define los márgenes objetivo. Los productos se evaluarán automáticamente con semáforo.</p>
 
           {configCats.length > 0 && (
-            <div className="space-y-2 mb-5">
-              <div className="grid grid-cols-[auto_1fr_72px_72px_72px_32px] gap-2 items-center px-2">
-                <div className="w-8" />
+            <div className="mb-5">
+              {/* Header */}
+              <div className="grid grid-cols-[36px_1fr_64px_64px_64px_28px] md:grid-cols-[36px_1fr_80px_80px_80px_28px] gap-2 items-center px-3 pb-2">
+                <div />
                 <span className={cx.th}>Categoría</span>
-                <span className={cx.th + ' text-center'}>🔴 Mín</span>
-                <span className={cx.th + ' text-center'}>🟡 Mod</span>
-                <span className={cx.th + ' text-center'}>🟢 Ópt</span>
+                <div className="flex flex-col items-center gap-0.5">
+                  <div className="w-2 h-2 rounded-full bg-rose-500" />
+                  <span className={cx.th}>Mín %</span>
+                </div>
+                <div className="flex flex-col items-center gap-0.5">
+                  <div className="w-2 h-2 rounded-full bg-amber-500" />
+                  <span className={cx.th}>Mod %</span>
+                </div>
+                <div className="flex flex-col items-center gap-0.5">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className={cx.th}>Ópt %</span>
+                </div>
                 <div />
               </div>
-              {configCats.map(c => (
-                <div key={c.id} className={`grid grid-cols-[auto_1fr_72px_72px_72px_32px] gap-2 items-center px-2 py-2 rounded-lg ${c.activo ? '' : 'opacity-40'}`}>
-                  <button onClick={() => setConfigCats(prev => prev.map(cc => cc.id === c.id ? { ...cc, activo: !cc.activo } : cc))} className="w-8">
-                    {c.activo ? <ToggleRight size={20} className="text-[#16A34A]" /> : <ToggleLeft size={20} className="text-stone-400" />}
-                  </button>
-                  <span className="text-sm font-medium text-stone-700 truncate">{c.nombre}</span>
-                  <input type="number" min="0" max="99" value={c.margen_minimo}
-                    onChange={e => setConfigCats(prev => prev.map(cc => cc.id === c.id ? { ...cc, margen_minimo: Number(e.target.value) } : cc))}
-                    className="w-full text-center text-sm px-1 py-1.5 rounded-lg border border-rose-200 bg-rose-50/50 text-rose-700 focus:outline-none focus:border-rose-400" disabled={!c.activo} />
-                  <input type="number" min="0" max="99" value={c.margen_moderado}
-                    onChange={e => setConfigCats(prev => prev.map(cc => cc.id === c.id ? { ...cc, margen_moderado: Number(e.target.value) } : cc))}
-                    className="w-full text-center text-sm px-1 py-1.5 rounded-lg border border-amber-200 bg-amber-50/50 text-amber-700 focus:outline-none focus:border-amber-400" disabled={!c.activo} />
-                  <input type="number" min="0" max="99" value={c.margen_optimo}
-                    onChange={e => setConfigCats(prev => prev.map(cc => cc.id === c.id ? { ...cc, margen_optimo: Number(e.target.value) } : cc))}
-                    className="w-full text-center text-sm px-1 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50/50 text-emerald-700 focus:outline-none focus:border-emerald-400" disabled={!c.activo} />
-                  <button onClick={() => handleDeleteCat(c.id)} className="text-stone-300 hover:text-rose-500"><X size={14} /></button>
-                </div>
-              ))}
+
+              {/* Rows */}
+              <div className="divide-y divide-stone-100">
+                {configCats.map(c => (
+                  <div key={c.id} className={`grid grid-cols-[36px_1fr_64px_64px_64px_28px] md:grid-cols-[36px_1fr_80px_80px_80px_28px] gap-2 items-center px-3 py-3 ${c.activo ? '' : 'opacity-30'}`}>
+                    <button onClick={() => setConfigCats(prev => prev.map(cc => cc.id === c.id ? { ...cc, activo: !cc.activo } : cc))}>
+                      {c.activo ? <ToggleRight size={22} className="text-[#16A34A]" /> : <ToggleLeft size={22} className="text-stone-300" />}
+                    </button>
+                    <span className="text-sm font-medium text-stone-800 truncate">{c.nombre}</span>
+                    <input type="number" min="0" max="99" value={c.margen_minimo}
+                      onChange={e => setConfigCats(prev => prev.map(cc => cc.id === c.id ? { ...cc, margen_minimo: Number(e.target.value) } : cc))}
+                      className="w-full text-center text-sm py-2 rounded-lg border border-stone-200 focus:outline-none focus:border-rose-400 min-h-[40px]" disabled={!c.activo} />
+                    <input type="number" min="0" max="99" value={c.margen_moderado}
+                      onChange={e => setConfigCats(prev => prev.map(cc => cc.id === c.id ? { ...cc, margen_moderado: Number(e.target.value) } : cc))}
+                      className="w-full text-center text-sm py-2 rounded-lg border border-stone-200 focus:outline-none focus:border-amber-400 min-h-[40px]" disabled={!c.activo} />
+                    <input type="number" min="0" max="99" value={c.margen_optimo}
+                      onChange={e => setConfigCats(prev => prev.map(cc => cc.id === c.id ? { ...cc, margen_optimo: Number(e.target.value) } : cc))}
+                      className="w-full text-center text-sm py-2 rounded-lg border border-stone-200 focus:outline-none focus:border-emerald-400 min-h-[40px]" disabled={!c.activo} />
+                    <button onClick={() => handleDeleteCat(c.id)} className="text-stone-300 hover:text-rose-500 transition-colors">
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

@@ -1793,28 +1793,6 @@ export default function CotizadorPage() {
               </div>
             )}
 
-            {/* Margen objetivo — sugerencia desde Márgenes */}
-            {margenObjetivo && costos.costoNeto > 0 && (() => {
-              const precioSugerido = Math.round(costos.costoNeto / (1 - margenObjetivo / 100) * 100) / 100;
-              const margenActual = Math.round((costos.margen || 0) * 100) / 100;
-              const necesitaMejora = margenActual < margenObjetivo;
-              if (!necesitaMejora) return null;
-              return (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-4">
-                  <p className="text-xs font-semibold text-emerald-800 mb-1">Margen objetivo: {margenObjetivo}%</p>
-                  <p className="text-xs text-emerald-700 mb-2">
-                    Margen actual: {margenActual.toFixed(1)}% · Precio sugerido: {formatCurrency(precioSugerido)}
-                  </p>
-                  <button
-                    onClick={() => setPrecioFinal(precioSugerido)}
-                    className="text-xs font-semibold text-white bg-[#16A34A] hover:bg-[#15803D] px-3 py-1.5 rounded-lg transition-colors"
-                  >
-                    Aplicar precio sugerido
-                  </button>
-                </div>
-              );
-            })()}
-
             {/* Pack sin items: mostrar mensaje */}
             {tipoProducto === 'pack' && costos.costoNeto === 0 && packCosto === 0 && (
               <div className="bg-amber-50 rounded-lg px-3 py-3 mb-4 text-center">
@@ -2071,6 +2049,51 @@ export default function CotizadorPage() {
                 </>
               )}
             </button>
+
+            {/* Margen objetivo — tarjeta debajo del guardar */}
+            {margenObjetivo && costos.costoNeto > 0 && (() => {
+              const margenActual = Math.round((costos.margen || 0) * 100) / 100;
+              // Tolerancia: si está a menos de 1% del objetivo, no mostrar
+              if (margenActual >= margenObjetivo - 1) return null;
+
+              // Calcular precios para moderado y óptimo
+              const catData = categoriasMargenes.find(c => c.id === categoriaMargerId);
+              const moderado = catData ? parseFloat(catData.margen_moderado) : Math.round(margenObjetivo * 0.85);
+              const optimo = parseFloat(margenObjetivo);
+              const precioModerado = Math.round(costos.costoNeto / (1 - moderado / 100) * 100) / 100;
+              const precioOptimo = Math.round(costos.costoNeto / (1 - optimo / 100) * 100) / 100;
+
+              return (
+                <div className={cx.card + ' p-4 mt-3'}>
+                  <p className="text-xs font-semibold text-stone-800 mb-0.5">Mejorar margen</p>
+                  <p className="text-[11px] text-stone-400 mb-3">Margen actual: {margenActual.toFixed(1)}%</p>
+                  <div className="space-y-2">
+                    {margenActual < moderado && (
+                      <button
+                        onClick={() => setPrecioFinal(precioModerado)}
+                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-amber-200 hover:bg-amber-50/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-amber-500" />
+                          <span className="text-xs font-medium text-stone-700">Moderado ({moderado}%)</span>
+                        </div>
+                        <span className="text-xs font-semibold text-stone-800">{formatCurrency(precioModerado)}</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setPrecioFinal(precioOptimo)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-emerald-200 hover:bg-emerald-50/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="text-xs font-medium text-stone-700">Óptimo ({optimo}%)</span>
+                      </div>
+                      <span className="text-xs font-semibold text-stone-800">{formatCurrency(precioOptimo)}</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           </motion.div>
         </div>
       </div>
