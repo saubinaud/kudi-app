@@ -1794,10 +1794,22 @@ export default function CotizadorPage() {
               </div>
             )}
 
-            {/* Pack sin items: mostrar mensaje */}
-            {tipoProducto === 'pack' && costos.costoNeto === 0 && packCosto === 0 && (
+            {/* Pack sin items: mostrar mensaje solo si realmente no hay nada */}
+            {tipoProducto === 'pack' && packCosto === 0 && costoGuardado === 0 && !pendingPackItems?.length && (
               <div className="bg-amber-50 rounded-lg px-3 py-3 mb-4 text-center">
                 <p className="text-xs text-amber-700">Agrega productos al pack para ver el costo y calcular el precio</p>
+              </div>
+            )}
+
+            {/* Pack items desglose */}
+            {tipoProducto === 'pack' && pendingPackItems?.length > 0 && (
+              <div className="space-y-1 pb-3 mb-1 border-b border-stone-100">
+                {pendingPackItems.map((item, i) => (
+                  <div key={item.id || i} className="flex justify-between text-xs">
+                    <span className="text-stone-400 truncate mr-2">{item.nombre} {item.cantidad > 1 ? `×${item.cantidad}` : ''}</span>
+                    <span className="text-stone-500 shrink-0">{formatCurrency((parseFloat(item.costo_neto) || 0) * (Number(item.cantidad) || 1))}</span>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -1806,8 +1818,8 @@ export default function CotizadorPage() {
                 {/* Cost lines */}
                 <div className="space-y-3 pb-4 border-b border-stone-100">
                   <div className="flex justify-between text-sm">
-                    <span className="text-stone-500">{tipoProducto === 'pack' ? 'Costo items' : `Costo ${(t.insumos || 'insumos').toLowerCase()}`}</span>
-                    <span className="text-stone-800 font-medium">{formatCurrency(tipoProducto === 'pack' ? packCosto : costos.costoInsumosProducto)}</span>
+                    <span className="text-stone-500">{tipoProducto === 'pack' ? 'Costo del pack' : `Costo ${(t.insumos || 'insumos').toLowerCase()}`}</span>
+                    <span className="text-stone-800 font-medium">{formatCurrency(tipoProducto === 'pack' ? (packCosto || costoGuardado) : costos.costoInsumosProducto)}</span>
                   </div>
                   {costos.costoEmpaqueEntero > 0 && (
                     <div className="flex justify-between text-sm">
