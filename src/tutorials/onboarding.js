@@ -24,7 +24,7 @@ export function buildBienvenida(user) {
       message: 'El primer paso es registrar tus ingredientes. ¡Vamos!',
       expression: 'celebrando',
       position: 'center',
-      action: { label: 'Registrar mis ingredientes →', route: '/tutoriales' },
+      action: { label: 'Registrar mis ingredientes →', route: '/insumos', startTutorial: 'insumos' },
     },
   ];
 }

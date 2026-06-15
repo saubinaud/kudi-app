@@ -53,7 +53,7 @@ export const INSUMOS_STEPS = [
     message: 'Ahora registra tus materiales de empaque.',
     expression: 'celebrando',
     position: 'center',
-    action: { label: 'Ir a Materiales →', route: '/materiales' },
+    action: { label: 'Ir a Materiales →', route: '/materiales', startTutorial: 'materiales' },
   },
 ];
 
