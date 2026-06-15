@@ -165,19 +165,19 @@ export default function MaterialesPage() {
           if (isEditing) {
             return (
               <div key={mat.id || `new-${idx}`} className={`${cx.card} p-4 border-[var(--accent)] space-y-3`}>
-                <input id="material-nombre" type="text" value={editData.nombre} onChange={(e) => setEditData({ ...editData, nombre: e.target.value })} onBlur={(e) => { const v = e.target.value.trim(); if (v) setEditData({ ...editData, nombre: v.charAt(0).toUpperCase() + v.slice(1) }); }} placeholder="Nombre" className={cx.input} autoFocus />
-                <input id="material-proveedor" type="text" value={editData.proveedor || ''} onChange={(e) => setEditData({ ...editData, proveedor: e.target.value })} placeholder="Proveedor (opcional)" className={cx.input} />
+                <input type="text" value={editData.nombre} onChange={(e) => setEditData({ ...editData, nombre: e.target.value })} onBlur={(e) => { const v = e.target.value.trim(); if (v) setEditData({ ...editData, nombre: v.charAt(0).toUpperCase() + v.slice(1) }); }} placeholder="Nombre" className={cx.input} autoFocus />
+                <input type="text" value={editData.proveedor || ''} onChange={(e) => setEditData({ ...editData, proveedor: e.target.value })} placeholder="Proveedor (opcional)" className={cx.input} />
                 <div className="grid grid-cols-3 gap-2">
-                  <input id="material-cantidad" type="number" value={editData.cantidad_presentacion} onChange={(e) => setEditData({ ...editData, cantidad_presentacion: e.target.value })} placeholder="Cantidad" className={cx.input} />
+                  <input type="number" value={editData.cantidad_presentacion} onChange={(e) => setEditData({ ...editData, cantidad_presentacion: e.target.value })} placeholder="Cantidad" className={cx.input} />
                   <CustomSelect
                     value={editData.unidad_medida}
                     onChange={(v) => setEditData({ ...editData, unidad_medida: v })}
                     options={UNIDADES.map(u => ({ value: u, label: u }))}
                   />
-                  <input id="material-precio" type="number" step="0.01" value={editData.precio_presentacion} onChange={(e) => setEditData({ ...editData, precio_presentacion: e.target.value })} placeholder="Precio" className={cx.input} />
+                  <input type="number" step="0.01" value={editData.precio_presentacion} onChange={(e) => setEditData({ ...editData, precio_presentacion: e.target.value })} placeholder="Precio" className={cx.input} />
                 </div>
                 <div className="flex gap-2">
-                  <button id="material-save" onClick={saveEdit} className={cx.btnPrimary + ' flex-1 flex items-center justify-center gap-1'}><Save size={14} /> Guardar</button>
+                  <button onClick={saveEdit} className={cx.btnPrimary + ' flex-1 flex items-center justify-center gap-1'}><Save size={14} /> Guardar</button>
                   <button onClick={cancelEdit} className={cx.btnSecondary + ' flex items-center justify-center gap-1'}><X size={14} /></button>
                 </div>
               </div>
@@ -224,9 +224,9 @@ export default function MaterialesPage() {
               if (isEditing) {
                 return (
                   <tr key={mat.id || `new-${idx}`} className="border-b border-[var(--accent)]/30">
-                    <td className={cx.td}><input type="text" value={editData.nombre} onChange={(e) => setEditData({ ...editData, nombre: e.target.value })} onBlur={(e) => { const v = e.target.value.trim(); if (v) setEditData({ ...editData, nombre: v.charAt(0).toUpperCase() + v.slice(1) }); }} className={cx.input} autoFocus /></td>
+                    <td className={cx.td}><input id="material-nombre" type="text" value={editData.nombre} onChange={(e) => setEditData({ ...editData, nombre: e.target.value })} onBlur={(e) => { const v = e.target.value.trim(); if (v) setEditData({ ...editData, nombre: v.charAt(0).toUpperCase() + v.slice(1) }); }} className={cx.input} autoFocus /></td>
                     <td className={cx.td}><input type="text" value={editData.proveedor || ''} onChange={(e) => setEditData({ ...editData, proveedor: e.target.value })} className={cx.input} /></td>
-                    <td className={cx.td}><input type="number" value={editData.cantidad_presentacion} onChange={(e) => setEditData({ ...editData, cantidad_presentacion: e.target.value })} className={cx.input} /></td>
+                    <td className={cx.td}><input id="material-cantidad" type="number" value={editData.cantidad_presentacion} onChange={(e) => setEditData({ ...editData, cantidad_presentacion: e.target.value })} className={cx.input} /></td>
                     <td className={cx.td}>
                       <CustomSelect
                         value={editData.unidad_medida}
@@ -234,11 +234,11 @@ export default function MaterialesPage() {
                         options={UNIDADES.map(u => ({ value: u, label: u }))}
                       />
                     </td>
-                    <td className={cx.td}><input type="number" step="0.01" value={editData.precio_presentacion} onChange={(e) => setEditData({ ...editData, precio_presentacion: e.target.value })} className={cx.input} /></td>
+                    <td className={cx.td}><input id="material-precio" type="number" step="0.01" value={editData.precio_presentacion} onChange={(e) => setEditData({ ...editData, precio_presentacion: e.target.value })} className={cx.input} /></td>
                     <td className={cx.td + ' text-[var(--accent)] font-semibold'}>{formatCurrency(costoUnitario(editData))}</td>
                     <td className={cx.td + ' text-right'}>
                       <div className="flex justify-end gap-1">
-                        <button onClick={saveEdit} className={cx.btnIcon + ' text-[var(--success)] hover:text-[var(--success)]'}><Save size={15} /></button>
+                        <button id="material-save" onClick={saveEdit} className={cx.btnIcon + ' text-[var(--success)] hover:text-[var(--success)]'}><Save size={15} /></button>
                         <button onClick={cancelEdit} className={cx.btnIcon}><X size={15} /></button>
                       </div>
                     </td>

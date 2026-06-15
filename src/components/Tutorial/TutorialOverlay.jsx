@@ -3,12 +3,14 @@ import { motion } from 'framer-motion';
 const PAD = 8;
 const RADIUS = 12;
 
-export default function TutorialOverlay({ targetRect }) {
+export default function TutorialOverlay({ targetRect, step }) {
+  const blockClicks = !step?.prefill && !step?.allowInteraction;
+
   return (
     <>
-      {/* Dark backdrop — blocks clicks on everything behind */}
+      {/* Dark backdrop — blocks clicks on everything behind (pointer-events-none when prefill/allowInteraction) */}
       <motion.div
-        className="fixed inset-0 bg-black/55"
+        className={`fixed inset-0 bg-black/55${blockClicks ? '' : ' pointer-events-none'}`}
         style={{ zIndex: 9998 }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

@@ -24,6 +24,7 @@ export const MATERIALES_STEPS = [
     message: 'Te puse un ejemplo: Caja kraft, 50 unidades a S/ 25.00 (S/ 0.50 c/u). Cámbialo si quieres.',
     expression: 'todoBien',
     position: 'bottom',
+    allowInteraction: true,
     prefill: {
       '#material-nombre': 'Caja kraft',
       '#material-cantidad': '50',

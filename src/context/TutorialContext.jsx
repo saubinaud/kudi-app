@@ -249,7 +249,7 @@ export function TutorialProvider({ children }) {
         <AnimatePresence>
           {state.active && step && (
             <>
-              <TutorialOverlay targetRect={targetRect} />
+              <TutorialOverlay targetRect={targetRect} step={step} />
               <TutorialCard
                 step={step}
                 targetRect={targetRect}

@@ -19,11 +19,12 @@ export const INSUMOS_STEPS = [
   },
   {
     id: 'fill-data',
-    target: '#insumo-form',
+    target: '#insumo-nombre',
     title: 'Llena los datos del ingrediente',
     message: 'Te puse un ejemplo: Harina, 1000g a S/ 5.00. Puedes cambiarlo o dejarlo así y darle Siguiente.',
     expression: 'todoBien',
     position: 'bottom',
+    allowInteraction: true,
     prefill: {
       '#insumo-nombre': 'Harina',
       '#insumo-cantidad': '1000',
