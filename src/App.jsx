@@ -9,6 +9,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import LoginPage from './pages/LoginPage';
 import OnboardingPage from './pages/OnboardingPage';
 import { TutorialProvider } from './context/TutorialContext';
+import TutorialesPage from './pages/TutorialesPage';
 import DashboardPage from './pages/DashboardPage';
 import CotizadorPage from './pages/CotizadorPage';
 import InsumosPage from './pages/InsumosPage';
@@ -138,6 +139,7 @@ export default function App() {
               <Route path="/equipo" element={<EquipoPage />} />
               <Route path="/perfil" element={<PerfilPage />} />
               <Route path="/feedback" element={<FeedbackPage />} />
+              <Route path="/tutoriales" element={<TutorialesPage />} />
               <Route path="/novedades" element={<NovedadesPage />} />
             </Route>
 

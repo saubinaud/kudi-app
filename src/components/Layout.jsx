@@ -174,6 +174,7 @@ export default function Layout() {
   ];
 
   const standaloneLinks = [
+    { to: '/tutoriales', label: 'Tutoriales', icon: Sparkles },
     { to: '/perfil', label: 'Perfil', icon: User },
     { to: '/feedback', label: 'Feedback', icon: MessageSquare },
   ];
