@@ -195,8 +195,9 @@ function PackItemsEditor({ productoId, onItemsChange }) {
       return;
     }
     try {
-      await api.put(`/productos/${productoId}/pack-items/${itemId}`, { cantidad: Number(cantidad) || 1 });
-      setItems(prev => prev.map(i => i.id === itemId ? { ...i, cantidad } : i));
+      const res = await api.put(`/productos/${productoId}/pack-items/${itemId}`, { cantidad: Number(cantidad) || 1 });
+      const updated = res?.data || res;
+      setItems(prev => prev.map(i => i.id === itemId ? { ...i, ...updated, cantidad } : i));
     } catch (err) {
       toast.error(err.message || 'Error actualizando cantidad');
     }
