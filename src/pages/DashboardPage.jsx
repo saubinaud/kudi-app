@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useTutorial } from '../hooks/useTutorial';
+import { ONBOARDING_STEPS } from '../tutorials/onboarding';
 import { cx } from '../styles/tokens';
 import { formatCurrency, formatPercent, formatDate, precioComercial } from '../utils/format';
 import ConfirmDialog, { PromptDialog } from '../components/ConfirmDialog';
@@ -46,6 +48,8 @@ export default function DashboardPage() {
   const toast = useToast();
   const t = useTerminos();
   const navigate = useNavigate();
+  const { start: startTutorial, isCompleted: isTutorialCompleted } = useTutorial();
+  const tutorialTriggered = useRef(false);
   const precioMode = user?.precio_decimales || 'variable';
 
   const [products, setProducts] = useState([]);
@@ -76,6 +80,15 @@ export default function DashboardPage() {
   useEffect(() => {
     loadProducts();
     api.get('/precios/categorias').then(r => setCategorias(r?.data || r || [])).catch(() => toast.error('Error cargando datos'));
+  }, []);
+
+  // Auto-start onboarding para usuarios nuevos
+  useEffect(() => {
+    if (tutorialTriggered.current) return;
+    if (isTutorialCompleted('onboarding')) return;
+    tutorialTriggered.current = true;
+    const t = setTimeout(() => startTutorial('onboarding', ONBOARDING_STEPS), 800);
+    return () => clearTimeout(t);
   }, []);
 
   const loadProducts = async () => {
@@ -406,6 +419,7 @@ export default function DashboardPage() {
           {(() => {
             return (
               <button
+                id="btn-nuevo-producto"
                 onClick={() => navigate('/cotizador')}
                 className={cx.btnPrimary + ' flex items-center gap-2'}
               >

@@ -8,6 +8,7 @@ import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoginPage from './pages/LoginPage';
 import OnboardingPage from './pages/OnboardingPage';
+import { TutorialProvider } from './context/TutorialContext';
 import DashboardPage from './pages/DashboardPage';
 import CotizadorPage from './pages/CotizadorPage';
 import InsumosPage from './pages/InsumosPage';
@@ -86,6 +87,7 @@ export default function App() {
     <ErrorBoundary>
     <AuthProvider>
       <ToastProvider>
+        <TutorialProvider>
         <HashRouter>
           <ScrollToTop />
           <Routes>
@@ -154,6 +156,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </HashRouter>
+        </TutorialProvider>
       </ToastProvider>
     </AuthProvider>
     </ErrorBoundary>
