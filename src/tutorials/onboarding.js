@@ -20,7 +20,7 @@ export const BIENVENIDA_STEPS = [
     message: 'Aprende a costear tu primer producto, vender y más.',
     expression: 'celebrando',
     position: 'center',
-    action: { label: 'Ir a Tutoriales →', route: '/tutoriales' },
+    action: { label: 'Registrar mis ingredientes →', route: '/tutoriales' },
   },
 ];
 

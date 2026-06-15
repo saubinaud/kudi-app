@@ -236,7 +236,7 @@ export default function InsumosPage() {
           <h2 className="text-xl font-bold text-stone-900">{t.insumos}</h2>
           <p className="text-stone-500 text-sm mt-0.5">{insumos.filter((i) => !i._new).length} insumos registrados</p>
         </div>
-        <button onClick={addNew} disabled={editingId !== null} className={cx.btnPrimary + ' flex items-center gap-2'}>
+        <button id="btn-nuevo-insumo" onClick={addNew} disabled={editingId !== null} className={cx.btnPrimary + ' flex items-center gap-2'}>
           <Plus size={16} />
           Nuevo Insumo
         </button>
@@ -246,6 +246,7 @@ export default function InsumosPage() {
         <div className="mb-4 relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
           <input
+            id="insumos-search"
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -256,13 +257,13 @@ export default function InsumosPage() {
       )}
 
       {/* Mobile cards */}
-      <div className="space-y-3 lg:hidden">
+      <div id="insumos-list" className="space-y-3 lg:hidden">
         {filtered.map((ins, idx) => {
           const isEditing = editingId === (ins._new ? 'new' : ins.id);
           if (isEditing) {
             return (
-              <div key={ins.id || `new-${idx}`} className={`${cx.card} p-4 border-[var(--accent)] space-y-3`}>
-                <input type="text" value={editData.nombre} onChange={(e) => setEditData({ ...editData, nombre: e.target.value })} onBlur={(e) => { const v = e.target.value.trim(); if (v) setEditData({ ...editData, nombre: v.charAt(0).toUpperCase() + v.slice(1) }); }} placeholder="Nombre" className={cx.input} autoFocus />
+              <div id="insumo-form" key={ins.id || `new-${idx}`} className={`${cx.card} p-4 border-[var(--accent)] space-y-3`}>
+                <input id="insumo-nombre" type="text" value={editData.nombre} onChange={(e) => setEditData({ ...editData, nombre: e.target.value })} onBlur={(e) => { const v = e.target.value.trim(); if (v) setEditData({ ...editData, nombre: v.charAt(0).toUpperCase() + v.slice(1) }); }} placeholder="Nombre" className={cx.input} autoFocus />
                 <div className="grid grid-cols-3 gap-2">
                   <input type="number" value={editData.cantidad_presentacion} onChange={(e) => setEditData({ ...editData, cantidad_presentacion: e.target.value })} placeholder="Cantidad" className={cx.input} />
                   <CustomSelect
@@ -270,10 +271,10 @@ export default function InsumosPage() {
                     onChange={(v) => setEditData({ ...editData, unidad_medida: v })}
                     options={UNIDADES.map(u => ({ value: u, label: u }))}
                   />
-                  <input type="number" step="0.01" value={editData.precio_presentacion} onChange={(e) => setEditData({ ...editData, precio_presentacion: e.target.value })} placeholder="Precio" className={cx.input} />
+                  <input id="insumo-precio" type="number" step="0.01" value={editData.precio_presentacion} onChange={(e) => setEditData({ ...editData, precio_presentacion: e.target.value })} placeholder="Precio" className={cx.input} />
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={saveEdit} className={cx.btnPrimary + ' flex-1 flex items-center justify-center gap-1'}><Save size={16} /> Guardar</button>
+                  <button id="insumo-save" onClick={saveEdit} className={cx.btnPrimary + ' flex-1 flex items-center justify-center gap-1'}><Save size={16} /> Guardar</button>
                   <button onClick={cancelEdit} className={cx.btnSecondary + ' flex items-center justify-center gap-1'}><X size={16} /></button>
                 </div>
               </div>

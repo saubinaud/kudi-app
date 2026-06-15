@@ -1,0 +1,45 @@
+export const INSUMOS_STEPS = [
+  {
+    id: 'intro',
+    title: 'Registra tus ingredientes',
+    message: 'Antes de costear un producto, necesitas tener tus ingredientes con sus precios. ¡Es rápido!',
+    expression: 'eureka',
+    position: 'center',
+    route: '/insumos',
+  },
+  {
+    id: 'click-nuevo',
+    target: '#btn-nuevo-insumo',
+    title: 'Crea tu primer ingrediente',
+    message: 'Haz clic en "Nuevo Insumo" para empezar.',
+    expression: 'atencion',
+    position: 'bottom',
+    route: '/insumos',
+    waitFor: 'click',
+  },
+  {
+    id: 'fill-data',
+    title: 'Llena los datos',
+    message: 'Escribe el nombre, la presentación (ej: 1 kg) y el precio. Si no sabes qué poner, te doy un ejemplo al avanzar.',
+    expression: 'todoBien',
+    position: 'center',
+    prefill: {
+      '#insumo-nombre': 'Harina',
+    },
+  },
+  {
+    id: 'example-tip',
+    title: 'Tip: empieza con lo básico',
+    message: 'No necesitas todos tus ingredientes ahora. Empieza con 3-5 principales (harina, azúcar, huevos, mantequilla...) y agrega más después.',
+    expression: 'pensando',
+    position: 'center',
+  },
+  {
+    id: 'done',
+    title: '¡Ingredientes listos!',
+    message: 'Ahora registra tus materiales de empaque para completar tu catálogo.',
+    expression: 'celebrando',
+    position: 'center',
+    action: { label: 'Ir a Materiales →', route: '/materiales' },
+  },
+];

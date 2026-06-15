@@ -146,7 +146,7 @@ export default function MaterialesPage() {
           <h2 className="text-xl font-bold text-stone-900">Materiales</h2>
           <p className="text-stone-500 text-sm mt-0.5">{materiales.filter((m) => !m._new).length} materiales registrados</p>
         </div>
-        <button onClick={addNew} disabled={editingId !== null} className={cx.btnPrimary + ' flex items-center gap-2'}>
+        <button id="btn-nuevo-material" onClick={addNew} disabled={editingId !== null} className={cx.btnPrimary + ' flex items-center gap-2'}>
           <Plus size={16} /> Nuevo Material
         </button>
       </div>
@@ -154,18 +154,18 @@ export default function MaterialesPage() {
       {materiales.length > 0 && (
         <div className="mb-4 relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar material..." className={cx.input + ' pl-9'} />
+          <input id="materiales-search" type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar material..." className={cx.input + ' pl-9'} />
         </div>
       )}
 
       {/* Mobile cards */}
-      <div className="space-y-3 lg:hidden">
+      <div id="materiales-list" className="space-y-3 lg:hidden">
         {filtered.map((mat, idx) => {
           const isEditing = editingId === (mat._new ? 'new' : mat.id);
           if (isEditing) {
             return (
               <div key={mat.id || `new-${idx}`} className={`${cx.card} p-4 border-[var(--accent)] space-y-3`}>
-                <input type="text" value={editData.nombre} onChange={(e) => setEditData({ ...editData, nombre: e.target.value })} onBlur={(e) => { const v = e.target.value.trim(); if (v) setEditData({ ...editData, nombre: v.charAt(0).toUpperCase() + v.slice(1) }); }} placeholder="Nombre" className={cx.input} autoFocus />
+                <input id="material-nombre" type="text" value={editData.nombre} onChange={(e) => setEditData({ ...editData, nombre: e.target.value })} onBlur={(e) => { const v = e.target.value.trim(); if (v) setEditData({ ...editData, nombre: v.charAt(0).toUpperCase() + v.slice(1) }); }} placeholder="Nombre" className={cx.input} autoFocus />
                 <input type="text" value={editData.proveedor || ''} onChange={(e) => setEditData({ ...editData, proveedor: e.target.value })} placeholder="Proveedor (opcional)" className={cx.input} />
                 <div className="grid grid-cols-3 gap-2">
                   <input type="number" value={editData.cantidad_presentacion} onChange={(e) => setEditData({ ...editData, cantidad_presentacion: e.target.value })} placeholder="Cantidad" className={cx.input} />
@@ -174,10 +174,10 @@ export default function MaterialesPage() {
                     onChange={(v) => setEditData({ ...editData, unidad_medida: v })}
                     options={UNIDADES.map(u => ({ value: u, label: u }))}
                   />
-                  <input type="number" step="0.01" value={editData.precio_presentacion} onChange={(e) => setEditData({ ...editData, precio_presentacion: e.target.value })} placeholder="Precio" className={cx.input} />
+                  <input id="material-precio" type="number" step="0.01" value={editData.precio_presentacion} onChange={(e) => setEditData({ ...editData, precio_presentacion: e.target.value })} placeholder="Precio" className={cx.input} />
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={saveEdit} className={cx.btnPrimary + ' flex-1 flex items-center justify-center gap-1'}><Save size={14} /> Guardar</button>
+                  <button id="material-save" onClick={saveEdit} className={cx.btnPrimary + ' flex-1 flex items-center justify-center gap-1'}><Save size={14} /> Guardar</button>
                   <button onClick={cancelEdit} className={cx.btnSecondary + ' flex items-center justify-center gap-1'}><X size={14} /></button>
                 </div>
               </div>

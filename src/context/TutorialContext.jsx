@@ -37,12 +37,14 @@ function useTargetRect(selector) {
     update();
     const t1 = setTimeout(update, 200);
     const t2 = setTimeout(update, 500);
+    const t3 = setTimeout(update, 1200);
 
     window.addEventListener('scroll', update, true);
     window.addEventListener('resize', update);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
+      clearTimeout(t3);
       window.removeEventListener('scroll', update, true);
       window.removeEventListener('resize', update);
     };
@@ -72,6 +74,52 @@ export function TutorialProvider({ children }) {
       // We need to navigate - use window.location since we don't have navigate() in context
       window.location.hash = `#${step.route}`;
     }
+  }, [step]);
+
+  /* Scroll target into view */
+  useEffect(() => {
+    if (!step?.target) return;
+
+    const scrollToTarget = () => {
+      const el = document.querySelector(step.target);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    };
+
+    // Delay to allow route navigation to complete first
+    const timer = setTimeout(scrollToTarget, step.route ? 600 : 200);
+    return () => clearTimeout(timer);
+  }, [step]);
+
+  /* Pre-fill form fields */
+  useEffect(() => {
+    if (!step?.prefill) return;
+
+    const fillFields = () => {
+      Object.entries(step.prefill).forEach(([selector, value]) => {
+        const el = document.querySelector(selector);
+        if (!el) return;
+
+        // Only fill if the field is empty
+        if (el.value && el.value.trim() !== '') return;
+
+        // Use React's native input value setter to trigger onChange
+        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype, 'value'
+        )?.set;
+
+        if (nativeInputValueSetter) {
+          nativeInputValueSetter.call(el, value);
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+    };
+
+    // Delay to allow rendering
+    const timer = setTimeout(fillFields, step.route ? 1000 : 400);
+    return () => clearTimeout(timer);
   }, [step]);
 
   /* Elevar target por encima del overlay */

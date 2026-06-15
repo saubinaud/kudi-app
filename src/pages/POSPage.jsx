@@ -467,7 +467,7 @@ export default function POSPage() {
 
   // Cart panel — reused on both desktop and mobile
   const renderCart = (isMobile = false) => (
-    <div className={cx.card + ' flex flex-col overflow-hidden' + (!isMobile ? ' lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]' : '')}>
+    <div id={isMobile ? undefined : 'pos-cart'} className={cx.card + ' flex flex-col overflow-hidden' + (!isMobile ? ' lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]' : '')}>
       {/* Cart header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
         <div className="flex items-center gap-2.5">
@@ -618,7 +618,7 @@ export default function POSPage() {
               {!pagoMixto && (
                 <div>
                   <label className="text-xs text-stone-500 font-medium block mb-2">Método de pago</label>
-                  <div className={`grid gap-1.5 ${METODOS_PAGO.length > 3 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                  <div id="pos-metodos" className={`grid gap-1.5 ${METODOS_PAGO.length > 3 ? 'grid-cols-2' : 'grid-cols-3'}`}>
                     {METODOS_PAGO.map(m => (
                       <button
                         key={m.key}
@@ -913,6 +913,7 @@ export default function POSPage() {
                   <span className="text-2xl font-bold text-[#0A2F24]">{formatCurrency(cartTotal)}</span>
                 </div>
                 <button
+                  id="pos-confirmar"
                   onClick={handleCheckout}
                   disabled={saving || (pagoMixto && pagoPartes.some(p => (parseFloat(p.monto) || 0) > 0 && !p.pagada))}
                   className={`w-full py-3.5 text-sm font-semibold rounded-xl transition-colors duration-100 ${
@@ -961,6 +962,7 @@ export default function POSPage() {
                 </div>
               </div>
               <button
+                id="pos-cobrar"
                 onClick={() => setShowCheckout(true)}
                 className={cx.btnPrimary + ' w-full py-3.5 text-sm font-semibold flex items-center justify-center gap-2'}
               >
@@ -1018,7 +1020,7 @@ export default function POSPage() {
               <p className="text-[11px] text-stone-400">Puedes vender, pero no se registrara el cuadre de caja</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <button onClick={() => setShowAbrirCaja(true)} className={cx.btnPrimary + ' text-xs px-3 py-1.5'}>Abrir caja</button>
+              <button id="pos-abrir-caja" onClick={() => setShowAbrirCaja(true)} className={cx.btnPrimary + ' text-xs px-3 py-1.5'}>Abrir caja</button>
               <button onClick={() => setCajaDismissed(true)} className="text-stone-300 hover:text-stone-500 transition-colors duration-150"><X size={16} /></button>
             </div>
           </div>
@@ -1034,6 +1036,7 @@ export default function POSPage() {
       ) : (
         <div className="flex flex-col lg:flex-row gap-4 pb-20 lg:pb-0">
           <ProductGrid
+            id="pos-products"
             products={posFilteredProducts}
             search={posSearch}
             onSearchChange={setPosSearch}

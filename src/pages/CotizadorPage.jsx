@@ -1120,7 +1120,7 @@ export default function CotizadorPage() {
               <div className={`grid gap-3 grid-cols-1 ${tipoPresentacion === 'entero' ? 'sm:grid-cols-[9fr_7fr_4fr]' : 'sm:grid-cols-[3fr_2fr]'}`}>
                 <div>
                   <label className={cx.label}>Nombre del producto</label>
-                  <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} className={cx.input} placeholder={`Ej: Mi ${(t.productos || 'producto').toLowerCase().replace(/s$/, '')}`} autoFocus />
+                  <input id="cotizador-nombre" type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} className={cx.input} placeholder={`Ej: Mi ${(t.productos || 'producto').toLowerCase().replace(/s$/, '')}`} autoFocus />
                 </div>
                 <div>
                   <label className={cx.label}>Presentación<InfoTip text="'Por unidad' si vendes items individuales. 'Presentación entera' si vendes algo divisible en porciones." /></label>
@@ -1356,12 +1356,12 @@ export default function CotizadorPage() {
 
           {/* ── Preparaciones + Composicion — solo para transformables ── */}
           {tipoProducto === 'transformable' && <>
-          <div>
+          <div id="cotizador-prep-section">
             <h3 className="text-lg font-semibold text-stone-900 mb-3">{t.preparaciones || 'Preparaciones'}<InfoTip text={`Cada ${(t.preparacion || 'preparación').toLowerCase()} es un componente base de tu producto. Indica cuánto rinde en total. Puedes cargar plantillas guardadas previamente.`} /></h3>
 
             {/* Single card with divide-y for all preps */}
             <div className={`${cx.card} divide-y divide-stone-100`}>
-              {preparaciones.map((prep) => (
+              {preparaciones.map((prep, prepIdx) => (
                 <div key={prep._id} className="p-3 sm:p-5">
                   {/* Header row — click to collapse */}
                   <div className="flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse(prep._id)}>
@@ -1525,6 +1525,7 @@ export default function CotizadorPage() {
                       </table>
 
                       <button
+                        {...(prepIdx === 0 ? { id: 'cotizador-add-insumo' } : {})}
                         onClick={() => addInsumo(prep._id)}
                         className={cx.btnGhost + ' mt-1 flex items-center gap-1 text-xs'}
                       >
@@ -1664,7 +1665,7 @@ export default function CotizadorPage() {
           </>}
 
           {/* ── Empaque / Materiales — accordion like preparaciones ── */}
-          <div>
+          <div id="cotizador-materiales">
             <h3 className="text-lg font-semibold text-stone-900 mb-3">{t.materiales || 'Empaque'}<InfoTip text={`${t.materiales || 'Materiales de empaque'} para presentar tu producto. Si es presentacion entera, separa el del producto completo y el de cada porcion individual.`} /></h3>
 
             <div className={`${cx.card} divide-y divide-stone-100`}>
@@ -1771,7 +1772,7 @@ export default function CotizadorPage() {
         </div>
 
         {/* ── Right column: Resumen — premium sticky card ── */}
-        <div className="lg:col-span-1 lg:self-start lg:sticky lg:top-6 max-h-[calc(100vh-48px)] overflow-y-auto">
+        <div id="cotizador-resumen" className="lg:col-span-1 lg:self-start lg:sticky lg:top-6 max-h-[calc(100vh-48px)] overflow-y-auto">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1848,6 +1849,7 @@ export default function CotizadorPage() {
                   <label className={cx.label}>Margen producto entero</label>
                   <div className="flex items-center gap-3 mt-1">
                     <input
+                      id="cotizador-margen"
                       type="range"
                       min="0"
                       max="90"
@@ -1891,7 +1893,7 @@ export default function CotizadorPage() {
                       <span className="text-stone-800">{formatCurrency(costos.comisionMonto)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between items-baseline pt-1">
+                  <div id="cotizador-precio" className="flex justify-between items-baseline pt-1">
                     <span className="text-stone-600 text-sm">Precio final</span>
                     <EditablePrice value={precioFinal} onChange={(v) => setPrecioFinal(Math.round(v * 100) / 100)} className="text-2xl font-bold text-stone-900" />
                   </div>
@@ -1976,6 +1978,7 @@ export default function CotizadorPage() {
                   <label className={cx.label}>Margen</label>
                   <div className="flex items-center gap-3 mt-1">
                     <input
+                      id="cotizador-margen"
                       type="range"
                       min="0"
                       max="90"
@@ -2021,7 +2024,7 @@ export default function CotizadorPage() {
 
                 {/* Final price — BIG, editable */}
                 <div className="pt-4">
-                  <div className="flex justify-between items-baseline mb-1">
+                  <div id="cotizador-precio" className="flex justify-between items-baseline mb-1">
                     <span className="text-stone-600 text-sm">Precio final</span>
                     <EditablePrice value={precioFinal} onChange={(v) => setPrecioFinal(Math.round(v * 100) / 100)} className="text-2xl font-bold text-stone-900" />
                   </div>
@@ -2037,6 +2040,7 @@ export default function CotizadorPage() {
 
             {/* Save button — full width, prominent */}
             <button
+              id="cotizador-save"
               onClick={handleSaveClick}
               disabled={saving}
               className={cx.btnPrimary + ' w-full mt-5 py-3 text-sm flex items-center justify-center gap-2'}
