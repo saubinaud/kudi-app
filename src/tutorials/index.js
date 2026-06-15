@@ -34,6 +34,6 @@ export const TUTORIALS = [
     description: 'Aprende a costear un producto paso a paso con tus ingredientes.',
     expression: 'eureka',
     steps: PRIMER_PRODUCTO_STEPS,
-    route: '/dashboard',
+    route: '/cotizador',
   },
 ];
