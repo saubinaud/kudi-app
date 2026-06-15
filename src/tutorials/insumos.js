@@ -19,27 +19,41 @@ export const INSUMOS_STEPS = [
   },
   {
     id: 'fill-data',
-    title: 'Llena los datos',
-    message: 'Escribe el nombre, la presentación (ej: 1 kg) y el precio. Si no sabes qué poner, te doy un ejemplo al avanzar.',
+    target: '#insumo-form',
+    title: 'Llena los datos del ingrediente',
+    message: 'Te puse un ejemplo: Harina, 1000g a S/ 5.00. Puedes cambiarlo o dejarlo así y darle Siguiente.',
     expression: 'todoBien',
-    position: 'center',
+    position: 'bottom',
     prefill: {
       '#insumo-nombre': 'Harina',
+      '#insumo-cantidad': '1000',
+      '#insumo-precio': '5.00',
     },
   },
   {
-    id: 'example-tip',
-    title: 'Tip: empieza con lo básico',
-    message: 'No necesitas todos tus ingredientes ahora. Empieza con 3-5 principales (harina, azúcar, huevos, mantequilla...) y agrega más después.',
+    id: 'save-hint',
+    target: '#insumo-save',
+    title: 'Guarda el ingrediente',
+    message: 'Haz clic en el botón de guardar para registrarlo.',
+    expression: 'eureka',
+    position: 'top',
+    waitFor: 'click',
+  },
+  {
+    id: 'tip',
+    title: 'Tip: agrega más ingredientes',
+    message: 'Repite el proceso para tus ingredientes principales: azúcar, huevos, mantequilla, leche... No necesitas todos ahora, puedes agregar más después.',
     expression: 'pensando',
     position: 'center',
   },
   {
     id: 'done',
     title: '¡Ingredientes listos!',
-    message: 'Ahora registra tus materiales de empaque para completar tu catálogo.',
+    message: 'Ahora registra tus materiales de empaque.',
     expression: 'celebrando',
     position: 'center',
     action: { label: 'Ir a Materiales →', route: '/materiales' },
   },
 ];
+
+export const ONBOARDING_INSUMOS = INSUMOS_STEPS;

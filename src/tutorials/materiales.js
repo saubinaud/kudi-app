@@ -19,13 +19,25 @@ export const MATERIALES_STEPS = [
   },
   {
     id: 'fill-data',
-    title: 'Llena los datos',
-    message: 'Nombre del material, cantidad por paquete y precio. Por ejemplo: "Caja kraft", 50 unidades, S/ 25.00.',
+    target: '#material-nombre',
+    title: 'Llena los datos del material',
+    message: 'Te puse un ejemplo: Caja kraft, 50 unidades a S/ 25.00 (S/ 0.50 c/u). Cámbialo si quieres.',
     expression: 'todoBien',
-    position: 'center',
+    position: 'bottom',
     prefill: {
       '#material-nombre': 'Caja kraft',
+      '#material-cantidad': '50',
+      '#material-precio': '25.00',
     },
+  },
+  {
+    id: 'save-hint',
+    target: '#material-save',
+    title: 'Guarda el material',
+    message: 'Haz clic para registrarlo.',
+    expression: 'eureka',
+    position: 'top',
+    waitFor: 'click',
   },
   {
     id: 'done',

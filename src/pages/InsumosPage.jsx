@@ -265,7 +265,7 @@ export default function InsumosPage() {
               <div id="insumo-form" key={ins.id || `new-${idx}`} className={`${cx.card} p-4 border-[var(--accent)] space-y-3`}>
                 <input id="insumo-nombre" type="text" value={editData.nombre} onChange={(e) => setEditData({ ...editData, nombre: e.target.value })} onBlur={(e) => { const v = e.target.value.trim(); if (v) setEditData({ ...editData, nombre: v.charAt(0).toUpperCase() + v.slice(1) }); }} placeholder="Nombre" className={cx.input} autoFocus />
                 <div className="grid grid-cols-3 gap-2">
-                  <input type="number" value={editData.cantidad_presentacion} onChange={(e) => setEditData({ ...editData, cantidad_presentacion: e.target.value })} placeholder="Cantidad" className={cx.input} />
+                  <input id="insumo-cantidad" type="number" value={editData.cantidad_presentacion} onChange={(e) => setEditData({ ...editData, cantidad_presentacion: e.target.value })} placeholder="Cantidad" className={cx.input} />
                   <CustomSelect
                     value={editData.unidad_medida}
                     onChange={(v) => setEditData({ ...editData, unidad_medida: v })}
