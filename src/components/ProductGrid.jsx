@@ -11,6 +11,7 @@ export default function ProductGrid({
   loading,
   searchPlaceholder = 'Buscar producto...',
   children, // slot for tabs/filters above the grid
+  id,
 }) {
   if (loading) {
     return (
@@ -23,7 +24,7 @@ export default function ProductGrid({
   }
 
   return (
-    <div className="flex-1">
+    <div className="flex-1" {...(id ? { id } : {})}>
       {children}
 
       {/* Search */}

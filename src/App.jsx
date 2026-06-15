@@ -8,6 +8,8 @@ import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoginPage from './pages/LoginPage';
 import OnboardingPage from './pages/OnboardingPage';
+import { TutorialProvider } from './context/TutorialContext';
+import TutorialesPage from './pages/TutorialesPage';
 import DashboardPage from './pages/DashboardPage';
 import CotizadorPage from './pages/CotizadorPage';
 import InsumosPage from './pages/InsumosPage';
@@ -40,7 +42,9 @@ import ShopifyPage from './pages/ShopifyPage';
 import POSPage from './pages/POSPage';
 import MesasPage from './pages/MesasPage';
 import MesaDetailPage from './pages/MesaDetailPage';
+import MargenesPage from './pages/MargenesPage';
 import FeedbackPage from './pages/FeedbackPage';
+import KudiDemo from './pages/KudiDemo';
 import NovedadesPage from './pages/NovedadesPage';
 import LandingPage from './pages/LandingPage';
 
@@ -84,11 +88,13 @@ export default function App() {
     <ErrorBoundary>
     <AuthProvider>
       <ToastProvider>
+        <TutorialProvider>
         <HashRouter>
           <ScrollToTop />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/kudi-demo" element={<KudiDemo />} />
             <Route path="/" element={<Navigate to="/planes" replace />} />
 
             {/* Protected routes with layout */}
@@ -123,6 +129,7 @@ export default function App() {
               <Route path="/comprobantes" element={<ComprobantesPage />} />
               <Route path="/ficha-tecnica/:id" element={<FichaTecnicaPage />} />
               <Route path="/analisis" element={<AnalisisPage />} />
+              <Route path="/margenes" element={<MargenesPage />} />
               <Route path="/stock" element={<StockPage />} />
               <Route path="/comisiones" element={<ComisionesPage />} />
               <Route path="/proveedores" element={<ProveedoresPage />} />
@@ -132,6 +139,7 @@ export default function App() {
               <Route path="/equipo" element={<EquipoPage />} />
               <Route path="/perfil" element={<PerfilPage />} />
               <Route path="/feedback" element={<FeedbackPage />} />
+              <Route path="/tutoriales" element={<TutorialesPage />} />
               <Route path="/novedades" element={<NovedadesPage />} />
             </Route>
 
@@ -150,6 +158,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </HashRouter>
+        </TutorialProvider>
       </ToastProvider>
     </AuthProvider>
     </ErrorBoundary>

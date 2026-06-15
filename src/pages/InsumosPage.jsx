@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
@@ -235,7 +236,7 @@ export default function InsumosPage() {
           <h2 className="text-xl font-bold text-stone-900">{t.insumos}</h2>
           <p className="text-stone-500 text-sm mt-0.5">{insumos.filter((i) => !i._new).length} insumos registrados</p>
         </div>
-        <button onClick={addNew} disabled={editingId !== null} className={cx.btnPrimary + ' flex items-center gap-2'}>
+        <button id="btn-nuevo-insumo" onClick={addNew} disabled={editingId !== null} className={cx.btnPrimary + ' flex items-center gap-2'}>
           <Plus size={16} />
           Nuevo Insumo
         </button>
@@ -245,6 +246,7 @@ export default function InsumosPage() {
         <div className="mb-4 relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
           <input
+            id="insumos-search"
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -255,7 +257,7 @@ export default function InsumosPage() {
       )}
 
       {/* Mobile cards */}
-      <div className="space-y-3 lg:hidden">
+      <div id="insumos-list" className="space-y-3 lg:hidden">
         {filtered.map((ins, idx) => {
           const isEditing = editingId === (ins._new ? 'new' : ins.id);
           if (isEditing) {
@@ -272,8 +274,8 @@ export default function InsumosPage() {
                   <input type="number" step="0.01" value={editData.precio_presentacion} onChange={(e) => setEditData({ ...editData, precio_presentacion: e.target.value })} placeholder="Precio" className={cx.input} />
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={saveEdit} className={cx.btnPrimary + ' flex-1 flex items-center justify-center gap-1'}><Save size={14} /> Guardar</button>
-                  <button onClick={cancelEdit} className={cx.btnSecondary + ' flex items-center justify-center gap-1'}><X size={14} /></button>
+                  <button onClick={saveEdit} className={cx.btnPrimary + ' flex-1 flex items-center justify-center gap-1'}><Save size={16} /> Guardar</button>
+                  <button onClick={cancelEdit} className={cx.btnSecondary + ' flex items-center justify-center gap-1'}><X size={16} /></button>
                 </div>
               </div>
             );
@@ -293,9 +295,9 @@ export default function InsumosPage() {
                 </div>
               </div>
               <div className="flex gap-2 mt-3 border-t border-stone-200 pt-3">
-                <button onClick={() => loadPriceHistory(ins.id)} className={cx.btnGhost + ' flex items-center justify-center gap-1'} title="Historial de precios"><TrendingUp size={13} /></button>
-                <button onClick={() => startEdit(ins)} className={cx.btnGhost + ' flex-1 flex items-center justify-center gap-1'}><Pencil size={13} /> Editar</button>
-                <button onClick={() => setDeleteTarget(ins)} className={cx.btnDanger + ' flex items-center justify-center gap-1'}><Trash2 size={13} /></button>
+                <button onClick={() => loadPriceHistory(ins.id)} className={cx.btnGhost + ' flex items-center justify-center gap-1'} title="Historial de precios"><TrendingUp size={16} /></button>
+                <button onClick={() => startEdit(ins)} className={cx.btnGhost + ' flex-1 flex items-center justify-center gap-1'}><Pencil size={16} /> Editar</button>
+                <button onClick={() => setDeleteTarget(ins)} className={cx.btnDanger + ' flex items-center justify-center gap-1'}><Trash2 size={16} /></button>
               </div>
               {/* Mobile presentaciones */}
               {ins.presentaciones?.length > 0 && (
@@ -305,8 +307,8 @@ export default function InsumosPage() {
                     className="flex items-center gap-1 text-xs text-stone-500 font-medium"
                   >
                     {expanded[ins.id]
-                      ? <ChevronDown size={13} />
-                      : <ChevronRight size={13} />
+                      ? <ChevronDown size={16} />
+                      : <ChevronRight size={16} />
                     }
                     {ins.presentaciones.length} presentacion{ins.presentaciones.length !== 1 ? 'es' : ''}
                   </button>
@@ -362,8 +364,8 @@ export default function InsumosPage() {
                 return (
                   <tr key={ins.id || `new-${idx}`} className="border-b border-[var(--accent)]/30">
                     <td className={cx.td}></td>
-                    <td className={cx.td}><input type="text" value={editData.nombre} onChange={(e) => setEditData({ ...editData, nombre: e.target.value })} onBlur={(e) => { const v = e.target.value.trim(); if (v) setEditData({ ...editData, nombre: v.charAt(0).toUpperCase() + v.slice(1) }); }} className={cx.input} autoFocus /></td>
-                    <td className={cx.td}><input type="number" value={editData.cantidad_presentacion} onChange={(e) => setEditData({ ...editData, cantidad_presentacion: e.target.value })} className={cx.input} /></td>
+                    <td className={cx.td}><input id="insumo-nombre" type="text" value={editData.nombre} onChange={(e) => setEditData({ ...editData, nombre: e.target.value })} onBlur={(e) => { const v = e.target.value.trim(); if (v) setEditData({ ...editData, nombre: v.charAt(0).toUpperCase() + v.slice(1) }); }} className={cx.input} autoFocus /></td>
+                    <td className={cx.td}><input id="insumo-cantidad" type="number" value={editData.cantidad_presentacion} onChange={(e) => setEditData({ ...editData, cantidad_presentacion: e.target.value })} className={cx.input} /></td>
                     <td className={cx.td}>
                       <CustomSelect
                         value={editData.unidad_medida}
@@ -371,14 +373,14 @@ export default function InsumosPage() {
                         options={UNIDADES.map(u => ({ value: u, label: u }))}
                       />
                     </td>
-                    <td className={cx.td}><input type="number" step="0.01" value={editData.precio_presentacion} onChange={(e) => setEditData({ ...editData, precio_presentacion: e.target.value })} className={cx.input} /></td>
+                    <td className={cx.td}><input id="insumo-precio" type="number" step="0.01" value={editData.precio_presentacion} onChange={(e) => setEditData({ ...editData, precio_presentacion: e.target.value })} className={cx.input} /></td>
                     <td className={cx.td + ' text-[var(--accent)] font-semibold font-mono text-xs'}>
                       S/ {costoUnitario(editData).toFixed(3)}
                     </td>
                     <td className={cx.td + ' text-right'}>
                       <div className="flex justify-end gap-1">
-                        <button onClick={saveEdit} className={cx.btnIcon + ' text-[var(--success)] hover:text-[var(--success)]'}><Save size={15} /></button>
-                        <button onClick={cancelEdit} className={cx.btnIcon}><X size={15} /></button>
+                        <button id="insumo-save" onClick={saveEdit} className={cx.btnIcon + ' text-[var(--success)] hover:text-[var(--success)]'}><Save size={16} /></button>
+                        <button onClick={cancelEdit} className={cx.btnIcon}><X size={16} /></button>
                       </div>
                     </td>
                   </tr>
@@ -391,12 +393,12 @@ export default function InsumosPage() {
                       {ins.presentaciones?.length > 0 && (
                         <button
                           onClick={() => toggleExpanded(ins.id)}
-                          className="p-0.5 rounded hover:bg-stone-100 transition-colors duration-100 text-stone-400 hover:text-stone-600"
+                          className="p-0.5 rounded hover:bg-stone-100 transition-colors duration-150 text-stone-400 hover:text-stone-600"
                           title={expanded[ins.id] ? 'Ocultar presentaciones' : 'Ver presentaciones'}
                         >
                           {expanded[ins.id]
-                            ? <ChevronDown size={14} />
-                            : <ChevronRight size={14} />
+                            ? <ChevronDown size={16} />
+                            : <ChevronRight size={16} />
                           }
                         </button>
                       )}
@@ -411,9 +413,9 @@ export default function InsumosPage() {
                     </td>
                     <td className={cx.td + ' text-right'}>
                       <div className="flex justify-end gap-1">
-                        <button onClick={() => loadPriceHistory(ins.id)} className={cx.btnIcon} title="Historial de precios"><TrendingUp size={15} /></button>
-                        <button onClick={() => startEdit(ins)} className={cx.btnIcon}><Pencil size={15} /></button>
-                        <button onClick={() => setDeleteTarget(ins)} className={cx.btnIcon + ' hover:text-rose-600'}><Trash2 size={15} /></button>
+                        <button onClick={() => loadPriceHistory(ins.id)} className={cx.btnIcon} title="Historial de precios"><TrendingUp size={16} /></button>
+                        <button onClick={() => startEdit(ins)} className={cx.btnIcon}><Pencil size={16} /></button>
+                        <button onClick={() => setDeleteTarget(ins)} className={cx.btnIcon + ' hover:text-rose-600'}><Trash2 size={16} /></button>
                       </div>
                     </td>
                   </tr>
@@ -448,17 +450,17 @@ export default function InsumosPage() {
                                       <div className="flex items-center gap-2">
                                         {p.es_principal ? (
                                           <span className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600" title="Principal">
-                                            <Pin size={14} />
+                                            <Pin size={16} />
                                           </span>
                                         ) : (
                                           <>
                                             <button onClick={async () => { try { await api.put(`/insumos/${ins.id}/presentaciones/${p.id}`, { es_principal: true }); toast.success('Principal actualizado'); loadInsumos(); } catch (e) { toast.error(e.message); } }}
                                               className="w-7 h-7 rounded-lg bg-stone-50 flex items-center justify-center text-stone-300 hover:bg-emerald-50 hover:text-emerald-500 transition-colors" title="Hacer principal">
-                                              <Pin size={14} />
+                                              <Pin size={16} />
                                             </button>
                                             <button onClick={async () => { if (!confirm(`¿Eliminar "${p.nombre}"?`)) return; try { await api.del(`/insumos/${ins.id}/presentaciones/${p.id}`); toast.success('Eliminada'); loadInsumos(); } catch (e) { toast.error(e.message); } }}
                                               className="w-7 h-7 rounded-lg bg-stone-50 flex items-center justify-center text-stone-300 hover:bg-rose-50 hover:text-rose-500 transition-colors" title="Eliminar">
-                                              <Trash2 size={13} />
+                                              <Trash2 size={16} />
                                             </button>
                                           </>
                                         )}
@@ -482,10 +484,25 @@ export default function InsumosPage() {
       </div>
 
       {/* Price history modal */}
+      <AnimatePresence>
       {priceHistory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setPriceHistory(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-w-[95vw] max-h-[80vh] overflow-y-auto p-6">
+        <>
+          <motion.div
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => setPriceHistory(null)}
+          />
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+          >
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md max-w-[95vw] max-h-[80vh] overflow-y-auto p-6">
             <h3 className="text-lg font-bold text-stone-900 mb-1">{priceHistory.insumo?.nombre}</h3>
             <p className="text-xs text-stone-400 mb-4">Historial de precios de compra</p>
 
@@ -537,8 +554,10 @@ export default function InsumosPage() {
 
             <button onClick={() => setPriceHistory(null)} className={cx.btnSecondary + ' w-full mt-4'}>Cerrar</button>
           </div>
-        </div>
+          </motion.div>
+        </>
       )}
+      </AnimatePresence>
 
       <ConfirmDialog
         open={!!deleteTarget}

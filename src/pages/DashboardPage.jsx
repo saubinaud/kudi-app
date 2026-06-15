@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useTutorial } from '../hooks/useTutorial';
+import { ONBOARDING_STEPS } from '../tutorials/onboarding';
 import { cx } from '../styles/tokens';
 import { formatCurrency, formatPercent, formatDate, precioComercial } from '../utils/format';
 import ConfirmDialog, { PromptDialog } from '../components/ConfirmDialog';
@@ -45,6 +48,8 @@ export default function DashboardPage() {
   const toast = useToast();
   const t = useTerminos();
   const navigate = useNavigate();
+  const { start: startTutorial, isCompleted: isTutorialCompleted } = useTutorial();
+  const tutorialTriggered = useRef(false);
   const precioMode = user?.precio_decimales || 'variable';
 
   const [products, setProducts] = useState([]);
@@ -75,6 +80,15 @@ export default function DashboardPage() {
   useEffect(() => {
     loadProducts();
     api.get('/precios/categorias').then(r => setCategorias(r?.data || r || [])).catch(() => toast.error('Error cargando datos'));
+  }, []);
+
+  // Auto-start onboarding para usuarios nuevos
+  useEffect(() => {
+    if (tutorialTriggered.current) return;
+    if (isTutorialCompleted('onboarding')) return;
+    tutorialTriggered.current = true;
+    const t = setTimeout(() => startTutorial('onboarding', ONBOARDING_STEPS), 800);
+    return () => clearTimeout(t);
   }, []);
 
   const loadProducts = async () => {
@@ -390,7 +404,7 @@ export default function DashboardPage() {
               }}
               className={`${cx.btnIcon} sm:hidden`}
             >
-              {mobileColumns === 2 ? <Square size={18} /> : <Columns2 size={18} />}
+              {mobileColumns === 2 ? <Square size={16} /> : <Columns2 size={16} />}
             </button>
           </Tooltip>
           <Tooltip text="Exportar recetas" position="bottom">
@@ -402,13 +416,18 @@ export default function DashboardPage() {
               {exporting ? <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" /> : <Download size={16} />}
             </button>
           </Tooltip>
-          <button
-            onClick={() => navigate('/cotizador')}
-            className={cx.btnPrimary + ' flex items-center gap-2'}
-          >
-            <Plus size={16} />
-            Nuevo
-          </button>
+          {(() => {
+            return (
+              <button
+                id="btn-nuevo-producto"
+                onClick={() => navigate('/cotizador')}
+                className={cx.btnPrimary + ' flex items-center gap-2'}
+              >
+                <Plus size={16} />
+                Nuevo
+              </button>
+            );
+          })()}
         </div>
       </div>
 
@@ -416,7 +435,7 @@ export default function DashboardPage() {
       {products.length > 0 && (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4">
           <div className="relative flex-1">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" />
+            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
               type="text"
               value={search}
@@ -428,7 +447,7 @@ export default function DashboardPage() {
           {categorias.length > 0 && (
             <button onClick={() => setShowCartaConfig(true)}
               className={cx.btnGhost + ' text-xs flex items-center gap-1 whitespace-nowrap'}>
-              <Settings size={14} /> Configurar cartas
+              <Settings size={16} /> Configurar cartas
             </button>
           )}
         </div>
@@ -470,11 +489,11 @@ export default function DashboardPage() {
           return cat ? (
             <div className="flex items-center gap-0.5">
               <button onClick={(e) => { e.stopPropagation(); setEditCatTarget(cat); }}
-                className="text-stone-400 hover:text-blue-500">
+                className="text-stone-400 hover:text-blue-500" title="Renombrar">
                 <Pencil size={12} />
               </button>
               <button onClick={(e) => { e.stopPropagation(); setDeleteCatTarget(cat); }}
-                className="text-stone-400 hover:text-rose-500">
+                className="text-stone-400 hover:text-rose-500" title="Eliminar">
                 <X size={12} />
               </button>
             </div>
@@ -501,7 +520,7 @@ export default function DashboardPage() {
                 )}
                 {p.imagen_url ? (
                   <div className="aspect-[4/3] bg-stone-100 rounded-t-xl overflow-hidden">
-                    <img src={p.imagen_url} alt={p.nombre} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <img src={p.imagen_url} alt={p.nombre} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
                   </div>
                 ) : (
                   <div className="aspect-[4/3] bg-stone-100 rounded-t-xl flex items-center justify-center">
@@ -524,17 +543,17 @@ export default function DashboardPage() {
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
                   <Tooltip text="Ficha técnica" position="bottom">
                     <Link to={`/ficha-tecnica/${p.id}`} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-[var(--accent)]">
-                      <Package size={13} />
+                      <Package size={16} />
                     </Link>
                   </Tooltip>
                   <Tooltip text="Duplicar" position="bottom">
                     <button onClick={() => setDuplicateTarget(p)} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-blue-600">
-                      <Copy size={14} />
+                      <Copy size={16} />
                     </button>
                   </Tooltip>
                   <Tooltip text="Eliminar" position="bottom">
                     <button onClick={() => setDeleteTarget(p)} className="bg-white/80 backdrop-blur rounded-lg p-1.5 text-stone-500 hover:text-rose-600">
-                      <Trash2 size={13} />
+                      <Trash2 size={16} />
                     </button>
                   </Tooltip>
                 </div>
@@ -569,22 +588,22 @@ export default function DashboardPage() {
                 )}
                 <div className="flex flex-wrap gap-1 border-t border-stone-200 pt-3">
                   <button onClick={() => navigate(`/cotizador/${p.id}`)} className={cx.btnGhost + ' flex-1 min-w-[4rem] flex items-center justify-center gap-1 text-xs'}>
-                    <Pencil size={12} /> Editar
+                    <Pencil size={16} /> Editar
                   </button>
                   <Link to={`/ficha-tecnica/${p.id}`} className={cx.btnGhost + ' flex-1 min-w-[4rem] flex items-center justify-center gap-1 text-xs text-[var(--accent)]'}>
-                    <Package size={12} /> Ficha
+                    <Package size={16} /> Ficha
                   </Link>
                   <button onClick={() => openCanalesModal(p)} className={cx.btnGhost + ' flex-1 min-w-[4rem] flex items-center justify-center gap-1 text-xs'}>
-                    <Truck size={12} /> Canales
+                    <Truck size={16} /> Canales
                   </button>
                   <Tooltip text="Duplicar" position="top">
                     <button onClick={() => setDuplicateTarget(p)} className={cx.btnGhost + ' flex items-center justify-center p-2'}>
-                      <Copy size={12} />
+                      <Copy size={16} />
                     </button>
                   </Tooltip>
                   <Tooltip text="Eliminar" position="top">
                     <button onClick={() => setDeleteTarget(p)} className={cx.btnDanger + ' flex items-center justify-center p-2'}>
-                      <Trash2 size={12} />
+                      <Trash2 size={16} />
                     </button>
                   </Tooltip>
                 </div>
@@ -628,32 +647,32 @@ export default function DashboardPage() {
                       <div className="flex justify-end gap-1">
                         <Tooltip text="Editar" position="top">
                           <button onClick={() => navigate(`/cotizador/${p.id}`)} className={cx.btnIcon}>
-                            <Pencil size={15} />
+                            <Pencil size={16} />
                           </button>
                         </Tooltip>
                         <Tooltip text="Ficha técnica" position="top">
                           <Link to={`/ficha-tecnica/${p.id}`} className={cx.btnIcon + ' text-[var(--accent)]'}>
-                            <Package size={15} />
+                            <Package size={16} />
                           </Link>
                         </Tooltip>
                         <Tooltip text="Canales" position="top">
                           <button onClick={() => openCanalesModal(p)} className={cx.btnIcon + ' text-sky-500'}>
-                            <Truck size={15} />
+                            <Truck size={16} />
                           </button>
                         </Tooltip>
                         <Tooltip text="Duplicar" position="top">
                           <button onClick={() => setDuplicateTarget(p)} className={cx.btnIcon}>
-                            <Copy size={15} />
+                            <Copy size={16} />
                           </button>
                         </Tooltip>
                         <Tooltip text="Historial" position="top">
                           <button onClick={() => handleHistory(p)} className={cx.btnIcon}>
-                            <History size={15} />
+                            <History size={16} />
                           </button>
                         </Tooltip>
                         <Tooltip text="Eliminar" position="top">
                           <button onClick={() => setDeleteTarget(p)} className={cx.btnIcon + ' hover:text-rose-600'}>
-                            <Trash2 size={15} />
+                            <Trash2 size={16} />
                           </button>
                         </Tooltip>
                       </div>
@@ -748,10 +767,25 @@ export default function DashboardPage() {
       />
 
       {/* History modal */}
+      <AnimatePresence>
       {historyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setHistoryModal(null); setSelectedVersion(null); setConfirmRestore(null); }} />
-          <div className="relative bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl p-4 sm:p-6">
+        <>
+          <motion.div
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => { setHistoryModal(null); setSelectedVersion(null); setConfirmRestore(null); }}
+          />
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+          >
+          <div className="relative bg-white rounded-xl w-full max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl p-4 sm:p-6">
             <h3 className="text-lg font-bold text-stone-900 mb-4">Historial: {historyModal.nombre}</h3>
 
             {history.length === 0 ? (
@@ -911,22 +945,39 @@ export default function DashboardPage() {
               Cerrar
             </button>
           </div>
-        </div>
+          </motion.div>
+        </>
       )}
+      </AnimatePresence>
 
       {/* Detail modal — Airbnb listing style */}
+      <AnimatePresence>
       {detailModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setDetailModal(null); setDetailData(null); }} />
-          <div className="relative bg-white rounded-2xl w-full max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl">
+        <>
+          <motion.div
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => { setDetailModal(null); setDetailData(null); }}
+          />
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+          >
+          <div className="relative bg-white rounded-xl w-full max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl">
 
             {/* Header with image */}
             {detailModal.imagen_url ? (
-              <div className="aspect-[3/1] bg-stone-100 rounded-t-2xl overflow-hidden">
+              <div className="aspect-[3/1] bg-stone-100 rounded-t-xl overflow-hidden">
                 <img src={detailModal.imagen_url} alt="" className="w-full h-full object-cover" />
               </div>
             ) : (
-              <div className="aspect-[3/1] bg-stone-100 rounded-t-2xl flex items-center justify-center">
+              <div className="aspect-[3/1] bg-stone-100 rounded-t-xl flex items-center justify-center">
                 <Package size={48} className="text-stone-300" />
               </div>
             )}
@@ -1040,7 +1091,7 @@ export default function DashboardPage() {
                   {/* Action buttons */}
                   <div className="flex gap-3 mt-6">
                     <button onClick={() => navigate(`/cotizador/${detailModal.id}`)} className={cx.btnPrimary + ' flex-1 flex items-center justify-center gap-2'}>
-                      <Pencil size={14} /> Editar
+                      <Pencil size={16} /> Editar
                     </button>
                     <button onClick={() => { setDetailModal(null); setDetailData(null); }} className={cx.btnSecondary + ' flex-1'}>Cerrar</button>
                   </div>
@@ -1048,13 +1099,30 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-        </div>
+          </motion.div>
+        </>
       )}
+      </AnimatePresence>
       {/* Configurar cartas modal */}
+      <AnimatePresence>
       {showCartaConfig && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowCartaConfig(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-lg max-h-[80vh] flex flex-col">
+        <>
+          <motion.div
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => setShowCartaConfig(false)}
+          />
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+          >
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[95vw] sm:max-w-lg max-h-[80vh] flex flex-col">
             <div className="p-5 border-b border-stone-200">
               <h3 className="text-lg font-bold text-stone-900">Configurar cartas</h3>
               <p className="text-sm text-stone-500 mt-1">Selecciona los productos para cada carta</p>
@@ -1096,14 +1164,31 @@ export default function DashboardPage() {
               <button onClick={() => setShowCartaConfig(false)} className={cx.btnPrimary + ' w-full'}>Listo</button>
             </div>
           </div>
-        </div>
+          </motion.div>
+        </>
       )}
+      </AnimatePresence>
 
       {/* Canales modal — assign product to channels */}
+      <AnimatePresence>
       {canalesModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setCanalesModal(null)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-md p-4 sm:p-5">
+        <>
+          <motion.div
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => setCanalesModal(null)}
+          />
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+          >
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-[95vw] sm:max-w-md p-4 sm:p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-semibold text-stone-900">Canales de venta</h3>
@@ -1128,7 +1213,7 @@ export default function DashboardPage() {
                   return (
                     <button key={canal.id} onClick={() => toggleProductoCanal(canalesModal.id, canal.id, isIn)} disabled={savingCanal}
                       className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors text-left ${isIn ? 'bg-emerald-50 border border-emerald-200' : 'bg-stone-50 border border-stone-100 hover:border-stone-200'}`}>
-                      {isIn ? <CheckCircle size={18} className="text-emerald-500 shrink-0" /> : <Circle size={18} className="text-stone-300 shrink-0" />}
+                      {isIn ? <CheckCircle size={16} className="text-emerald-500 shrink-0" /> : <Circle size={16} className="text-stone-300 shrink-0" />}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-stone-800">{canal.nombre}</p>
                         <p className="text-[10px] text-stone-400">Comisión: {comision}% · Precio: {formatCurrency(isIn ? (cp?.precio_override || calculado) : calculado)}</p>
@@ -1139,8 +1224,10 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
-        </div>
+          </motion.div>
+        </>
       )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
@@ -310,7 +311,7 @@ export default function ComprobantesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
         <div className="flex items-center gap-3">
-          <FileText size={22} className="text-[var(--accent)]" />
+          <FileText size={20} className="text-[var(--accent)]" />
           <h1 className="text-xl font-bold text-stone-900">Comprobantes</h1>
         </div>
         <div className="flex items-center gap-3">
@@ -384,7 +385,7 @@ export default function ComprobantesPage() {
           <div className="space-y-2">
             {/* Step 1: RUC */}
             <div className="flex items-start gap-2">
-              {config.direccion_fiscal ? <CheckCircle size={14} className="text-emerald-500 mt-0.5 shrink-0" /> : <Circle size={14} className="text-stone-300 mt-0.5 shrink-0" />}
+              {config.direccion_fiscal ? <CheckCircle size={16} className="text-emerald-500 mt-0.5 shrink-0" /> : <Circle size={16} className="text-stone-300 mt-0.5 shrink-0" />}
               <div>
                 <p className={`text-xs font-medium ${config.direccion_fiscal ? 'text-stone-700' : 'text-stone-400'}`}>Dirección fiscal</p>
                 <p className="text-[10px] text-stone-400">Haz click en "Configurar" abajo. Puedes usar el botón "Buscar mi dirección" para auto-completar desde tu RUC.</p>
@@ -393,7 +394,7 @@ export default function ComprobantesPage() {
 
             {/* Step 2: SOL credentials */}
             <div className="flex items-start gap-2">
-              {config.sol_user ? <CheckCircle size={14} className="text-emerald-500 mt-0.5 shrink-0" /> : <Circle size={14} className="text-stone-300 mt-0.5 shrink-0" />}
+              {config.sol_user ? <CheckCircle size={16} className="text-emerald-500 mt-0.5 shrink-0" /> : <Circle size={16} className="text-stone-300 mt-0.5 shrink-0" />}
               <div>
                 <p className={`text-xs font-medium ${config.sol_user ? 'text-stone-700' : 'text-stone-400'}`}>Usuario y clave SOL</p>
                 <p className="text-[10px] text-stone-400">El mismo usuario y contraseña con los que entras a SUNAT. Kudi los usa para firmar y enviar tus comprobantes. Se guardan encriptados.</p>
@@ -402,7 +403,7 @@ export default function ComprobantesPage() {
 
             {/* Step 3: Certificate */}
             <div className="flex items-start gap-2">
-              {config.certificado_subido ? <CheckCircle size={14} className="text-emerald-500 mt-0.5 shrink-0" /> : <Circle size={14} className="text-stone-300 mt-0.5 shrink-0" />}
+              {config.certificado_subido ? <CheckCircle size={16} className="text-emerald-500 mt-0.5 shrink-0" /> : <Circle size={16} className="text-stone-300 mt-0.5 shrink-0" />}
               <div>
                 <p className={`text-xs font-medium ${config.certificado_subido ? 'text-stone-700' : 'text-stone-400'}`}>Certificado digital (.p12)</p>
                 <p className="text-[10px] text-stone-400">Descárgalo gratis desde SOL → Empresas → Certificado Digital Tributario (CDT). Te pedirá crear una contraseña de 8+ caracteres — anótala porque la necesitarás al subirlo aquí.</p>
@@ -411,7 +412,7 @@ export default function ComprobantesPage() {
 
             {/* Step 4: Auto-enabled */}
             <div className="flex items-start gap-2">
-              {config.habilitado ? <CheckCircle size={14} className="text-emerald-500 mt-0.5 shrink-0" /> : <Circle size={14} className="text-stone-300 mt-0.5 shrink-0" />}
+              {config.habilitado ? <CheckCircle size={16} className="text-emerald-500 mt-0.5 shrink-0" /> : <Circle size={16} className="text-stone-300 mt-0.5 shrink-0" />}
               <div>
                 <p className={`text-xs font-medium ${config.habilitado ? 'text-stone-700' : 'text-stone-400'}`}>Facturación activa</p>
                 <p className="text-[10px] text-stone-400">Se activa automáticamente cuando completes los 3 pasos anteriores. No necesitas hacer nada adicional.</p>
@@ -428,7 +429,7 @@ export default function ComprobantesPage() {
             <h3 className="text-sm font-semibold text-stone-900">Configuracion de facturacion</h3>
             {!editingConfig && (
               <button onClick={() => startEditConfig()} className={cx.btnGhost + ' text-xs flex items-center gap-1'}>
-                <Settings size={14} /> Configurar
+                <Settings size={16} /> Configurar
               </button>
             )}
           </div>
@@ -438,7 +439,7 @@ export default function ComprobantesPage() {
               <div className="flex items-center gap-2 mb-2">
                 <button type="button" onClick={buscarDireccionFiscal} disabled={buscandoRuc}
                   className={cx.btnSecondary + ' text-xs flex items-center gap-1'}>
-                  <Search size={14} /> {buscandoRuc ? 'Buscando...' : 'Buscar mi dirección (SUNAT)'}
+                  <Search size={16} /> {buscandoRuc ? 'Buscando...' : 'Buscar mi dirección (SUNAT)'}
                 </button>
                 <span className="text-[10px] text-stone-400">Auto-completa desde tu RUC</span>
               </div>
@@ -475,9 +476,9 @@ export default function ComprobantesPage() {
                   <button
                     type="button"
                     onClick={() => setConfigForm(p => ({ ...p, tiene_local: !p.tiene_local }))}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${configForm.tiene_local ? 'bg-[var(--accent)]' : 'bg-stone-300'}`}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-150 ease-in-out focus:outline-none ${configForm.tiene_local ? 'bg-[var(--accent)]' : 'bg-stone-300'}`}
                   >
-                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${configForm.tiene_local ? 'translate-x-5' : 'translate-x-0'}`} />
+                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-150 ease-in-out ${configForm.tiene_local ? 'translate-x-5' : 'translate-x-0'}`} />
                   </button>
                 </div>
                 {configForm.tiene_local && (
@@ -551,7 +552,7 @@ export default function ComprobantesPage() {
                   disabled={savingConfig || !configForm.sol_user || !configForm.sol_pass}
                   className={cx.btnSecondary + ' text-sm flex items-center gap-1'}
                 >
-                  {savingConfig ? 'Validando...' : <><CheckCircle size={14} /> Validar SOL</>}
+                  {savingConfig ? 'Validando...' : <><CheckCircle size={16} /> Validar SOL</>}
                 </button>
                 <button onClick={() => { setEditingConfig(false); setSolValidation(null); }} className={cx.btnGhost + ' text-sm'}>Cancelar</button>
               </div>
@@ -590,7 +591,7 @@ export default function ComprobantesPage() {
               <div className="flex items-center gap-2">
                 <input type="file" accept=".p12,.pfx" id="cert-upload" className="hidden" onChange={handleCertUpload} />
                 <label htmlFor="cert-upload" className={cx.btnSecondary + ' text-xs cursor-pointer flex items-center gap-1'}>
-                  <Upload size={14} /> Subir certificado .p12
+                  <Upload size={16} /> Subir certificado .p12
                 </label>
                 {uploadingCert && <span className="text-xs text-stone-400">Subiendo...</span>}
               </div>
@@ -656,21 +657,21 @@ export default function ComprobantesPage() {
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-5">
         <div className={`${cx.card} p-4`}>
           <div className="flex items-center gap-2 mb-2">
-            <DollarSign size={18} className="text-[var(--accent)]" />
+            <DollarSign size={20} className="text-[var(--accent)]" />
             <span className="text-xs font-semibold text-stone-500 tracking-wide uppercase">Total emitido</span>
           </div>
           <p className="text-xl font-bold text-stone-900">{formatCurrency(summary.total)}</p>
         </div>
         <div className={`${cx.card} p-4`}>
           <div className="flex items-center gap-2 mb-2">
-            <FileText size={18} className="text-stone-400" />
+            <FileText size={20} className="text-stone-400" />
             <span className="text-xs font-semibold text-stone-500 tracking-wide uppercase">Facturas</span>
           </div>
           <p className="text-xl font-bold text-stone-900">{summary.facturas}</p>
         </div>
         <div className={`${cx.card} p-4`}>
           <div className="flex items-center gap-2 mb-2">
-            <Receipt size={18} className="text-stone-400" />
+            <Receipt size={20} className="text-stone-400" />
             <span className="text-xs font-semibold text-stone-500 tracking-wide uppercase">Boletas</span>
           </div>
           <p className="text-xl font-bold text-stone-900">{summary.boletas}</p>
@@ -684,7 +685,7 @@ export default function ComprobantesPage() {
             onClick={() => setDeleteRechazados(true)}
             className={cx.btnDanger + ' flex items-center gap-1 text-xs'}
           >
-            <Trash2 size={13} /> Limpiar rechazados
+            <Trash2 size={16} /> Limpiar rechazados
           </button>
         </div>
       )}
@@ -747,18 +748,18 @@ export default function ComprobantesPage() {
                     <td className={cx.td}>
                       <div className="flex items-center gap-1 justify-end">
                         <button onClick={() => viewPdf(c.id)} className={cx.btnIcon} title="Ver PDF Lycet">
-                          <Eye size={14} />
+                          <Eye size={16} />
                         </button>
                         <a href={`${API_BASE.replace('/api','')}/api/ticket/${c.id}/pdf?token=${localStorage.getItem('nodum_token')}`}
                           className={cx.btnIcon} title="Descargar ticket PDF" download>
-                          <FileText size={14} />
+                          <FileText size={16} />
                         </a>
                         <button
                           onClick={() => handlePrint(c.id)}
                           className={cx.btnIcon}
                           title="Imprimir ticket"
                         >
-                          <Printer size={14} />
+                          <Printer size={16} />
                         </button>
                         {parseFloat(c.costo_envio) > 0 && (
                           <button
@@ -766,7 +767,7 @@ export default function ComprobantesPage() {
                             className={cx.btnIcon}
                             title="Ticket de envío"
                           >
-                            <Truck size={14} />
+                            <Truck size={16} />
                           </button>
                         )}
                         {(c.estado === 'error' || c.estado === 'pendiente') && (
@@ -782,12 +783,12 @@ export default function ComprobantesPage() {
                             }}
                             className={cx.btnIcon + ' hover:text-amber-600'} title={c.estado === 'pendiente' ? 'Validar con SUNAT' : 'Reintentar emisión'}
                           >
-                            <RotateCcw size={14} />
+                            <RotateCcw size={16} />
                           </button>
                         )}
                         {c.estado === 'emitido' && (
                           <button onClick={() => setAnularTarget(c)} className={cx.btnIcon + ' hover:text-rose-600'} title="Anular">
-                            <Ban size={14} />
+                            <Ban size={16} />
                           </button>
                         )}
                       </div>
@@ -827,18 +828,18 @@ export default function ComprobantesPage() {
                   </div>
                   <div className="flex gap-1">
                     <button onClick={() => viewPdf(c.id)} className={cx.btnGhost + ' text-xs flex items-center gap-1'}>
-                      <Eye size={12} /> PDF
+                      <Eye size={16} /> PDF
                     </button>
                     <a href={`${API_BASE.replace('/api','')}/api/ticket/${c.id}/pdf?token=${localStorage.getItem('nodum_token')}`}
                       className={cx.btnGhost + ' text-xs flex items-center gap-1'} download>
-                      <FileText size={12} />
+                      <FileText size={16} />
                     </a>
                     <button
                       onClick={() => handlePrint(c.id)}
                       className={cx.btnGhost + ' text-xs flex items-center gap-1'}
                       title="Imprimir ticket"
                     >
-                      <Printer size={12} /> Ticket
+                      <Printer size={16} /> Ticket
                     </button>
                     {parseFloat(c.costo_envio) > 0 && (
                       <button
@@ -846,7 +847,7 @@ export default function ComprobantesPage() {
                         className={cx.btnGhost + ' text-xs flex items-center gap-1'}
                         title="Ticket de envío"
                       >
-                        <Truck size={12} /> Envío
+                        <Truck size={16} /> Envío
                       </button>
                     )}
                     {(c.estado === 'error' || c.estado === 'pendiente') && (
@@ -862,12 +863,12 @@ export default function ComprobantesPage() {
                         }}
                         className={cx.btnGhost + ' text-xs flex items-center gap-1 text-amber-600'}
                       >
-                        <RotateCcw size={12} /> {c.estado === 'pendiente' ? 'Validar' : 'Reintentar'}
+                        <RotateCcw size={16} /> {c.estado === 'pendiente' ? 'Validar' : 'Reintentar'}
                       </button>
                     )}
                     {c.estado === 'emitido' && (
                       <button onClick={() => setAnularTarget(c)} className={cx.btnDanger + ' text-xs flex items-center gap-1'}>
-                        <Ban size={12} /> Anular
+                        <Ban size={16} /> Anular
                       </button>
                     )}
                   </div>
@@ -916,9 +917,24 @@ export default function ComprobantesPage() {
         onCancel={() => { setCertPasswordPrompt(false); setCertFile(null); }}
       />
       {/* Venta detail sidebar */}
+      <AnimatePresence>
       {(ventaDetalle || loadingVenta) && (
-        <div className="fixed inset-0 z-[60] flex">
-          <div className="flex-1 bg-black/20" onClick={() => setVentaDetalle(null)} />
+        <>
+          <motion.div
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => setVentaDetalle(null)}
+          />
+          <motion.div
+            className="fixed inset-0 z-[60] flex justify-end"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.15 }}
+          >
           <div className="w-full sm:w-96 bg-white h-full shadow-xl flex flex-col overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
               <h3 className="font-bold text-stone-900 text-sm">Detalle de venta</h3>
@@ -969,8 +985,10 @@ export default function ComprobantesPage() {
               </div>
             )}
           </div>
-        </div>
+          </motion.div>
+        </>
       )}
+      </AnimatePresence>
     </div>
   );
 }

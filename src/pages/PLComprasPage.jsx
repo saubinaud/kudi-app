@@ -543,7 +543,7 @@ export default function PLComprasPage() {
             <Download size={16} /> Exportar CSV
           </button>
           <button onClick={openNewCompra} className={cx.btnPrimary + ' flex items-center gap-2'}>
-            <Plus size={14} /> Nueva compra
+            <Plus size={16} /> Nueva compra
           </button>
         </div>
       </div>
@@ -552,27 +552,27 @@ export default function PLComprasPage() {
       {resumen && (
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-5">
           <SummaryCard
-            icon={<Salad size={18} />}
+            icon={<Salad size={20} />}
             label="Compras Insumos"
             value={formatCurrency(resumen.total_insumos)}
             color="text-teal-600"
           />
           <SummaryCard
-            icon={<Package size={18} />}
+            icon={<Package size={20} />}
             label="Compras Materiales"
             value={formatCurrency(resumen.total_materiales)}
             color="text-blue-600"
           />
           {parseFloat(resumen.total_productos || 0) > 0 && (
             <SummaryCard
-              icon={<ShoppingBag size={18} />}
+              icon={<ShoppingBag size={20} />}
               label="Compras Productos"
               value={formatCurrency(resumen.total_productos)}
               color="text-violet-600"
             />
           )}
           <SummaryCard
-            icon={<DollarSign size={18} />}
+            icon={<DollarSign size={20} />}
             label="Total Compras"
             value={formatCurrency(resumen.total_compras)}
             color="text-rose-600"
@@ -598,7 +598,7 @@ export default function PLComprasPage() {
               <div key={compra.id}>
                 {/* Compra header */}
                 <div
-                  className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-stone-50/50 transition-colors duration-100"
+                  className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-stone-50/50 transition-colors duration-150"
                   onClick={() => toggleCompra(compra.id)}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -622,7 +622,7 @@ export default function PLComprasPage() {
                       onClick={(e) => { e.stopPropagation(); setDeleteTarget(compra); }}
                       className={cx.btnIcon + ' !p-1 hover:text-rose-600'}
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </div>
@@ -768,7 +768,7 @@ export default function PLComprasPage() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-stone-900">Nueva compra</h3>
                 <button onClick={() => setModalOpen(false)} className={cx.btnIcon}>
-                  <X size={18} />
+                  <X size={16} />
                 </button>
               </div>
 
@@ -796,7 +796,7 @@ export default function PLComprasPage() {
                   <button
                     type="button"
                     onClick={() => setShowNewProveedor(true)}
-                    className="text-[11px] text-[var(--accent)] hover:underline transition-colors duration-100 mt-1"
+                    className="text-[11px] text-[var(--accent)] hover:underline transition-colors duration-150 mt-1"
                   >
                     + Crear proveedor
                   </button>
@@ -890,7 +890,7 @@ export default function PLComprasPage() {
                         />
                         {items.length > 1 && (
                           <button onClick={() => removeItem(idx)} className={cx.btnIcon + ' !p-1 hover:text-rose-600'}>
-                            <Trash2 size={14} />
+                            <Trash2 size={16} />
                           </button>
                         )}
                       </div>
@@ -943,7 +943,7 @@ export default function PLComprasPage() {
                           />
                           <button
                             onClick={() => { setNewMaterialTarget(idx); setShowNewMaterial(true); }}
-                            className="text-[11px] text-[var(--accent)] hover:underline transition-colors duration-100"
+                            className="text-[11px] text-[var(--accent)] hover:underline transition-colors duration-150"
                           >
                             + Crear nuevo material
                           </button>
@@ -959,7 +959,7 @@ export default function PLComprasPage() {
                           />
                           <button
                             onClick={() => { setNewProductoTarget(idx); setShowNewProducto(true); }}
-                            className="text-[11px] text-[var(--accent)] hover:underline transition-colors duration-100"
+                            className="text-[11px] text-[var(--accent)] hover:underline transition-colors duration-150"
                           >
                             + Crear nuevo producto
                           </button>
@@ -1045,7 +1045,7 @@ export default function PLComprasPage() {
                       {item.tipo === 'insumo' && !item.insumo_id && (
                         <button
                           onClick={() => { setNewInsumoTarget(idx); setShowNewInsumo(true); }}
-                          className="text-[11px] text-[var(--accent)] hover:underline transition-colors duration-100 mt-1"
+                          className="text-[11px] text-[var(--accent)] hover:underline transition-colors duration-150 mt-1"
                         >
                           + Crear nuevo insumo
                         </button>
@@ -1075,7 +1075,7 @@ export default function PLComprasPage() {
               </div>
 
               <button onClick={addItem} className={cx.btnGhost + ' w-full flex items-center justify-center gap-1 text-xs mb-4'}>
-                <Plus size={14} /> Agregar item
+                <Plus size={16} /> Agregar item
               </button>
 
               {/* Nota */}
@@ -1119,7 +1119,7 @@ export default function PLComprasPage() {
           <div className="w-96 bg-white h-full shadow-xl p-6 overflow-y-auto flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-stone-900">Nuevo proveedor</h3>
-              <button onClick={() => setShowNewProveedor(false)} className={cx.btnIcon}><X size={18} /></button>
+              <button onClick={() => setShowNewProveedor(false)} className={cx.btnIcon}><X size={16} /></button>
             </div>
             <div className="space-y-3 flex-1">
               <div>
@@ -1188,7 +1188,7 @@ export default function PLComprasPage() {
           <div className="w-96 bg-white h-full shadow-xl p-6 overflow-y-auto flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-stone-900">Nuevo insumo</h3>
-              <button onClick={() => setShowNewInsumo(false)} className={cx.btnIcon}><X size={18} /></button>
+              <button onClick={() => setShowNewInsumo(false)} className={cx.btnIcon}><X size={16} /></button>
             </div>
             <div className="space-y-3 flex-1">
               <div>
@@ -1260,7 +1260,7 @@ export default function PLComprasPage() {
           <div className="w-96 bg-white h-full shadow-xl p-6 overflow-y-auto flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-stone-900">Nuevo material</h3>
-              <button onClick={() => setShowNewMaterial(false)} className={cx.btnIcon}><X size={18} /></button>
+              <button onClick={() => setShowNewMaterial(false)} className={cx.btnIcon}><X size={16} /></button>
             </div>
             <div className="space-y-3 flex-1">
               <div>
@@ -1332,7 +1332,7 @@ export default function PLComprasPage() {
           <div className="w-96 bg-white h-full shadow-xl p-6 overflow-y-auto flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-stone-900">Nuevo producto</h3>
-              <button onClick={() => setShowNewProducto(false)} className={cx.btnIcon}><X size={18} /></button>
+              <button onClick={() => setShowNewProducto(false)} className={cx.btnIcon}><X size={16} /></button>
             </div>
             <p className="text-xs text-stone-400 mb-4">Crea un producto de compra/reventa. El costo unitario se calcula automáticamente.</p>
             <div className="space-y-3 flex-1">

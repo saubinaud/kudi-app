@@ -46,7 +46,7 @@ function StatusBadge({ value, options, onChange, colorMap = {} }) {
         ref={btnRef}
         type="button"
         onClick={handleOpen}
-        className={`text-[10px] px-2 py-0.5 rounded-full cursor-pointer font-medium whitespace-nowrap transition-colors duration-100 ${colors}`}
+        className={`text-[10px] px-2 py-0.5 rounded-full cursor-pointer font-medium whitespace-nowrap transition-colors duration-150 ${colors}`}
       >
         {selected.label}
       </button>
@@ -59,7 +59,7 @@ function StatusBadge({ value, options, onChange, colorMap = {} }) {
                 key={o.value}
                 type="button"
                 onClick={() => { onChange(o.value); setOpen(false); }}
-                className={`w-full text-left px-3 py-1.5 text-xs transition-colors duration-100 ${
+                className={`w-full text-left px-3 py-1.5 text-xs transition-colors duration-150 ${
                   o.value === value ? 'bg-stone-50 font-medium text-stone-900' : 'text-stone-600 hover:bg-stone-50'
                 }`}
               >
@@ -775,7 +775,7 @@ export default function PLVentasPage() {
         </div>
         <div className="flex items-center gap-3">
           <button onClick={openNewVenta} className={cx.btnPrimary + ' flex items-center gap-2'}>
-            <Plus size={14} /> Registrar venta
+            <Plus size={16} /> Registrar venta
           </button>
         </div>
       </div>
@@ -784,24 +784,24 @@ export default function PLVentasPage() {
       {resumen && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
           <SummaryCard
-            icon={<DollarSign size={18} />}
+            icon={<DollarSign size={20} />}
             label="Ingresos"
             value={formatCurrency(resumen.ingresos_brutos)}
             accent
           />
           <SummaryCard
-            icon={<Package size={18} />}
+            icon={<Package size={20} />}
             label="COGS"
             value={formatCurrency(resumen.cogs_total)}
           />
           <SummaryCard
-            icon={<TrendingUp size={18} />}
+            icon={<TrendingUp size={20} />}
             label="Utilidad bruta"
             value={formatCurrency(utilidadBruta)}
             positive={utilidadBruta >= 0}
           />
           <SummaryCard
-            icon={<ShoppingCart size={18} />}
+            icon={<ShoppingCart size={20} />}
             label="Unidades vendidas"
             value={parseInt(resumen.unidades_vendidas) || 0}
           />
@@ -838,7 +838,7 @@ export default function PLVentasPage() {
               const cnt = t.value === 'todos' ? ventasBySeccion.length : ventasBySeccion.filter(v => (v.estado_entrega || 'pendiente') === t.value).length;
               return (
               <button key={t.value} onClick={() => setEstadoFilter(t.value)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors duration-100 flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors duration-150 flex items-center gap-1.5 ${
                   estadoFilter === t.value
                     ? t.value === 'pendiente' ? 'bg-stone-700 text-white'
                     : t.value === 'preparando' ? 'bg-blue-600 text-white'
@@ -958,7 +958,7 @@ export default function PLVentasPage() {
                       ) : (
                         <button
                           onClick={() => openEmitirModal(v)}
-                          className="text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-500 hover:bg-[#16A34A] hover:text-white transition-colors duration-100 whitespace-nowrap"
+                          className="text-[10px] px-1.5 py-0.5 rounded-full bg-stone-100 text-stone-500 hover:bg-[#16A34A] hover:text-white transition-colors duration-150 whitespace-nowrap"
                         >
                           Emitir
                         </button>
@@ -968,16 +968,16 @@ export default function PLVentasPage() {
                       <div className="flex items-center gap-1 justify-end">
                         {v.estado_pago !== 'cancelado' && (
                           <Tooltip text="Cancelar venta" position="top">
-                            <button onClick={() => setCancelTarget(v)} className={cx.btnIcon + ' hover:text-rose-600'}><Ban size={14} /></button>
+                            <button onClick={() => setCancelTarget(v)} className={cx.btnIcon + ' hover:text-rose-600'}><Ban size={16} /></button>
                           </Tooltip>
                         )}
                         <Tooltip text="Editar" position="top">
-                          <button onClick={() => openEditVenta(v)} className={cx.btnIcon}><Pencil size={14} /></button>
+                          <button onClick={() => openEditVenta(v)} className={cx.btnIcon}><Pencil size={16} /></button>
                         </Tooltip>
                         <Tooltip text="Eliminar" position="top">
-                          <button onClick={() => setDeleteTarget(v)} className={cx.btnIcon + ' hover:text-rose-600'}><Trash2 size={14} /></button>
+                          <button onClick={() => setDeleteTarget(v)} className={cx.btnIcon + ' hover:text-rose-600'}><Trash2 size={16} /></button>
                         </Tooltip>
-                        <ChevronRight size={14} className="text-stone-300" />
+                        <ChevronRight size={16} className="text-stone-300" />
                       </div>
                     </td>
                   </tr>
@@ -1126,19 +1126,19 @@ export default function PLVentasPage() {
                         )}
                         {!v.facturado && (
                           <button onClick={() => openEmitirModal(v)} className={cx.btnGhost + ' text-xs text-[var(--accent)] flex items-center gap-1'}>
-                            <FileText size={12} /> Emitir
+                            <FileText size={16} /> Emitir
                           </button>
                         )}
                         {v.estado_pago !== 'cancelado' && (
                           <button onClick={() => setCancelTarget(v)} className={cx.btnDanger + ' text-xs flex items-center gap-1'}>
-                            <Ban size={12} /> Cancelar
+                            <Ban size={16} /> Cancelar
                           </button>
                         )}
                         <button onClick={() => openEditVenta(v)} className={cx.btnGhost + ' text-xs flex items-center gap-1'}>
-                          <Pencil size={12} /> Editar
+                          <Pencil size={16} /> Editar
                         </button>
                         <button onClick={() => setDeleteTarget(v)} className={cx.btnDanger + ' text-xs flex items-center gap-1'}>
-                          <Trash2 size={12} /> Eliminar
+                          <Trash2 size={16} /> Eliminar
                         </button>
                       </div>
                     </div>
@@ -1162,7 +1162,7 @@ export default function PLVentasPage() {
                   {editingVenta ? 'Editar venta' : 'Registrar venta'}
                 </h3>
                 <button onClick={() => setModalOpen(false)} className={cx.btnIcon}>
-                  <X size={18} />
+                  <X size={16} />
                 </button>
               </div>
 
@@ -1196,7 +1196,7 @@ export default function PLVentasPage() {
                         </div>
                         {ventaItems.length > 1 && (
                           <button onClick={() => removeItem(item._id)} className={cx.btnIcon + ' hover:text-rose-600 flex-shrink-0 mt-1'}>
-                            <Trash2 size={14} />
+                            <Trash2 size={16} />
                           </button>
                         )}
                       </div>
@@ -1256,7 +1256,7 @@ export default function PLVentasPage() {
                     );
                   })}
                   <button onClick={addItem} className={cx.btnGhost + ' text-xs flex items-center gap-1'}>
-                    <Plus size={13} /> Agregar producto
+                    <Plus size={16} /> Agregar producto
                   </button>
                 </div>
 
@@ -1759,7 +1759,7 @@ export default function PLVentasPage() {
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-md p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-stone-900">Emitir comprobante</h3>
-              <button onClick={() => setEmitirModal(null)} className={cx.btnGhost}><X size={18} /></button>
+              <button onClick={() => setEmitirModal(null)} className={cx.btnGhost}><X size={16} /></button>
             </div>
 
             <div className="space-y-4">
@@ -1849,7 +1849,7 @@ export default function PLVentasPage() {
                   </h2>
                 </div>
                 <button onClick={() => { setSelectedVenta(null); setVentaDetalle(null); }}
-                  className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-white/20 transition-colors duration-100">
+                  className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:bg-white/20 transition-colors duration-150">
                   <X size={16} />
                 </button>
               </div>
@@ -1970,7 +1970,7 @@ export default function PLVentasPage() {
                         <img src={item.producto_imagen} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" alt="" />
                       ) : (
                         <div className="w-10 h-10 rounded-lg bg-stone-200 flex items-center justify-center flex-shrink-0">
-                          <Package size={14} className="text-stone-400" />
+                          <Package size={16} className="text-stone-400" />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
@@ -2035,7 +2035,7 @@ export default function PLVentasPage() {
               {/* Emitir boleta button */}
               {!ventaDetalle.facturado && ventaDetalle.estado_pago !== 'cancelado' && (
                 <button onClick={() => openEmitirModal(ventaDetalle)}
-                  className="w-full py-3 bg-[#16A34A] hover:bg-[#15803D] text-white font-semibold rounded-xl transition-colors duration-100 text-sm">
+                  className="w-full py-3 bg-[#16A34A] hover:bg-[#15803D] text-white font-semibold rounded-xl transition-colors duration-150 text-sm">
                   Emitir comprobante
                 </button>
               )}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
@@ -372,6 +372,8 @@ const emptyMaterial = (tipo = 'entero') => ({
 
 export default function CotizadorPage() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const margenObjetivo = searchParams.get('margenObjetivo') ? Number(searchParams.get('margenObjetivo')) : null;
   const navigate = useNavigate();
   const api = useApi();
   const { user } = useAuth();
@@ -416,6 +418,11 @@ export default function CotizadorPage() {
   const [catalogMateriales, setCatalogMateriales] = useState([]);
   const [catalogPreps, setCatalogPreps] = useState([]);
   const [catalogEmpaques, setCatalogEmpaques] = useState([]);
+
+  const [editingMargen, setEditingMargen] = useState(null);
+  const [editingMargenPorcion, setEditingMargenPorcion] = useState(null);
+  const [categoriaMargerId, setCategoriaMargenId] = useState(null);
+  const [categoriasMargenes, setCategoriasMargenes] = useState([]);
 
   const costosRaw = useCalculadorCostos(preparaciones, materiales, precioFinal, igvRate, tipoPresentacion, unidadesPorProducto, precioFinalPorcion, incluirComision ? comisionPosPct : 0);
 
@@ -511,6 +518,8 @@ export default function CotizadorPage() {
     api.get('/productos').then((d) => {
       setInventarioProductos((d.data || []).filter(p => p.tipo_producto === 'no_transformable' && p.disponible_venta));
     }).catch(() => toast.error('Error cargando productos'));
+    // Load margin categories for category selector
+    api.get('/margenes/categorias').then(r => setCategoriasMargenes(r?.data || r || [])).catch(() => {});
   }, []);
 
   // Load product for edit mode
@@ -536,6 +545,7 @@ export default function CotizadorPage() {
         setStockMinimo(p.stock_minimo != null ? String(parseFloat(p.stock_minimo)) : '');
         setPrecioGuardado(parseFloat(p.precio_final) || 0);
         setCostoGuardado(parseFloat(p.costo_neto) || parseFloat(p.costo_compra) || 0);
+        if (p.categoria_margen_id) setCategoriaMargenId(p.categoria_margen_id);
         if (p.variantes) setVariantes(p.variantes);
 
         if (p.preparaciones?.length) {
@@ -901,6 +911,7 @@ export default function CotizadorPage() {
           })),
         ...costos,
         precioFinal,  // siempre el precio exacto del usuario
+        categoria_margen_id: categoriaMargerId || null,
       };
 
       if (tipoProducto === 'no_transformable' && selectedInventarioId) {
@@ -1111,7 +1122,7 @@ export default function CotizadorPage() {
               <div className={`grid gap-3 grid-cols-1 ${tipoPresentacion === 'entero' ? 'sm:grid-cols-[9fr_7fr_4fr]' : 'sm:grid-cols-[3fr_2fr]'}`}>
                 <div>
                   <label className={cx.label}>Nombre del producto</label>
-                  <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} className={cx.input} placeholder={`Ej: Mi ${(t.productos || 'producto').toLowerCase().replace(/s$/, '')}`} autoFocus />
+                  <input id="cotizador-nombre" type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} className={cx.input} placeholder={`Ej: Mi ${(t.productos || 'producto').toLowerCase().replace(/s$/, '')}`} autoFocus />
                 </div>
                 <div>
                   <label className={cx.label}>Presentación<InfoTip text="'Por unidad' si vendes items individuales. 'Presentación entera' si vendes algo divisible en porciones." /></label>
@@ -1347,12 +1358,12 @@ export default function CotizadorPage() {
 
           {/* ── Preparaciones + Composicion — solo para transformables ── */}
           {tipoProducto === 'transformable' && <>
-          <div>
+          <div id="cotizador-prep-section">
             <h3 className="text-lg font-semibold text-stone-900 mb-3">{t.preparaciones || 'Preparaciones'}<InfoTip text={`Cada ${(t.preparacion || 'preparación').toLowerCase()} es un componente base de tu producto. Indica cuánto rinde en total. Puedes cargar plantillas guardadas previamente.`} /></h3>
 
             {/* Single card with divide-y for all preps */}
             <div className={`${cx.card} divide-y divide-stone-100`}>
-              {preparaciones.map((prep) => (
+              {preparaciones.map((prep, prepIdx) => (
                 <div key={prep._id} className="p-3 sm:p-5">
                   {/* Header row — click to collapse */}
                   <div className="flex items-center justify-between cursor-pointer" onClick={() => toggleCollapse(prep._id)}>
@@ -1516,6 +1527,7 @@ export default function CotizadorPage() {
                       </table>
 
                       <button
+                        {...(prepIdx === 0 ? { id: 'cotizador-add-insumo' } : {})}
                         onClick={() => addInsumo(prep._id)}
                         className={cx.btnGhost + ' mt-1 flex items-center gap-1 text-xs'}
                       >
@@ -1655,7 +1667,7 @@ export default function CotizadorPage() {
           </>}
 
           {/* ── Empaque / Materiales — accordion like preparaciones ── */}
-          <div>
+          <div id="cotizador-materiales">
             <h3 className="text-lg font-semibold text-stone-900 mb-3">{t.materiales || 'Empaque'}<InfoTip text={`${t.materiales || 'Materiales de empaque'} para presentar tu producto. Si es presentacion entera, separa el del producto completo y el de cada porcion individual.`} /></h3>
 
             <div className={`${cx.card} divide-y divide-stone-100`}>
@@ -1762,7 +1774,7 @@ export default function CotizadorPage() {
         </div>
 
         {/* ── Right column: Resumen — premium sticky card ── */}
-        <div className="lg:col-span-1 lg:self-start lg:sticky lg:top-6">
+        <div id="cotizador-resumen" className="lg:col-span-1 lg:self-start lg:sticky lg:top-6 max-h-[calc(100vh-48px)] overflow-y-auto">
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1770,10 +1782,36 @@ export default function CotizadorPage() {
             className={`${cx.card} p-4`}>
             <h3 className="text-lg font-semibold text-stone-900 mb-4">Resumen<InfoTip text="El costo neto incluye insumos + empaque. El margen define tu ganancia." /></h3>
 
-            {/* Pack sin items: mostrar mensaje */}
-            {tipoProducto === 'pack' && costos.costoNeto === 0 && packCosto === 0 && (
+            {/* Categoría de margen */}
+            {categoriasMargenes.length > 0 && (
+              <div className="mb-4">
+                <label className={cx.label}>Categoría de margen</label>
+                <CustomSelect
+                  options={[{ value: null, label: 'Sin categoría' }, ...categoriasMargenes.map(c => ({ value: c.id, label: c.nombre }))]}
+                  value={categoriaMargerId}
+                  onChange={setCategoriaMargenId}
+                  placeholder="Seleccionar categoría"
+                  compact
+                />
+              </div>
+            )}
+
+            {/* Pack sin items: mostrar mensaje solo si realmente no hay nada */}
+            {tipoProducto === 'pack' && packCosto === 0 && costoGuardado === 0 && !pendingPackItems?.length && (
               <div className="bg-amber-50 rounded-lg px-3 py-3 mb-4 text-center">
                 <p className="text-xs text-amber-700">Agrega productos al pack para ver el costo y calcular el precio</p>
+              </div>
+            )}
+
+            {/* Pack items desglose */}
+            {tipoProducto === 'pack' && pendingPackItems?.length > 0 && (
+              <div className="space-y-1 pb-3 mb-1 border-b border-stone-100">
+                {pendingPackItems.map((item, i) => (
+                  <div key={item.id || i} className="flex justify-between text-xs">
+                    <span className="text-stone-400 truncate mr-2">{item.nombre} {item.cantidad > 1 ? `×${item.cantidad}` : ''}</span>
+                    <span className="text-stone-500 shrink-0">{formatCurrency((parseFloat(item.costo_neto) || 0) * (Number(item.cantidad) || 1))}</span>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -1782,8 +1820,8 @@ export default function CotizadorPage() {
                 {/* Cost lines */}
                 <div className="space-y-3 pb-4 border-b border-stone-100">
                   <div className="flex justify-between text-sm">
-                    <span className="text-stone-500">{tipoProducto === 'pack' ? 'Costo items' : `Costo ${(t.insumos || 'insumos').toLowerCase()}`}</span>
-                    <span className="text-stone-800 font-medium">{formatCurrency(tipoProducto === 'pack' ? packCosto : costos.costoInsumosProducto)}</span>
+                    <span className="text-stone-500">{tipoProducto === 'pack' ? 'Costo del pack' : `Costo ${(t.insumos || 'insumos').toLowerCase()}`}</span>
+                    <span className="text-stone-800 font-medium">{formatCurrency(tipoProducto === 'pack' ? (packCosto || costoGuardado) : costos.costoInsumosProducto)}</span>
                   </div>
                   {costos.costoEmpaqueEntero > 0 && (
                     <div className="flex justify-between text-sm">
@@ -1825,6 +1863,7 @@ export default function CotizadorPage() {
                   <label className={cx.label}>Margen producto entero</label>
                   <div className="flex items-center gap-3 mt-1">
                     <input
+                      id="cotizador-margen"
                       type="range"
                       min="0"
                       max="90"
@@ -1835,8 +1874,14 @@ export default function CotizadorPage() {
                     />
                     <input
                       type="number"
-                      value={parseFloat((costos.margen || 0).toFixed(2))}
-                      onChange={(e) => handleMargenChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))}
+                      value={editingMargen !== null ? editingMargen : parseFloat((costos.margen || 0).toFixed(2))}
+                      onChange={(e) => setEditingMargen(e.target.value)}
+                      onBlur={(e) => {
+                        const val = Math.min(90, Math.max(0, Number(e.target.value) || 0));
+                        handleMargenChange(val);
+                        setEditingMargen(null);
+                      }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
                       className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400"
                     />
                     <span className="text-stone-400 text-sm">%</span>
@@ -1862,7 +1907,7 @@ export default function CotizadorPage() {
                       <span className="text-stone-800">{formatCurrency(costos.comisionMonto)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between items-baseline pt-1">
+                  <div id="cotizador-precio" className="flex justify-between items-baseline pt-1">
                     <span className="text-stone-600 text-sm">Precio final</span>
                     <EditablePrice value={precioFinal} onChange={(v) => setPrecioFinal(Math.round(v * 100) / 100)} className="text-2xl font-bold text-stone-900" />
                   </div>
@@ -1879,7 +1924,18 @@ export default function CotizadorPage() {
                   <label className={cx.label}>Margen por porcion</label>
                   <div className="flex items-center gap-3 mt-1">
                     <input type="range" min="0" max="90" step="0.5" value={Math.round((costos.margenPorcion || 0) * 10) / 10} onChange={(e) => handleMargenPorcionChange(Number(e.target.value))} className="flex-1 accent-[var(--accent)] h-1.5" />
-                    <input type="number" value={parseFloat((costos.margenPorcion || 0).toFixed(2))} onChange={(e) => handleMargenPorcionChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))} className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400" />
+                    <input
+                      type="number"
+                      value={editingMargenPorcion !== null ? editingMargenPorcion : parseFloat((costos.margenPorcion || 0).toFixed(2))}
+                      onChange={(e) => setEditingMargenPorcion(e.target.value)}
+                      onBlur={(e) => {
+                        const val = Math.min(90, Math.max(0, Number(e.target.value) || 0));
+                        handleMargenPorcionChange(val);
+                        setEditingMargenPorcion(null);
+                      }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
+                      className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400"
+                    />
                     <span className="text-stone-400 text-sm">%</span>
                   </div>
                 </div>
@@ -1936,6 +1992,7 @@ export default function CotizadorPage() {
                   <label className={cx.label}>Margen</label>
                   <div className="flex items-center gap-3 mt-1">
                     <input
+                      id="cotizador-margen"
                       type="range"
                       min="0"
                       max="90"
@@ -1946,8 +2003,14 @@ export default function CotizadorPage() {
                     />
                     <input
                       type="number"
-                      value={parseFloat((costos.margen || 0).toFixed(2))}
-                      onChange={(e) => handleMargenChange(Math.min(90, Math.max(0, Number(e.target.value) || 0)))}
+                      value={editingMargen !== null ? editingMargen : parseFloat((costos.margen || 0).toFixed(2))}
+                      onChange={(e) => setEditingMargen(e.target.value)}
+                      onBlur={(e) => {
+                        const val = Math.min(90, Math.max(0, Number(e.target.value) || 0));
+                        handleMargenChange(val);
+                        setEditingMargen(null);
+                      }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur(); }}
                       className="w-20 bg-stone-50 rounded-lg px-3 py-2.5 text-stone-800 text-sm text-center border border-stone-200 focus:outline-none focus:border-stone-400"
                     />
                     <span className="text-stone-400 text-sm">%</span>
@@ -1975,7 +2038,7 @@ export default function CotizadorPage() {
 
                 {/* Final price — BIG, editable */}
                 <div className="pt-4">
-                  <div className="flex justify-between items-baseline mb-1">
+                  <div id="cotizador-precio" className="flex justify-between items-baseline mb-1">
                     <span className="text-stone-600 text-sm">Precio final</span>
                     <EditablePrice value={precioFinal} onChange={(v) => setPrecioFinal(Math.round(v * 100) / 100)} className="text-2xl font-bold text-stone-900" />
                   </div>
@@ -1991,6 +2054,7 @@ export default function CotizadorPage() {
 
             {/* Save button — full width, prominent */}
             <button
+              id="cotizador-save"
               onClick={handleSaveClick}
               disabled={saving}
               className={cx.btnPrimary + ' w-full mt-5 py-3 text-sm flex items-center justify-center gap-2'}
@@ -2003,6 +2067,68 @@ export default function CotizadorPage() {
                 </>
               )}
             </button>
+
+            {/* Margen objetivo — tarjeta debajo del guardar */}
+            {margenObjetivo && costos.costoNeto > 0 && (() => {
+              // costos.margen ya es porcentaje (65 = 65%)
+              const margenActual = parseFloat(costos.margen) || 0;
+              // Tolerancia: si está a menos de 1% del objetivo, no mostrar
+              if (margenActual >= margenObjetivo - 1) return null;
+
+              // Calcular precios para moderado y óptimo
+              const catData = categoriasMargenes.find(c => c.id === categoriaMargerId);
+              const moderado = catData ? parseFloat(catData.margen_moderado) : Math.round(margenObjetivo * 0.85);
+              const optimo = parseFloat(margenObjetivo);
+              // Calcula precio final incluyendo IGV y comisión (misma lógica que handleMargenChange)
+              const redondeoComercial = (v) => {
+                const entero = Math.floor(v);
+                const frac = v - entero;
+                if (frac < 0.05) return entero;
+                if (frac < 0.5) return entero + 0.5;
+                return entero + 1;
+              };
+              const calcPrecio = (margenPct) => {
+                const pv = costos.costoNeto / (1 - margenPct / 100);
+                const igvDec = igvRate / 100;
+                const comDec = incluirComision ? comisionPosPct / 100 : 0;
+                const conIgv = pv * (1 + igvDec);
+                const conComision = comDec > 0 ? conIgv / (1 - comDec) : conIgv;
+                return redondeoComercial(conComision);
+              };
+              const precioModerado = calcPrecio(moderado);
+              const precioOptimo = calcPrecio(optimo);
+
+              return (
+                <div className={cx.card + ' p-4 mt-3'}>
+                  <p className="text-xs font-semibold text-stone-800 mb-0.5">Mejorar margen</p>
+                  <p className="text-[11px] text-stone-400 mb-3">Margen actual: {margenActual.toFixed(1)}%</p>
+                  <div className="space-y-2">
+                    {margenActual < moderado && (
+                      <button
+                        onClick={() => setPrecioFinal(precioModerado)}
+                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-amber-200 hover:bg-amber-50/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-amber-500" />
+                          <span className="text-xs font-medium text-stone-700">Moderado ({moderado}%)</span>
+                        </div>
+                        <span className="text-xs font-semibold text-stone-800">{formatCurrency(precioModerado)}</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setPrecioFinal(precioOptimo)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-emerald-200 hover:bg-emerald-50/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="text-xs font-medium text-stone-700">Óptimo ({optimo}%)</span>
+                      </div>
+                      <span className="text-xs font-semibold text-stone-800">{formatCurrency(precioOptimo)}</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           </motion.div>
         </div>
       </div>
