@@ -180,7 +180,7 @@ function PackItemsEditor({ productoId, onItemsChange }) {
         cantidad: 1,
       });
       const newItem = res?.data || res;
-      setItems(prev => [...prev, newItem]);
+      setItems(prev => [...prev, { ...newItem, costo_neto: newItem.costo_neto || product.costo_neto || 0, nombre: newItem.nombre || product.nombre }]);
       toast.success(`"${product.nombre}" agregado al pack`);
     } catch (err) {
       toast.error(err.message || 'Error agregando item');
