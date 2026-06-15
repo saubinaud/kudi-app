@@ -27,6 +27,7 @@ export const TUTORIALS = [
     expression: 'atencion',
     steps: MATERIALES_STEPS,
     route: '/materiales',
+    requires: [{ tutorial: 'insumos' }],
   },
   {
     id: 'primer-producto',
@@ -35,5 +36,6 @@ export const TUTORIALS = [
     expression: 'eureka',
     steps: PRIMER_PRODUCTO_STEPS,
     route: '/cotizador',
+    requires: [{ tutorial: 'insumos' }, { tutorial: 'materiales' }],
   },
 ];
