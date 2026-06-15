@@ -14,28 +14,30 @@ function calcPosition(targetRect, position, cardH) {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const clampX = (l) => Math.max(EDGE, Math.min(l, vw - CARD_W - EDGE));
+  const clampY = (t) => Math.max(EDGE, Math.min(t, vh - cardH - EDGE));
 
   const positions = [position, 'bottom', 'top', 'right', 'left'];
   for (const pos of positions) {
     if (pos === 'bottom') {
       const t = targetRect.top + targetRect.height + GAP;
-      if (t + cardH <= vh - EDGE) return { top: t, left: clampX(targetRect.left), x: 0, y: 0 };
+      if (t + cardH <= vh - EDGE) return { top: clampY(t), left: clampX(targetRect.left), x: 0, y: 0 };
     }
     if (pos === 'top') {
       const t = targetRect.top - GAP - cardH;
-      if (t >= EDGE) return { top: t, left: clampX(targetRect.left), x: 0, y: 0 };
+      if (t >= EDGE) return { top: clampY(t), left: clampX(targetRect.left), x: 0, y: 0 };
     }
     if (pos === 'right') {
       const l = targetRect.left + targetRect.width + GAP;
-      if (l + CARD_W <= vw - EDGE) return { top: Math.max(EDGE, targetRect.top), left: l, x: 0, y: 0 };
+      if (l + CARD_W <= vw - EDGE) return { top: clampY(targetRect.top), left: l, x: 0, y: 0 };
     }
     if (pos === 'left') {
       const l = targetRect.left - GAP - CARD_W;
-      if (l >= EDGE) return { top: Math.max(EDGE, targetRect.top), left: l, x: 0, y: 0 };
+      if (l >= EDGE) return { top: clampY(targetRect.top), left: l, x: 0, y: 0 };
     }
   }
 
-  return { top: '50%', left: '50%', x: '-50%', y: '-50%' };
+  // Fallback: place near target, clamped to viewport
+  return { top: clampY(targetRect.top), left: clampX(targetRect.left), x: 0, y: 0 };
 }
 
 export default function TutorialCard({
@@ -48,12 +50,16 @@ export default function TutorialCard({
   onSkip,
 }) {
   const cardRef = useRef(null);
-  const [cardH, setCardH] = useState(220);
+  const [measuredH, setMeasuredH] = useState(null);
 
   useLayoutEffect(() => {
-    if (cardRef.current) setCardH(cardRef.current.offsetHeight);
-  }, [step]);
+    if (cardRef.current) {
+      const h = cardRef.current.offsetHeight;
+      if (h !== measuredH) setMeasuredH(h);
+    }
+  });
 
+  const cardH = measuredH ?? 220;
   const pos = calcPosition(targetRect, step.position || 'bottom', cardH);
   const isCenter = !step.target || step.position === 'center';
   const isWaiting = step.waitFor === 'click';
@@ -63,7 +69,7 @@ export default function TutorialCard({
     <motion.div
       ref={cardRef}
       className="fixed bg-white rounded-2xl shadow-2xl"
-      style={{ zIndex: 10000, width: CARD_W, maxWidth: `calc(100vw - ${EDGE * 2}px)` }}
+      style={{ zIndex: 10000, width: CARD_W, maxWidth: `calc(100vw - ${EDGE * 2}px)`, maxHeight: `calc(100vh - ${EDGE * 2}px)`, overflowY: 'auto' }}
       initial={{ opacity: 0, scale: 0.92 }}
       animate={{
         opacity: 1,

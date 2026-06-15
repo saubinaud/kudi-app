@@ -64,6 +64,16 @@ export function TutorialProvider({ children }) {
   const targetRect = useTargetRect(step?.target || null);
   const prevTargetRef = useRef(null);
 
+  /* Navegar a la ruta del step si es necesario */
+  useEffect(() => {
+    if (!step?.route) return;
+    const currentPath = window.location.hash.replace('#', '') || '/';
+    if (currentPath !== step.route) {
+      // We need to navigate - use window.location since we don't have navigate() in context
+      window.location.hash = `#${step.route}`;
+    }
+  }, [step]);
+
   /* Elevar target por encima del overlay */
   useEffect(() => {
     // Restaurar el anterior
@@ -86,7 +96,7 @@ export function TutorialProvider({ children }) {
     };
 
     find();
-    const retry = setTimeout(find, 300);
+    const retry = setTimeout(find, 800);
     return () => clearTimeout(retry);
   }, [step?.target]);
 

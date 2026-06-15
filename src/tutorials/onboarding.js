@@ -1,8 +1,8 @@
-export const ONBOARDING_STEPS = [
+export const BIENVENIDA_STEPS = [
   {
     id: 'welcome',
     title: '¡Bienvenido a Kudi!',
-    message: 'Soy Kudi y te voy a dar un tour rápido por la plataforma. ¡Vamos!',
+    message: 'Soy Kudi, tu asistente. Te voy a ayudar a dominar tu negocio paso a paso.',
     expression: 'saludo',
     position: 'center',
   },
@@ -10,55 +10,18 @@ export const ONBOARDING_STEPS = [
     id: 'sidebar',
     target: '#sidebar',
     title: 'Tu menú',
-    message: 'Desde aquí accedes a todas las secciones de Kudi. Se organiza por categorías.',
+    message: 'Desde aquí navegas por toda la plataforma: catálogo, ventas, finanzas y más.',
     expression: 'atencion',
     position: 'right',
   },
   {
-    id: 'catalogo',
-    target: '#sidebar [data-group="catalogo"]',
-    title: 'Catálogo',
-    message: 'Aquí viven tus productos, ingredientes y materiales. Es el corazón de Kudi.',
-    expression: 'eureka',
-    position: 'right',
-  },
-  {
-    id: 'nuevo-producto',
-    target: '#btn-nuevo-producto',
-    title: 'Crea tu primer producto',
-    message: 'Haz clic en "Nuevo" para costear tu primer producto paso a paso.',
-    expression: 'eureka',
-    position: 'bottom',
-  },
-  {
-    id: 'ingresos',
-    target: '#sidebar [data-group="ingresos"]',
-    title: 'Ingresos',
-    message: 'POS, órdenes de venta y facturación electrónica — todo en un solo lugar.',
-    expression: 'todoBien',
-    position: 'right',
-  },
-  {
-    id: 'gastos',
-    target: '#sidebar [data-group="gastos"]',
-    title: 'Gastos',
-    message: 'Registra compras, pagos y pérdidas para tener un control financiero real.',
-    expression: 'pensando',
-    position: 'right',
-  },
-  {
-    id: 'finanzas',
-    target: '#sidebar [data-group="finanzas"]',
-    title: 'Finanzas',
-    message: 'Tu estado de resultados, flujo de caja y timeline — ve cómo crece tu negocio.',
-    expression: 'todoBien',
-    position: 'right',
-  },
-  {
-    id: 'done',
-    title: '¡Todo listo!',
-    message: 'Ya conoces lo básico. Empieza creando tu primer producto. ¡Éxitos!',
+    id: 'next-step',
+    title: '¿Listo para empezar?',
+    message: 'Ve a Tutoriales en el menú para aprender a costear tu primer producto, vender y más.',
     expression: 'celebrando',
     position: 'center',
   },
 ];
+
+// Backward compat
+export const ONBOARDING_STEPS = BIENVENIDA_STEPS;
