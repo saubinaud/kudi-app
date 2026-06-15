@@ -167,6 +167,18 @@ export function TutorialProvider({ children }) {
     setState(s => { markCompleted(s.tutorialId); return { ...s, active: false }; });
   }, []);
 
+  const handleAction = useCallback((action) => {
+    setState(s => {
+      markCompleted(s.tutorialId);
+      return { ...s, active: false };
+    });
+    if (action.route) {
+      setTimeout(() => {
+        window.location.hash = `#${action.route}`;
+      }, 100);
+    }
+  }, []);
+
   const isCompleted = useCallback((id) => !!getCompleted()[id], []);
 
   const resetTutorial = useCallback((id) => {
@@ -198,6 +210,7 @@ export function TutorialProvider({ children }) {
                 onNext={next}
                 onPrev={prev}
                 onSkip={skip}
+                onAction={handleAction}
               />
             </>
           )}

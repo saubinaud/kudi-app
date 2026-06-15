@@ -17,9 +17,10 @@ export const BIENVENIDA_STEPS = [
   {
     id: 'next-step',
     title: '¿Listo para empezar?',
-    message: 'Ve a Tutoriales en el menú para aprender a costear tu primer producto, vender y más.',
+    message: 'Aprende a costear tu primer producto, vender y más.',
     expression: 'celebrando',
     position: 'center',
+    action: { label: 'Ir a Tutoriales →', route: '/tutoriales' },
   },
 ];
 

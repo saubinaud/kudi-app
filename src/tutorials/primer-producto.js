@@ -49,5 +49,6 @@ export const PRIMER_PRODUCTO_STEPS = [
     message: 'Cuando termines de llenar los datos, haz clic en "Guardar". Ya tienes tu primer producto costeado.',
     expression: 'celebrando',
     position: 'center',
+    action: { label: 'Volver a Productos →', route: '/dashboard' },
   },
 ];

@@ -48,6 +48,7 @@ export default function TutorialCard({
   onNext,
   onPrev,
   onSkip,
+  onAction,
 }) {
   const cardRef = useRef(null);
   const [measuredH, setMeasuredH] = useState(null);
@@ -94,15 +95,25 @@ export default function TutorialCard({
           <h3 className="text-lg font-semibold text-stone-900 mt-3">{step.title}</h3>
           <p className="text-sm text-stone-500 leading-relaxed mt-1.5">{step.message}</p>
 
-          <div className="flex gap-3 mt-5 w-full">
-            {currentStep > 0 && (
-              <button onClick={onPrev} className="flex-1 px-4 py-2 text-sm text-stone-500 hover:text-stone-700 hover:bg-stone-50 rounded-lg transition-colors">
-                ← Anterior
+          <div className="mt-5 w-full">
+            {step.action && onAction && (
+              <button
+                onClick={() => onAction(step.action)}
+                className="w-full px-4 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors mb-2"
+              >
+                {step.action.label}
               </button>
             )}
-            <button onClick={onNext} className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors">
-              {isLast ? '¡Listo!' : 'Siguiente →'}
-            </button>
+            <div className="flex gap-3">
+              {currentStep > 0 && (
+                <button onClick={onPrev} className="flex-1 px-4 py-2 text-sm text-stone-500 hover:text-stone-700 hover:bg-stone-50 rounded-lg transition-colors">
+                  ← Anterior
+                </button>
+              )}
+              <button onClick={step.action ? onSkip : onNext} className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors ${step.action ? 'text-stone-500 hover:text-stone-700 hover:bg-stone-50' : 'text-white bg-green-600 hover:bg-green-700'}`}>
+                {step.action ? 'Saltar' : isLast ? '¡Listo!' : 'Siguiente →'}
+              </button>
+            </div>
           </div>
 
           {totalSteps > 1 && <Dots current={currentStep} total={totalSteps} />}
@@ -136,21 +147,31 @@ export default function TutorialCard({
               Haz clic en el elemento resaltado
             </p>
           ) : (
-            <div className="flex items-center justify-between">
-              <button
-                onClick={onPrev}
-                disabled={currentStep === 0}
-                className="px-3 py-1.5 text-sm text-stone-400 hover:text-stone-600 disabled:opacity-0 disabled:pointer-events-none transition-colors"
-              >
-                ← Anterior
-              </button>
-              <button
-                onClick={onNext}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
-              >
-                {isLast ? '¡Listo!' : 'Siguiente →'}
-              </button>
-            </div>
+            <>
+              {step.action && onAction && (
+                <button
+                  onClick={() => onAction(step.action)}
+                  className="w-full px-4 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors mb-2"
+                >
+                  {step.action.label}
+                </button>
+              )}
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={onPrev}
+                  disabled={currentStep === 0}
+                  className="px-3 py-1.5 text-sm text-stone-400 hover:text-stone-600 disabled:opacity-0 disabled:pointer-events-none transition-colors"
+                >
+                  ← Anterior
+                </button>
+                <button
+                  onClick={step.action ? onSkip : onNext}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${step.action ? 'text-stone-400 hover:text-stone-600' : 'text-white bg-green-600 hover:bg-green-700'}`}
+                >
+                  {step.action ? 'Saltar' : isLast ? '¡Listo!' : 'Siguiente →'}
+                </button>
+              </div>
+            </>
           )}
 
           {totalSteps > 1 && <Dots current={currentStep} total={totalSteps} />}
