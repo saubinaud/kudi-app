@@ -839,8 +839,10 @@ export default function CotizadorPage() {
       toast.error('Ingresa un nombre para el producto');
       return;
     }
-    if (tipoProducto === 'transformable' && preparaciones.every(p => !p.insumos?.some(i => i.insumo_id))) {
-      toast.error('Agrega al menos un insumo a la receta');
+    const tieneInsumos = preparaciones.some(p => p.insumos?.some(i => i.insumo_id));
+    const tieneMateriales = materiales.some(m => m.material_id);
+    if (tipoProducto === 'transformable' && !tieneInsumos && !tieneMateriales) {
+      toast.error('Agrega al menos un insumo o material al producto');
       return;
     }
     if (tipoProducto === 'pack' && (!pendingPackItems || pendingPackItems.length === 0)) {
