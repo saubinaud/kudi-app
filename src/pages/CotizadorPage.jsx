@@ -424,6 +424,24 @@ export default function CotizadorPage() {
   const [editingMargenPorcion, setEditingMargenPorcion] = useState(null);
   const [categoriaMargerId, setCategoriaMargenId] = useState(null);
   const [categoriasMargenes, setCategoriasMargenes] = useState([]);
+  const [categoriaAutoDetectada, setCategoriaAutoDetectada] = useState(false);
+
+  // Auto-detect category from product name (debounced)
+  useEffect(() => {
+    if (!nombre || nombre.length < 3 || categoriaMargerId) return;
+    const timer = setTimeout(() => {
+      api.get(`/margenes/sugerir?nombre=${encodeURIComponent(nombre)}`)
+        .then(r => {
+          const sugerida = r?.data || r;
+          if (sugerida?.id && !categoriaMargerId) {
+            setCategoriaMargenId(sugerida.id);
+            setCategoriaAutoDetectada(true);
+          }
+        })
+        .catch(() => {});
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [nombre]);
 
   // Pack cost: sum item costs in real-time from pendingPackItems
   const packCosto = useMemo(() => {
