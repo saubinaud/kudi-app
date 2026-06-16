@@ -529,13 +529,20 @@ export default function CotizadorPage() {
         // Precio es la verdad — se carga directo
         setPrecioFinal(parseFloat(p.precio_final) || 0);
         // TODO: cargar precio porción del hijo si existe
-        setIgvRate(user?.tipo_negocio === 'informal' ? 0 : (p.igv_rate != null ? parseFloat((p.igv_rate * 100).toFixed(2)) : 0));
+        // Respetar igv_rate del producto guardado (incluso informal puede haberlo activado)
+        const prodIgv = p.igv_rate != null ? parseFloat((p.igv_rate * 100).toFixed(2)) : 0;
+        setIgvRate(prodIgv > 0 ? prodIgv : (user?.tipo_negocio === 'informal' ? 0 : (parseFloat((user?.igv_rate * 100).toFixed(2)) || 0)));
         setTipoProducto(p.tipo_producto || 'transformable');
         setControlStock(!!p.control_stock);
         setSku(p.sku || '');
         setStockActual(p.stock_actual != null ? String(parseFloat(p.stock_actual)) : '');
         setStockMinimo(p.stock_minimo != null ? String(parseFloat(p.stock_minimo)) : '');
         setPrecioGuardado(parseFloat(p.precio_final) || 0);
+        // Inferir si comisión estaba incluida: si precio_final > precio_venta * (1+igv) * 1.01
+        if (comisionPosPct > 0 && p.precio_final > 0 && p.precio_venta > 0) {
+          const pfSinComision = parseFloat(p.precio_venta) * (1 + (prodIgv / 100));
+          if (parseFloat(p.precio_final) > pfSinComision * 1.01) setIncluirComision(true);
+        }
         setCostoGuardado(parseFloat(p.costo_neto) || parseFloat(p.costo_compra) || 0);
         if (p.categoria_margen_id) setCategoriaMargenId(p.categoria_margen_id);
         if (p.variantes) setVariantes(p.variantes);
