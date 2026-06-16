@@ -437,8 +437,10 @@ export default function CotizadorPage() {
   }, [tipoProducto, pendingPackItems, costoGuardado]);
 
   // Fallback for Shopify/imported products with no ingredients OR packs
+  // Packs always use fallback (their cost comes from pack items, not from preparaciones/materiales)
   const fallbackCosto = packCosto > 0 ? packCosto : costoGuardado;
-  const usarFallback = costosRaw.costoNeto === 0 && (fallbackCosto > 0 || precioGuardado > 0);
+  const isPack = tipoProducto === 'pack' && (fallbackCosto > 0 || pendingPackItems?.length > 0);
+  const usarFallback = isPack || (costosRaw.costoNeto === 0 && (fallbackCosto > 0 || precioGuardado > 0));
   const costos = usarFallback ? (() => {
     const costo = fallbackCosto;
     const igvDec = Number(igvRate) / 100;
