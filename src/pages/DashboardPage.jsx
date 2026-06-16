@@ -5,7 +5,7 @@ import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useTutorial } from '../hooks/useTutorial';
-import { ONBOARDING_STEPS } from '../tutorials/onboarding';
+import { buildBienvenida } from '../tutorials/onboarding';
 import { cx } from '../styles/tokens';
 import { formatCurrency, formatPercent, formatDate, precioComercial } from '../utils/format';
 import ConfirmDialog, { PromptDialog } from '../components/ConfirmDialog';
@@ -87,7 +87,7 @@ export default function DashboardPage() {
     if (tutorialTriggered.current) return;
     if (isTutorialCompleted('onboarding')) return;
     tutorialTriggered.current = true;
-    const t = setTimeout(() => startTutorial('onboarding', ONBOARDING_STEPS), 800);
+    const t = setTimeout(() => startTutorial('onboarding', buildBienvenida(user)), 800);
     return () => clearTimeout(t);
   }, []);
 

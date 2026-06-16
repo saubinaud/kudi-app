@@ -1,0 +1,35 @@
+export const COMPRAS_STEPS = [
+  {
+    id: 'intro',
+    title: 'Registra tus compras',
+    message: 'Las compras son lo que gastas en ingredientes y materiales. Registrarlas te permite saber tu costo real y actualizar precios automáticamente.',
+    expression: 'atencion',
+    position: 'center',
+    route: '/pl/compras',
+  },
+  {
+    id: 'why',
+    title: '¿Por qué registrar compras?',
+    message: 'Cada vez que registras una compra, Kudi actualiza el precio de tus insumos automáticamente usando un promedio ponderado (WAC). Así tu costeo siempre está al día.',
+    expression: 'eureka',
+    position: 'center',
+    route: '/pl/compras',
+  },
+  {
+    id: 'nueva',
+    title: 'Crea una compra',
+    message: 'Haz clic en "+ Nueva compra" para registrar una. Selecciona el proveedor, los insumos/materiales que compraste, las cantidades y el precio.',
+    expression: 'todoBien',
+    position: 'center',
+    route: '/pl/compras',
+    allowInteraction: true,
+  },
+  {
+    id: 'done',
+    title: '¡Compras listas!',
+    message: 'Registra tus compras periódicamente para mantener tus costos actualizados. Kudi hace el resto.',
+    expression: 'celebrando',
+    position: 'center',
+    action: { label: 'Volver a Tutoriales →', route: '/tutoriales' },
+  },
+];

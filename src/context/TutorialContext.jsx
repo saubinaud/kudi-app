@@ -104,22 +104,39 @@ export function TutorialProvider({ children }) {
         // Only fill if the field is empty
         if (el.value && el.value.trim() !== '') return;
 
-        // Use React's native input value setter to trigger onChange
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-          window.HTMLInputElement.prototype, 'value'
-        )?.set;
+        // Get the correct prototype setter based on element type
+        const proto = el instanceof HTMLTextAreaElement
+          ? HTMLTextAreaElement.prototype
+          : HTMLInputElement.prototype;
+        const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
 
-        if (nativeInputValueSetter) {
-          nativeInputValueSetter.call(el, value);
-          el.dispatchEvent(new Event('input', { bubbles: true }));
-          el.dispatchEvent(new Event('change', { bubbles: true }));
+        if (setter) {
+          setter.call(el, value);
+        } else {
+          el.value = value;
         }
+
+        // Dispatch both events — React 16+ listens on 'input', React 19 may need both
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+
+        // Force React to see the change via its internal value tracker
+        const tracker = el._valueTracker;
+        if (tracker) {
+          tracker.setValue('');
+        }
+        el.dispatchEvent(new Event('input', { bubbles: true }));
       });
     };
 
-    // Delay to allow rendering
-    const timer = setTimeout(fillFields, step.route ? 1000 : 400);
-    return () => clearTimeout(timer);
+    // Multiple retries to handle slow page loads
+    const t1 = setTimeout(fillFields, step.route ? 1200 : 500);
+    const t2 = setTimeout(fillFields, step.route ? 2000 : 1000);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
   }, [step]);
 
   /* Elevar target por encima del overlay */
@@ -216,16 +233,37 @@ export function TutorialProvider({ children }) {
   }, []);
 
   const handleAction = useCallback((action) => {
+    const nextTutorialId = action.startTutorial;
+
     setState(s => {
       markCompleted(s.tutorialId);
       return { ...s, active: false };
     });
+
     if (action.route) {
+      if (nextTutorialId) {
+        localStorage.setItem('kudi_pending_tutorial', nextTutorialId);
+      }
       setTimeout(() => {
         window.location.hash = `#${action.route}`;
       }, 100);
     }
   }, []);
+
+  /* Auto-start chained tutorial from pending action */
+  useEffect(() => {
+    if (state.active) return;
+    const pending = localStorage.getItem('kudi_pending_tutorial');
+    if (!pending) return;
+    localStorage.removeItem('kudi_pending_tutorial');
+
+    import('../tutorials/index.js').then(mod => {
+      const tutorial = mod.TUTORIALS.find(t => t.id === pending);
+      if (tutorial) {
+        setTimeout(() => start(tutorial.id, tutorial.steps, { force: true }), 800);
+      }
+    });
+  }, [state.active]);
 
   const isCompleted = useCallback((id) => !!getCompleted()[id], []);
 

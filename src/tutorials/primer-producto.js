@@ -24,9 +24,9 @@ export const PRIMER_PRODUCTO_STEPS = [
     id: 'preparaciones',
     target: '#cotizador-prep-section',
     title: 'Tu receta',
-    message: 'Una "preparación" es la receta de tu producto. Ya tienes una creada. Dale un nombre (ej: "Masa") y agrega los ingredientes que lleva.',
+    message: 'Una "preparación" es la receta de tu producto. Ya tienes una creada. Dale un nombre (ej: "Masa") y agrega los ingredientes.',
     expression: 'atencion',
-    position: 'right',
+    position: 'left',
     allowInteraction: true,
   },
   {
@@ -35,7 +35,7 @@ export const PRIMER_PRODUCTO_STEPS = [
     title: 'Agrega tus ingredientes',
     message: 'En el selector, busca los ingredientes que registraste (ej: "Harina"). Selecciona uno y pon la cantidad que usas para una unidad de este producto.',
     expression: 'eureka',
-    position: 'bottom',
+    position: 'left',
     allowInteraction: true,
   },
   {
@@ -44,7 +44,7 @@ export const PRIMER_PRODUCTO_STEPS = [
     title: 'Agrega el empaque',
     message: 'En el selector, busca los materiales que registraste (ej: "Caja kraft"). Pon la cantidad que usas por producto. Si no usas empaque, pasa al siguiente.',
     expression: 'todoBien',
-    position: 'right',
+    position: 'left',
     allowInteraction: true,
   },
   {
@@ -79,6 +79,6 @@ export const PRIMER_PRODUCTO_STEPS = [
     message: '¡Felicidades! Ya tienes tu primer producto costeado. Ahora puedes venderlo desde la Caja.',
     expression: 'celebrando',
     position: 'center',
-    action: { label: 'Ir a mis productos →', route: '/dashboard' },
+    action: { label: 'Hacer mi primera venta →', route: '/pos', startTutorial: 'pos' },
   },
 ];

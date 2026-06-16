@@ -16,8 +16,11 @@ function calcPosition(targetRect, position, cardH) {
   const clampX = (l) => Math.max(EDGE, Math.min(l, vw - CARD_W - EDGE));
   const clampY = (t) => Math.max(EDGE, Math.min(t, vh - cardH - EDGE));
 
-  const positions = [position, 'bottom', 'top', 'right', 'left'];
-  for (const pos of positions) {
+  // Score each position by how well it fits WITHOUT overlapping the target
+  const candidates = [position, 'bottom', 'top', 'right', 'left']
+    .filter((v, i, a) => a.indexOf(v) === i);
+
+  for (const pos of candidates) {
     if (pos === 'bottom') {
       const t = targetRect.top + targetRect.height + GAP;
       if (t + cardH <= vh - EDGE) return { top: clampY(t), left: clampX(targetRect.left), x: 0, y: 0 };
@@ -36,8 +39,16 @@ function calcPosition(targetRect, position, cardH) {
     }
   }
 
-  // Fallback: place near target, clamped to viewport
-  return { top: clampY(targetRect.top), left: clampX(targetRect.left), x: 0, y: 0 };
+  // Fallback: NEVER overlap the target. Place below or above, forced.
+  const spaceBelow = vh - (targetRect.top + targetRect.height);
+  const spaceAbove = targetRect.top;
+
+  if (spaceBelow >= spaceAbove) {
+    // Below target, even if partially off-screen (max-height will handle overflow)
+    return { top: clampY(targetRect.top + targetRect.height + GAP), left: clampX(targetRect.left), x: 0, y: 0 };
+  }
+  // Above target
+  return { top: clampY(targetRect.top - GAP - cardH), left: clampX(targetRect.left), x: 0, y: 0 };
 }
 
 export default function TutorialCard({

@@ -145,7 +145,7 @@ export default function POSPage() {
       const igvProducto = parseFloat(product.igv_rate) || 0;
       const esInf = user?.tipo_negocio === 'informal';
       const tasaIgv = esInf ? tasaIgvPOS : igvProducto;
-      let precioConIgv = esInf ? Math.ceil(precioBase * (1 + tasaIgv) * 10) / 10 : precioBase;
+      let precioConIgv = esInf ? Math.round(precioBase * (1 + tasaIgv) * 100) / 100 : precioBase;
       let precioSinIgv = esInf ? precioBase : (parseFloat(product.precio_venta) || precioBase);
       if (selectedCanal) {
         const canalPrecio = (product.precios_canal || []).find(pc => pc.canal_id === selectedCanal);
@@ -238,7 +238,7 @@ export default function POSPage() {
     // Informal: precio ya es sin IGV → calcular con IGV usando tasa estándar 18%
     // Formal: precio ya incluye IGV → precio_venta es sin IGV
     const tasaIgv = esInformal ? tasaIgvPOS : igvProducto;
-    let precioConIgv = esInformal ? Math.ceil(precioBase * (1 + tasaIgv) * 10) / 10 : precioBase;
+    let precioConIgv = esInformal ? Math.round(precioBase * (1 + tasaIgv) * 100) / 100 : precioBase;
     let precioSinIgv = esInformal ? precioBase : (parseFloat(product.precio_venta) || precioBase);
     if (selectedCanal) {
       const canalPrecio = (product.precios_canal || []).find(pc => pc.canal_id === selectedCanal);
@@ -251,7 +251,7 @@ export default function POSPage() {
       const cartaPrecio = (product.precios_categoria || []).find(pc => pc.categoria_id === selectedCarta);
       if (cartaPrecio) {
         const cp = parseFloat(cartaPrecio.precio) || precioBase;
-        precioConIgv = esInformal ? Math.ceil(cp * (1 + tasaIgv) * 10) / 10 : cp;
+        precioConIgv = esInformal ? Math.round(cp * (1 + tasaIgv) * 100) / 100 : cp;
         precioSinIgv = esInformal ? cp : (tasaIgv > 0 ? Math.round(cp / (1 + tasaIgv) * 100) / 100 : cp);
       }
     }
@@ -289,7 +289,7 @@ export default function POSPage() {
       imagen_url: product.imagen_url || null,
       precio_con_igv: (() => {
         const vp = parseFloat(variant.precio_final) || parseFloat(product.precio_final) || 0;
-        return user?.tipo_negocio === 'informal' ? Math.ceil(vp * (1 + tasaIgvPOS) * 10) / 10 : vp;
+        return user?.tipo_negocio === 'informal' ? Math.round(vp * (1 + tasaIgvPOS) * 100) / 100 : vp;
       })(),
       precio_sin_igv: user?.tipo_negocio === 'informal'
         ? (parseFloat(variant.precio_final) || parseFloat(product.precio_final) || 0)
@@ -1048,7 +1048,7 @@ export default function POSPage() {
                 : selectedCarta
                   ? ((p.precios_categoria || []).find(pc => pc.categoria_id === selectedCarta)?.precio || p.precio_final)
                   : (conIgv
-                    ? (user?.tipo_negocio === 'informal' ? Math.ceil(parseFloat(p.precio_final) * (1 + tasaIgvPOS) * 10) / 10 : p.precio_final)
+                    ? (user?.tipo_negocio === 'informal' ? Math.round(parseFloat(p.precio_final) * (1 + tasaIgvPOS) * 100) / 100 : p.precio_final)
                     : (user?.tipo_negocio === 'informal' ? p.precio_final : (p.precio_venta || p.precio_final)))
             }
           >

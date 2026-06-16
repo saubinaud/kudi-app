@@ -46,6 +46,6 @@ export const MATERIALES_STEPS = [
     message: 'Ya tienes ingredientes y materiales. ¡Ahora sí, a crear tu primer producto!',
     expression: 'celebrando',
     position: 'center',
-    action: { label: 'Crear mi primer producto →', route: '/cotizador' },
+    action: { label: 'Crear mi primer producto →', route: '/cotizador', startTutorial: 'primer-producto' },
   },
 ];
