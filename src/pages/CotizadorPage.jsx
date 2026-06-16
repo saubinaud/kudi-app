@@ -1904,7 +1904,7 @@ export default function CotizadorPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-stone-500">IGV</span>
                     <span className="text-stone-800">
-                      {user?.tipo_negocio === 'informal' ? 'No aplica' : `${formatCurrency(costos.igvMonto)} (${costos.igvRate}%)`}
+                      {costos.igvRate > 0 ? `${formatCurrency(costos.igvMonto)} (${costos.igvRate}%)` : 'No aplica'}
                     </span>
                   </div>
                   {costos.comisionMonto > 0 && (
@@ -2031,7 +2031,7 @@ export default function CotizadorPage() {
                   <div className="flex justify-between text-sm">
                     <span className="text-stone-500">IGV</span>
                     <span className="text-stone-800">
-                      {user?.tipo_negocio === 'informal' ? 'No aplica' : `${formatCurrency(costos.igvMonto)} (${costos.igvRate}%)`}
+                      {costos.igvRate > 0 ? `${formatCurrency(costos.igvMonto)} (${costos.igvRate}%)` : 'No aplica'}
                     </span>
                   </div>
                   {costos.comisionMonto > 0 && (
