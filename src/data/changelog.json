@@ -1,9 +1,9 @@
 [
   {
-    "version": "2.0.0",
+    "version": "2.1.0",
     "fecha": "auto",
-    "titulo": "Kudi 2.0 — Todo conectado",
-    "descripcion": "La actualización más grande de Kudi. Gracias a sus recomendaciones y feedback, estamos implementando mejoras que realmente impactan su día a día: canales de venta conectados al POS, división de cuentas inteligente, costos que se actualizan solos al comprar, y un estado de resultados más detallado para que tengas visibilidad total de tus ingresos reales. Tu precio de venta nunca cambia — solo tu margen se ajusta automáticamente.",
+    "titulo": "Márgenes inteligentes y correcciones",
+    "descripcion": "Kudi ahora te recomienda precios basados en el tipo de producto que estás creando. Además, corregimos varios detalles que nos reportaron para que todo funcione más fluido.",
     "imagen": null,
     "secciones": [
       {
@@ -25,7 +25,16 @@
           { "tipo": "fix", "texto": "Productos solo con materiales — ahora se pueden crear sin necesidad de agregar insumos" },
           { "tipo": "fix", "texto": "IGV en el POS — el redondeo ahora es exacto a 2 decimales (antes redondeaba hacia arriba al 0.10 más cercano)" }
         ]
-      },
+      }
+    ]
+  },
+  {
+    "version": "2.0.0",
+    "fecha": "12 junio 2026",
+    "titulo": "Kudi 2.0 — Todo conectado",
+    "descripcion": "La actualización más grande de Kudi. Gracias a sus recomendaciones y feedback, estamos implementando mejoras que realmente impactan su día a día: canales de venta conectados al POS, división de cuentas inteligente, costos que se actualizan solos al comprar, y un estado de resultados más detallado para que tengas visibilidad total de tus ingresos reales. Tu precio de venta nunca cambia — solo tu margen se ajusta automáticamente.",
+    "imagen": null,
+    "secciones": [
       {
         "titulo": "Caja y pagos",
         "entries": [
