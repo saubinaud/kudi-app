@@ -2130,7 +2130,7 @@ export default function CotizadorPage() {
 
               return (
                 <div className={cx.card + ' p-4 mt-3'}>
-                  <p className="text-xs font-semibold text-stone-800 mb-0.5">{catData ? catData.nombre : 'Mejorar margen'}</p>
+                  <p className="text-xs font-semibold text-stone-800 mb-0.5">Recomendaciones de precio</p>
                   <p className="text-[11px] text-stone-400 mb-3">Margen actual: {margenActual.toFixed(1)}%</p>
                   <div className="space-y-2">
                     {minimo > 0 && margenActual < minimo && (
