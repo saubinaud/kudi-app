@@ -1810,36 +1810,6 @@ export default function CotizadorPage() {
                   placeholder="Seleccionar categoría"
                   compact
                 />
-                {categoriaMargerId && costos.costoNeto > 0 && (() => {
-                  const cat = categoriasMargenes.find(c => c.id === categoriaMargerId);
-                  if (!cat) return null;
-                  const minimo = parseFloat(cat.margen_minimo) || 0;
-                  const moderado = parseFloat(cat.margen_moderado) || 0;
-                  const optimo = parseFloat(cat.margen_optimo) || 0;
-                  const margenActual = Math.round(costos.margen);
-                  return (
-                    <div className="mt-2 bg-stone-50 rounded-lg p-3 space-y-2">
-                      <p className="text-[10px] text-stone-400 font-semibold uppercase tracking-wider">Margen recomendado para {cat.nombre}</p>
-                      <div className="flex gap-2">
-                        <button onClick={() => handleMargenChange(minimo)}
-                          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${margenActual >= minimo && margenActual < moderado ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-300' : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-100'}`}>
-                          <div className="text-lg">{minimo}%</div>
-                          <div className="text-[9px] text-stone-400">Mínimo</div>
-                        </button>
-                        <button onClick={() => handleMargenChange(moderado)}
-                          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${margenActual >= moderado && margenActual < optimo ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300' : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-100'}`}>
-                          <div className="text-lg">{moderado}%</div>
-                          <div className="text-[9px] text-stone-400">Moderado</div>
-                        </button>
-                        <button onClick={() => handleMargenChange(optimo)}
-                          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${margenActual >= optimo ? 'bg-[#16A34A]/10 text-[#16A34A] ring-1 ring-[#16A34A]/30' : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-100'}`}>
-                          <div className="text-lg">{optimo}%</div>
-                          <div className="text-[9px] text-stone-400">Óptimo</div>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })()}
               </div>
             )}
 
@@ -2130,16 +2100,14 @@ export default function CotizadorPage() {
             </button>
 
             {/* Margen objetivo — tarjeta debajo del guardar */}
-            {margenObjetivo && costos.costoNeto > 0 && (() => {
-              // costos.margen ya es porcentaje (65 = 65%)
-              const margenActual = parseFloat(costos.margen) || 0;
-              // Tolerancia: si está a menos de 1% del objetivo, no mostrar
-              if (margenActual >= margenObjetivo - 1) return null;
-
-              // Calcular precios para moderado y óptimo
+            {(margenObjetivo || categoriaMargerId) && costos.costoNeto > 0 && (() => {
               const catData = categoriasMargenes.find(c => c.id === categoriaMargerId);
-              const moderado = catData ? parseFloat(catData.margen_moderado) : Math.round(margenObjetivo * 0.85);
-              const optimo = parseFloat(margenObjetivo);
+              if (!catData && !margenObjetivo) return null;
+              const margenActual = parseFloat(costos.margen) || 0;
+
+              const minimo = catData ? parseFloat(catData.margen_minimo) : 0;
+              const moderado = catData ? parseFloat(catData.margen_moderado) : (margenObjetivo ? Math.round(margenObjetivo * 0.85) : 0);
+              const optimo = catData ? parseFloat(catData.margen_optimo) : parseFloat(margenObjetivo) || 0;
               // Calcula precio final incluyendo IGV y comisión (misma lógica que handleMargenChange)
               const redondeoComercial = (v) => {
                 const entero = Math.floor(v);
@@ -2156,14 +2124,27 @@ export default function CotizadorPage() {
                 const conComision = comDec > 0 ? conIgv / (1 - comDec) : conIgv;
                 return redondeoComercial(conComision);
               };
+              const precioMinimo = minimo > 0 ? calcPrecio(minimo) : 0;
               const precioModerado = calcPrecio(moderado);
               const precioOptimo = calcPrecio(optimo);
 
               return (
                 <div className={cx.card + ' p-4 mt-3'}>
-                  <p className="text-xs font-semibold text-stone-800 mb-0.5">Mejorar margen</p>
+                  <p className="text-xs font-semibold text-stone-800 mb-0.5">{catData ? catData.nombre : 'Mejorar margen'}</p>
                   <p className="text-[11px] text-stone-400 mb-3">Margen actual: {margenActual.toFixed(1)}%</p>
                   <div className="space-y-2">
+                    {minimo > 0 && margenActual < minimo && (
+                      <button
+                        onClick={() => setPrecioFinal(precioMinimo)}
+                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-stone-200 hover:bg-stone-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-stone-400" />
+                          <span className="text-xs font-medium text-stone-700">Mínimo ({minimo}%)</span>
+                        </div>
+                        <span className="text-xs font-semibold text-stone-800">{formatCurrency(precioMinimo)}</span>
+                      </button>
+                    )}
                     {margenActual < moderado && (
                       <button
                         onClick={() => setPrecioFinal(precioModerado)}
