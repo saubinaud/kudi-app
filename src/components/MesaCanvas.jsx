@@ -92,27 +92,22 @@ export default function MesaCanvas({
 
   useEffect(() => { if (!isEditing) { const iv = setInterval(() => setTick(t => t + 1), 30000); return () => clearInterval(iv); } }, [isEditing]);
 
-  // === VIEW MODE: auto-fit to content ===
+  // === VIEW MODE: auto-fit zoom, same rendering as edit (no translate offset) ===
   useEffect(() => {
     if (isEditing || !containerRef.current || mesas.length === 0) return;
     const fit = () => {
-      let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
+      let maxX = 0, maxY = 0;
       for (const m of mesas) {
-        minX = Math.min(minX, m.pos_x ?? 0);
-        minY = Math.min(minY, m.pos_y ?? 0);
         maxX = Math.max(maxX, (m.pos_x ?? 0) + (m.ancho ?? 3));
         maxY = Math.max(maxY, (m.pos_y ?? 0) + (m.alto ?? 2));
       }
       if (maxX === 0) return;
-      const pad = 1;
-      const cW = (maxX - minX + pad * 2) * CELL;
-      const cH = (maxY - minY + pad * 2) * CELL;
+      const pad = 2;
+      const cW = (maxX + pad) * CELL;
+      const cH = (maxY + pad) * CELL;
       const r = containerRef.current.getBoundingClientRect();
-      // Fit to container but cap at a reasonable max so mesas don't get huge
       const z = Math.min(r.width / cW, r.height / cH, 1.5);
-      const ox = (r.width - cW * z) / 2 - (minX - pad) * CELL * z;
-      const oy = (r.height - cH * z) / 2 - (minY - pad) * CELL * z;
-      setViewTx({ zoom: z, ox, oy });
+      setViewTx({ zoom: z, ox: 0, oy: 0 });
     };
     fit();
     const obs = new ResizeObserver(fit);
@@ -128,10 +123,10 @@ export default function MesaCanvas({
     const r = c.getBoundingClientRect();
     const x = isEditing
       ? (clientX - r.left + c.scrollLeft) / editZoom
-      : (clientX - r.left - viewTx.ox) / viewTx.zoom;
+      : (clientX - r.left + c.scrollLeft) / viewTx.zoom;
     const y = isEditing
       ? (clientY - r.top + c.scrollTop) / editZoom
-      : (clientY - r.top - viewTx.oy) / viewTx.zoom;
+      : (clientY - r.top + c.scrollTop) / viewTx.zoom;
     const col = Math.floor(x / CELL);
     const row = Math.floor(y / CELL);
     // In edit mode: clamp to canvas bounds (for drawing)
@@ -542,9 +537,9 @@ export default function MesaCanvas({
           </div>
         ) : (
           /* === VIEW MODE: fixed, auto-fit, no scroll === */
-          <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+          <div style={{ width: CANVAS_W * viewTx.zoom, height: CANVAS_H * viewTx.zoom, position: 'relative' }}>
             <div style={{
-              transform: `translate(${viewTx.ox}px, ${viewTx.oy}px) scale(${viewTx.zoom})`,
+              transform: `scale(${viewTx.zoom})`,
               transformOrigin: '0 0',
               width: CANVAS_W, height: CANVAS_H,
               position: 'absolute', top: 0, left: 0,
