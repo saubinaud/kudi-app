@@ -33,7 +33,7 @@ function convertirUnidad(valor, deUnidad, aUnidad) {
  * @param {number} unidadesPorProducto - porciones si es entero
  * @param {number|null} precioFinalPorcion - precio por porción (input del usuario)
  */
-export function useCalculadorCostos(preparaciones = [], materiales = [], precioFinal = 0, igvRate = 0, tipoPresentacion = 'unidad', unidadesPorProducto = 1, precioFinalPorcion = null, comisionPct = 0) {
+export function useCalculadorCostos(preparaciones = [], materiales = [], precioFinal = 0, igvRate = 0, tipoPresentacion = 'unidad', unidadesPorProducto = 1, precioFinalPorcion = null, comisionPct = 0, costoPackItems = 0, costoBaseManual = 0) {
   return useMemo(() => {
     // Cost for THE WHOLE PRODUCT from preparations
     const costoInsumosProducto = preparaciones.reduce((sum, prep) => {
@@ -71,8 +71,12 @@ export function useCalculadorCostos(preparaciones = [], materiales = [], precioF
       .filter((m) => m.empaque_tipo === 'unidad')
       .reduce((sum, mat) => sum + (Number(mat.precio) || 0) * (Number(mat.cantidad) || 0), 0);
 
-    const costoNetoProducto = costoInsumosProducto + costoEmpaqueEntero + (costoEmpaqueUnidad * unidades);
-    const costoNetoPorcion = costoInsumosPorPorcion + costoEmpaqueUnidad;
+    const costoPackItemsVal = Number(costoPackItems) || 0;
+    const costoBaseVal = Number(costoBaseManual) || 0;
+    const costoBaseTotal = costoInsumosProducto + costoPackItemsVal + costoBaseVal;
+    const costoNetoProducto = costoBaseTotal + costoEmpaqueEntero + (costoEmpaqueUnidad * unidades);
+    const costoBasePorPorcion = unidades > 1 ? costoBaseTotal / unidades : costoBaseTotal;
+    const costoNetoPorcion = costoBasePorPorcion + costoEmpaqueUnidad;
     const igvDecimal = Number(igvRate) / 100;
 
     // PRECIO es el input del usuario — no se calcula
@@ -99,6 +103,8 @@ export function useCalculadorCostos(preparaciones = [], materiales = [], precioF
     return {
       costoInsumos: costoInsumosProducto,
       costoInsumosProducto,
+      costoPackItems: costoPackItemsVal,
+      costoBaseManual: costoBaseVal,
       costoInsumosPorPorcion,
       costoEmpaqueEntero,
       costoEmpaqueUnidad,
@@ -117,5 +123,5 @@ export function useCalculadorCostos(preparaciones = [], materiales = [], precioF
       precioFinal: pf,
       precioFinalPorcion: pfp,
     };
-  }, [preparaciones, materiales, precioFinal, igvRate, tipoPresentacion, unidadesPorProducto, precioFinalPorcion, comisionPct]);
+  }, [preparaciones, materiales, precioFinal, igvRate, tipoPresentacion, unidadesPorProducto, precioFinalPorcion, comisionPct, costoPackItems, costoBaseManual]);
 }

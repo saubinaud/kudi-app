@@ -425,36 +425,25 @@ export default function CotizadorPage() {
   const [categoriaMargerId, setCategoriaMargenId] = useState(null);
   const [categoriasMargenes, setCategoriasMargenes] = useState([]);
 
-  const costosRaw = useCalculadorCostos(preparaciones, materiales, precioFinal, igvRate, tipoPresentacion, unidadesPorProducto, precioFinalPorcion, incluirComision ? comisionPosPct : 0);
-
   // Pack cost: sum item costs in real-time from pendingPackItems
   const packCosto = useMemo(() => {
-    if (tipoProducto !== 'pack' || !pendingPackItems?.length) return costoGuardado || 0;
-    const calculated = pendingPackItems.reduce((sum, item) => {
+    if (tipoProducto !== 'pack' || !pendingPackItems?.length) return 0;
+    return pendingPackItems.reduce((sum, item) => {
       return sum + (parseFloat(item.costo_neto) || 0) * (Number(item.cantidad) || 1);
     }, 0);
-    return calculated > 0 ? calculated : (costoGuardado || 0);
-  }, [tipoProducto, pendingPackItems, costoGuardado]);
+  }, [tipoProducto, pendingPackItems]);
 
-  // Fallback for Shopify/imported products with no ingredients OR packs
-  // Packs always use fallback (their cost comes from pack items, not from preparaciones/materiales)
-  const fallbackCosto = packCosto > 0 ? packCosto : costoGuardado;
-  const isPack = tipoProducto === 'pack' && (fallbackCosto > 0 || pendingPackItems?.length > 0);
-  const usarFallback = isPack || (costosRaw.costoNeto === 0 && (fallbackCosto > 0 || precioGuardado > 0));
-  const costos = usarFallback ? (() => {
-    const costo = fallbackCosto;
-    const igvDec = Number(igvRate) / 100;
-    const comDec = incluirComision ? Number(comisionPosPct) / 100 : 0;
-    const empaqueTotal = costosRaw.costoEmpaqueEntero || 0;
-    const costoNeto = costo + empaqueTotal;
-    const pf = Number(precioFinal) || 0;
-    const pfSinComision = comDec > 0 && pf > 0 ? pf * (1 - comDec) : pf;
-    const pv = igvDec > 0 && pfSinComision > 0 ? pfSinComision / (1 + igvDec) : pfSinComision;
-    const comisionMonto = pf - pfSinComision;
-    const igvMonto = pfSinComision - pv;
-    const m = pv > 0 && costoNeto > 0 ? (1 - costoNeto / pv) * 100 : 0;
-    return { ...costosRaw, costoInsumos: costo, costoInsumosProducto: costo, costoNeto, precioVenta: pv, igvMonto, comisionMonto, comisionPct: Number(comisionPosPct), precioFinal: pf, margen: m };
-  })() : costosRaw;
+  // Unified cost calculation — all sources are ADDITIVE:
+  //   costoNeto = insumos (recipes) + pack items + base manual (no_transformable) + empaque
+  const costoBaseManual = (tipoProducto === 'no_transformable' || (tipoProducto === 'pack' && !pendingPackItems?.length))
+    ? costoGuardado : 0;
+  const costos = useCalculadorCostos(
+    preparaciones, materiales, precioFinal, igvRate,
+    tipoPresentacion, unidadesPorProducto, precioFinalPorcion,
+    incluirComision ? comisionPosPct : 0,
+    packCosto,
+    costoBaseManual
+  );
 
   const enrichedInsumos = useMemo(() => {
     // Group by normalized name
@@ -1820,12 +1809,26 @@ export default function CotizadorPage() {
 
             {tipoPresentacion === 'entero' ? (
               <>
-                {/* Cost lines */}
+                {/* Cost lines — additive display */}
                 <div className="space-y-3 pb-4 border-b border-stone-100">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-stone-500">{tipoProducto === 'pack' ? 'Costo del pack' : `Costo ${(t.insumos || 'insumos').toLowerCase()}`}</span>
-                    <span className="text-stone-800 font-medium">{formatCurrency(tipoProducto === 'pack' ? (packCosto || costoGuardado) : costos.costoInsumosProducto)}</span>
-                  </div>
+                  {costos.costoInsumosProducto > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-stone-500">Costo {(t.insumos || 'insumos').toLowerCase()}</span>
+                      <span className="text-stone-800 font-medium">{formatCurrency(costos.costoInsumosProducto)}</span>
+                    </div>
+                  )}
+                  {costos.costoPackItems > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-stone-500">Costo items del pack</span>
+                      <span className="text-stone-800 font-medium">{formatCurrency(costos.costoPackItems)}</span>
+                    </div>
+                  )}
+                  {costos.costoBaseManual > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-stone-500">Costo base</span>
+                      <span className="text-stone-800 font-medium">{formatCurrency(costos.costoBaseManual)}</span>
+                    </div>
+                  )}
                   {costos.costoEmpaqueEntero > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-stone-500">{t.materiales || 'Empaque'} producto</span>
