@@ -1781,7 +1781,7 @@ export default function CotizadorPage() {
             className={`${cx.card} p-4`}>
             <h3 className="text-lg font-semibold text-stone-900 mb-4">Resumen<InfoTip text="El costo neto incluye insumos + empaque. El margen define tu ganancia." /></h3>
 
-            {/* Categoría de margen */}
+            {/* Categoría de margen + recomendación */}
             {categoriasMargenes.length > 0 && (
               <div className="mb-4">
                 <label className={cx.label}>Categoría de margen</label>
@@ -1792,6 +1792,36 @@ export default function CotizadorPage() {
                   placeholder="Seleccionar categoría"
                   compact
                 />
+                {categoriaMargerId && costos.costoNeto > 0 && (() => {
+                  const cat = categoriasMargenes.find(c => c.id === categoriaMargerId);
+                  if (!cat) return null;
+                  const minimo = parseFloat(cat.margen_minimo) || 0;
+                  const moderado = parseFloat(cat.margen_moderado) || 0;
+                  const optimo = parseFloat(cat.margen_optimo) || 0;
+                  const margenActual = Math.round(costos.margen);
+                  return (
+                    <div className="mt-2 bg-stone-50 rounded-lg p-3 space-y-2">
+                      <p className="text-[10px] text-stone-400 font-semibold uppercase tracking-wider">Margen recomendado para {cat.nombre}</p>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleMargenChange(minimo)}
+                          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${margenActual >= minimo && margenActual < moderado ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-300' : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-100'}`}>
+                          <div className="text-lg">{minimo}%</div>
+                          <div className="text-[9px] text-stone-400">Mínimo</div>
+                        </button>
+                        <button onClick={() => handleMargenChange(moderado)}
+                          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${margenActual >= moderado && margenActual < optimo ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300' : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-100'}`}>
+                          <div className="text-lg">{moderado}%</div>
+                          <div className="text-[9px] text-stone-400">Moderado</div>
+                        </button>
+                        <button onClick={() => handleMargenChange(optimo)}
+                          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${margenActual >= optimo ? 'bg-[#16A34A]/10 text-[#16A34A] ring-1 ring-[#16A34A]/30' : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-100'}`}>
+                          <div className="text-lg">{optimo}%</div>
+                          <div className="text-[9px] text-stone-400">Óptimo</div>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
