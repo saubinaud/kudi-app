@@ -7,6 +7,26 @@
     "imagen": null,
     "secciones": [
       {
+        "titulo": "Recomendaciones de margen",
+        "entries": [
+          { "tipo": "feat", "texto": "Categorías de margen por rubro — Kudi te sugiere un margen mínimo, moderado y óptimo según el tipo de producto (tortas, panes, bebidas, etc.)" },
+          { "tipo": "feat", "texto": "Auto-detección de categoría — al escribir el nombre del producto, Kudi detecta automáticamente el rubro y te muestra las recomendaciones de precio" },
+          { "tipo": "feat", "texto": "Recomendaciones de precio — al seleccionar una categoría, ves 3 opciones con el precio exacto calculado. Un click y el precio se ajusta" },
+          { "tipo": "feat", "texto": "Página de márgenes — vista general de todos tus productos con su margen actual vs el recomendado. Identifica rápidamente qué productos necesitan ajuste" }
+        ]
+      },
+      {
+        "titulo": "Correcciones puntuales",
+        "entries": [
+          { "tipo": "fix", "texto": "IGV se calcula correctamente al activar el toggle — antes decía 'No aplica' aunque marcaras la casilla" },
+          { "tipo": "fix", "texto": "Casillas de IGV y comisión se mantienen activas al editar un producto — ya no se resetean al recargar" },
+          { "tipo": "fix", "texto": "Packs con materiales — agregar empaque ya no borra el costo de los items del pack" },
+          { "tipo": "fix", "texto": "Costo del pack se actualiza en tiempo real al agregar o quitar items" },
+          { "tipo": "fix", "texto": "Productos solo con materiales — ahora se pueden crear sin necesidad de agregar insumos" },
+          { "tipo": "fix", "texto": "IGV en el POS — el redondeo ahora es exacto a 2 decimales (antes redondeaba hacia arriba al 0.10 más cercano)" }
+        ]
+      },
+      {
         "titulo": "Caja y pagos",
         "entries": [
           { "tipo": "feat", "texto": "Dividir cuenta en subcuentas — cada una con su propio método de pago (efectivo, yape, transferencia o tarjeta). La comisión de tarjeta se aplica solo a la subcuenta que paga con tarjeta, no al total" },
