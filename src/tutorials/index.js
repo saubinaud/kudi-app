@@ -1,7 +1,10 @@
 import { BIENVENIDA_STEPS, ONBOARDING_STEPS } from './onboarding';
 import { PRIMER_PRODUCTO_STEPS } from './primer-producto';
+import { POS_STEPS } from './pos';
 import { INSUMOS_STEPS } from './insumos';
 import { MATERIALES_STEPS } from './materiales';
+import { COMPRAS_STEPS } from './compras';
+import { FINANZAS_STEPS } from './finanzas';
 
 export const TUTORIALS = [
   {
@@ -35,5 +38,32 @@ export const TUTORIALS = [
     expression: 'eureka',
     steps: PRIMER_PRODUCTO_STEPS,
     route: '/cotizador',
+  },
+  {
+    id: 'compras',
+    title: 'Registra tus compras',
+    description: 'Aprende a registrar compras para mantener tus costos actualizados.',
+    expression: 'atencion',
+    steps: COMPRAS_STEPS,
+    route: '/pl/compras',
+    requires: [{ tutorial: 'primer-producto' }],
+  },
+  {
+    id: 'pos',
+    title: 'Haz tu primera venta',
+    description: 'Aprende a usar la Caja para vender tus productos.',
+    expression: 'todoBien',
+    steps: POS_STEPS,
+    route: '/pos',
+    requires: [{ tutorial: 'primer-producto' }],
+  },
+  {
+    id: 'finanzas',
+    title: 'Ve tus finanzas',
+    description: 'Entiende tu Timeline, estado de resultados y flujo de caja.',
+    expression: 'pensando',
+    steps: FINANZAS_STEPS,
+    route: '/pl',
+    requires: [{ tutorial: 'pos' }],
   },
 ];

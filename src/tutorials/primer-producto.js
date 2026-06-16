@@ -79,6 +79,6 @@ export const PRIMER_PRODUCTO_STEPS = [
     message: '¡Felicidades! Ya tienes tu primer producto costeado. Ahora puedes venderlo desde la Caja.',
     expression: 'celebrando',
     position: 'center',
-    action: { label: 'Ir a mis productos →', route: '/dashboard' },
+    action: { label: 'Hacer mi primera venta →', route: '/pos', startTutorial: 'pos' },
   },
 ];
