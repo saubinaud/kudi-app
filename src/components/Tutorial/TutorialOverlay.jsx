@@ -4,7 +4,7 @@ const PAD = 8;
 const RADIUS = 12;
 
 export default function TutorialOverlay({ targetRect, step }) {
-  const blockClicks = !step?.prefill && !step?.allowInteraction;
+  const blockClicks = !step?.prefill && !step?.allowInteraction && step?.waitFor !== 'click';
 
   return (
     <>
