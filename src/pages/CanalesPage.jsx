@@ -58,7 +58,7 @@ export default function CanalesPage() {
         api.get('/canales/zonas').catch(() => ({ data: [] })),
       ]);
       setCanales(canalesRes.data || []);
-      setProductos((prodsRes.data || []).filter(p => !p.locked));
+      setProductos((prodsRes.data || []));
       setZonas(zonasRes.data || []);
     } catch {
       // silently handled
@@ -128,7 +128,7 @@ export default function CanalesPage() {
         api.get('/productos'),
       ]);
       setCanales(canalesRes.data || []);
-      setProductos((prodsRes.data || []).filter(p => !p.locked));
+      setProductos((prodsRes.data || []));
       setEditingCanal(null);
       // Refresh channel view
       loadCanalPrecios(activeTab);
@@ -173,7 +173,7 @@ export default function CanalesPage() {
       }
       // Reload products from server (single source of truth)
       const res = await api.get('/productos');
-      const prods = (res.data || []).filter(p => !p.locked);
+      const prods = (res.data || []);
       setProductos(prods);
       // Recalculate canal view from fresh data
       const pm = {};
@@ -196,7 +196,7 @@ export default function CanalesPage() {
       setPreciosCanal(prev => ({ ...prev, [productoId]: parseFloat(nuevoPrecio) }));
       // Refresh productos
       const res = await api.get('/productos');
-      setProductos((res.data || []).filter(p => !p.locked));
+      setProductos((res.data || []));
     } catch (err) {
       toast.error(err.message || 'Error actualizando precio');
     }
@@ -217,7 +217,7 @@ export default function CanalesPage() {
         }
       }
       const res = await api.get('/productos');
-      setProductos((res.data || []).filter(p => !p.locked));
+      setProductos((res.data || []));
       loadCanalPrecios(activeTab);
       toast.success('Todos los productos agregados');
     } catch (err) {
@@ -237,7 +237,7 @@ export default function CanalesPage() {
         }
       }
       const res = await api.get('/productos');
-      setProductos((res.data || []).filter(p => !p.locked));
+      setProductos((res.data || []));
       setPreciosCanal({});
       setProductosEnCanal(new Set());
       toast.success('Todos los productos removidos');
