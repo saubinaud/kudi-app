@@ -7,7 +7,9 @@ import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
 import { precioComercial } from '../utils/redondeo';
+import { desglosarIGV } from '../utils/igv';
 import ProductGrid from '../components/ProductGrid';
+import PagoSheet from '../components/PagoSheet';
 import { ArrowLeft, Clock, Users, Minus, Plus, Trash2, X, Package, CheckCircle, Banknote, CreditCard, Smartphone, Send, FileText, ShoppingCart } from 'lucide-react';
 
 function formatTimer(abiertaAt) {
@@ -58,15 +60,9 @@ export default function MesaDetailPage() {
   const [showCobrar, setShowCobrar] = useState(false);
   const [cobrando, setCobrando] = useState(false);
 
-  // Payment
-  const [metodoPago, setMetodoPago] = useState('efectivo');
-  const [pagaCon, setPagaCon] = useState('');
-  const [pagoMixto, setPagoMixto] = useState(false);
-  const [pagoPartes, setPagoPartes] = useState([
-    { metodo: 'efectivo', monto: '', pagada: false, sinComision: false },
-    { metodo: 'efectivo', monto: '', pagada: false, sinComision: false },
-  ]);
-  const [sinComisionTarjeta, setSinComisionTarjeta] = useState(false);
+  // Payment — el estado de pago (metodo, mixto, comision, vuelto) vive en <PagoSheet>,
+  // compartido con el POS. Aqui solo el toggle Con/Sin IGV (afecta los montos).
+  const [conIgv, setConIgv] = useState(user?.tipo_negocio !== 'informal');
 
   // Post-sale
   const [lastSaleId, setLastSaleId] = useState(null);
@@ -284,54 +280,61 @@ export default function MesaDetailPage() {
     } catch { toast.error('Error generando precuenta'); }
   };
 
-  // Totals
-  const subtotal = useMemo(() =>
-    allItems.reduce((sum, i) => sum + (parseFloat(i.precio_unitario) * parseFloat(i.cantidad)) - (parseFloat(i.descuento) || 0), 0),
-    [allItems]
-  );
+  // Tasa IGV efectiva de la empresa (igual que el back: 0 si informal). Los items
+  // de mesa se guardan con precio CON IGV (precio_final).
+  const esFormal = user?.tipo_negocio === 'formal';
+  const igvRateEmpresa = esFormal ? (parseFloat(user?.igv_rate) || 0) : 0;
 
-  const comisionTarjeta = useMemo(() => {
-    if (comisionPosPct === 0) return 0;
-    if (pagoMixto) return pagoPartes.reduce((sum, p) => p.metodo === 'tarjeta' && !p.sinComision ? sum + Math.round((parseFloat(p.monto) || 0) * comisionPosPct) / 100 : sum, 0);
-    return (metodoPago === 'tarjeta' && !sinComisionTarjeta) ? Math.round(subtotal * comisionPosPct) / 100 : 0;
-  }, [pagoMixto, pagoPartes, metodoPago, sinComisionTarjeta, subtotal, comisionPosPct]);
+  // Desglose del cobro segun toggle Con/Sin IGV — ESPEJO EXACTO de mesas.js cobrar:
+  // precio cobrado por item = conIgv ? precioConIgv : precioConIgv/(1+tasa) (redondeo comercial).
+  const cobroDesglose = useMemo(() => {
+    let cobrado = 0;
+    for (const i of allItems) {
+      const pCon = precioComercial(parseFloat(i.precio_unitario), precioMode);
+      const pCobrado = conIgv
+        ? pCon
+        : (igvRateEmpresa > 0 ? precioComercial(pCon / (1 + igvRateEmpresa), precioMode) : pCon);
+      cobrado += (pCobrado * parseFloat(i.cantidad)) - (parseFloat(i.descuento) || 0);
+    }
+    cobrado = Math.round(cobrado * 100) / 100;
+    const { base, igv } = (conIgv && igvRateEmpresa > 0)
+      ? desglosarIGV(cobrado, igvRateEmpresa)
+      : { base: cobrado, igv: 0 };
+    return { base, igv, cobrado };
+  }, [allItems, conIgv, igvRateEmpresa, precioMode]);
 
-  const total = Math.round((subtotal + comisionTarjeta) * 100) / 100;
+  const total = cobroDesglose.cobrado;
 
   const metodosPago = useMemo(() => [
     ...METODOS_PAGO,
     ...(comisionPosPct > 0 ? [{ key: 'tarjeta', label: `Tarjeta +${comisionPosPct}%`, icon: CreditCard }] : []),
   ], [comisionPosPct]);
 
-  // Cobrar
-  const handleCobrar = async () => {
+  // Cobrar — recibe la decision de pago desde <PagoSheet>.
+  const handleCobrar = async ({ conIgv: ventaConIgv, metodoPago: metodoPagoFinal, pagoDetalle, comisionTarjeta }) => {
     if (!sesion || allItems.length === 0) return;
     setCobrando(true);
     try {
-      let metodoPagoFinal = metodoPago;
-      let pagoDetalle = null;
-      if (pagoMixto) {
-        const partes = pagoPartes.filter(p => parseFloat(p.monto) > 0);
-        if (partes.length > 0) {
-          metodoPagoFinal = 'mixto';
-          pagoDetalle = partes.map(p => ({
-            metodo: p.metodo,
-            monto: parseFloat(p.monto),
-            comision_tarjeta: (p.metodo === 'tarjeta' && !p.sinComision) ? Math.round(parseFloat(p.monto) * comisionPosPct) / 100 : 0,
-          }));
-        }
-      }
+      // El back es autoridad de precios: recibe la DECISION (con_igv) y recalcula.
       const res = await api.post(`/mesas/sesion/${sesion.id}/cobrar`, {
-        metodo_pago: metodoPagoFinal, pago_detalle: pagoDetalle, comision_tarjeta: comisionTarjeta,
+        con_igv: ventaConIgv, metodo_pago: metodoPagoFinal, pago_detalle: pagoDetalle, comision_tarjeta: comisionTarjeta,
       });
       const venta = res?.data || res;
       setLastSaleId(venta.id);
       setLastSaleCode(venta.codigo_pedido || venta.nro_pedido);
-      setLastSaleItems(allItems.map(i => ({
-        producto_id: i.producto_id, producto_nombre: i.nombre,
-        cantidad: parseFloat(i.cantidad), precio_unitario: parseFloat(i.precio_unitario),
-        descuento: parseFloat(i.descuento) || 0,
-      })));
+      // lastSaleItems para la boleta: precio cobrado + tasa efectiva por item (espejo del back).
+      const itemIgvRate = ventaConIgv ? igvRateEmpresa : 0;
+      setLastSaleItems(allItems.map(i => {
+        const pCon = precioComercial(parseFloat(i.precio_unitario), precioMode);
+        const pCobrado = ventaConIgv
+          ? pCon
+          : (igvRateEmpresa > 0 ? precioComercial(pCon / (1 + igvRateEmpresa), precioMode) : pCon);
+        return {
+          producto_id: i.producto_id, producto_nombre: i.nombre,
+          cantidad: parseFloat(i.cantidad), precio_unitario: pCobrado,
+          igv_rate: itemIgvRate, descuento: parseFloat(i.descuento) || 0,
+        };
+      }));
       setShowCobrar(false);
       toast.success('Mesa cobrada');
     } catch (err) {
@@ -559,65 +562,20 @@ export default function MesaDetailPage() {
                 <h3 className="text-lg font-bold text-stone-900">Cobrar Mesa {mesaInfo.numero}</h3>
                 <button onClick={() => setShowCobrar(false)} className={cx.btnIcon}><X size={16} /></button>
               </div>
-              <div className="text-center mb-5">
-                <p className="text-stone-500 text-xs mb-1">Total a cobrar</p>
-                <p className="text-3xl font-bold text-stone-900">{formatCurrency(total)}</p>
-                {comisionTarjeta > 0 && <p className="text-xs text-stone-400 mt-1">Comisión tarjeta: {formatCurrency(comisionTarjeta)}</p>}
-              </div>
-              {!pagoMixto && (
-                <div className="grid grid-cols-4 gap-2 mb-4">
-                  {metodosPago.map(m => {
-                    const isActive = metodoPago === m.key;
-                    return (
-                      <button key={m.key} onClick={() => setMetodoPago(m.key)}
-                        className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-colors min-h-[44px] ${isActive ? 'border-emerald-500 bg-emerald-50' : 'border-stone-200 hover:border-stone-300'}`}>
-                        <m.icon size={16} className={isActive ? 'text-emerald-600' : 'text-stone-400'} />
-                        <span className={`text-[10px] font-medium ${isActive ? 'text-emerald-700' : 'text-stone-500'}`}>{m.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              {!pagoMixto && metodoPago === 'efectivo' && (
-                <div className="mb-4">
-                  <label className={cx.label}>Paga con</label>
-                  <input type="number" value={pagaCon} onChange={e => setPagaCon(e.target.value)} className={cx.input + ' text-center text-lg font-semibold'} placeholder="0.00" min="0" step="0.01" />
-                  {pagaCon && parseFloat(pagaCon) > 0 && (
-                    <p className={`text-center text-sm font-semibold mt-2 ${parseFloat(pagaCon) >= total ? 'text-emerald-600' : 'text-rose-500'}`}>
-                      {parseFloat(pagaCon) >= total ? `Vuelto: ${formatCurrency(parseFloat(pagaCon) - total)}` : `Falta: ${formatCurrency(total - parseFloat(pagaCon))}`}
-                    </p>
-                  )}
-                </div>
-              )}
-              <button onClick={() => { setPagoMixto(!pagoMixto); if (!pagoMixto) { const h = Math.round(total/2*100)/100; setPagoPartes([{metodo:'efectivo',monto:String(h),pagada:false,sinComision:false},{metodo:'efectivo',monto:String(Math.round((total-h)*100)/100),pagada:false,sinComision:false}]); }}}
-                className={cx.btnGhost + ' w-full text-xs mb-4'}>{pagoMixto ? 'Pago simple' : 'Dividir cuenta'}</button>
-              {pagoMixto && (
-                <div className="space-y-3 mb-4">
-                  {pagoPartes.map((parte, idx) => (
-                    <div key={idx} className={cx.card + ' p-3'}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-semibold text-stone-600">Parte {idx + 1}</span>
-                        {pagoPartes.length > 2 && <button onClick={() => setPagoPartes(prev => prev.filter((_, i) => i !== idx))} className="text-stone-300 hover:text-rose-500"><X size={16} /></button>}
-                      </div>
-                      <div className="grid grid-cols-4 gap-1.5 mb-2">
-                        {metodosPago.map(m => (
-                          <button key={m.key} onClick={() => { const n = [...pagoPartes]; n[idx] = {...n[idx], metodo: m.key}; setPagoPartes(n); }}
-                            className={`flex flex-col items-center gap-0.5 p-2 rounded-lg border transition-colors ${parte.metodo === m.key ? 'border-emerald-500 bg-emerald-50' : 'border-stone-200'}`}>
-                            <m.icon size={16} className={parte.metodo === m.key ? 'text-emerald-600' : 'text-stone-400'} />
-                            <span className="text-[9px]">{m.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                      <input type="number" value={parte.monto} onChange={e => { const n = [...pagoPartes]; n[idx] = {...n[idx], monto: e.target.value}; setPagoPartes(n); }}
-                        className={cx.input + ' text-center font-semibold'} placeholder="0.00" min="0" step="0.01" />
-                    </div>
-                  ))}
-                  <button onClick={() => setPagoPartes(prev => [...prev, {metodo:'efectivo',monto:'',pagada:false,sinComision:false}])} className={cx.btnGhost + ' w-full text-xs'}>+ Agregar parte</button>
-                </div>
-              )}
-              <button onClick={handleCobrar} disabled={cobrando || allItems.length === 0} className={cx.btnPrimary + ' w-full py-3 text-base min-h-[48px]'}>
-                {cobrando ? <span className="flex items-center justify-center gap-2"><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Procesando...</span> : `Confirmar cobro ${formatCurrency(total)}`}
-              </button>
+              {/* Momento de pago COMPARTIDO con el POS (tras la precuenta). */}
+              <PagoSheet
+                conIgv={conIgv}
+                setConIgv={setConIgv}
+                tasaIgv={igvRateEmpresa}
+                precioMode={precioMode}
+                base={cobroDesglose.base}
+                igv={cobroDesglose.igv}
+                comisionPosPct={comisionPosPct}
+                metodosPago={metodosPago}
+                confirmLabel="Confirmar cobro"
+                confirming={cobrando}
+                onConfirm={handleCobrar}
+              />
             </motion.div>
           </div>
         )}

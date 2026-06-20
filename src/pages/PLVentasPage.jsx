@@ -680,6 +680,8 @@ export default function PLVentasPage() {
           producto_nombre: i.producto_nombre,
           cantidad: i.cantidad,
           precio_unitario: i.precio_unitario,
+          // P1: tasa IGV persistida al momento de la venta (fuente unica). null -> tasa empresa.
+          igv_rate: i.igv_rate != null ? i.igv_rate : undefined,
           descuento: i.descuento || 0,
         }));
 
