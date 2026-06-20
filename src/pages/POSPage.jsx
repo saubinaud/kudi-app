@@ -166,7 +166,7 @@ export default function POSPage() {
 
   // Cart totals — desglose tipo boleta
   const esInformal = user?.tipo_negocio === 'informal';
-  const tasaIgvPOS = parseFloat(user?.igv_rate) || 0.18; // tasa real, incluso para informal
+  const tasaIgvPOS = parseFloat(user?.igv_rate) || 0; // tasa real configurada (empresa), no se asume 18%
 
   const cartSubtotal = useMemo(() =>
     cartItems.reduce((s, i) => s + itemPrecio(i) * i.cantidad - (parseFloat(i.descuento) || 0), 0),

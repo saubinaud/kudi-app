@@ -70,7 +70,7 @@ export default function MesaDetailPage() {
   const [lastSaleItems, setLastSaleItems] = useState([]);
   const [emittingBoleta, setEmittingBoleta] = useState(false);
 
-  const tasaIgvPOS = parseFloat(user?.igv_rate) || 0.18;
+  const tasaIgvPOS = parseFloat(user?.igv_rate) || 0; // tasa real configurada (empresa), no se asume 18%
   const comisionPosPct = parseFloat(user?.comision_pos) || 0;
   // Redondeo comercial del precio cobrado (con IGV). DEFAULT 'variable'.
   const precioMode = user?.precio_decimales || 'variable';
