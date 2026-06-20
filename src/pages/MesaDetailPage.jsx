@@ -286,28 +286,30 @@ export default function MesaDetailPage() {
     [allItems]
   );
 
-  // Tasa IGV efectiva de la empresa (igual que el back: 0 si informal). Los items
-  // de mesa se guardan con precio CON IGV (precio_final).
-  const esFormal = user?.tipo_negocio === 'formal';
-  const igvRateEmpresa = esFormal ? (parseFloat(user?.igv_rate) || 0) : 0;
+  // IGV identico al POS: la tasa real se usa incluso para informal (simulacion).
+  const esInformal = user?.tipo_negocio === 'informal';
 
-  // Desglose del cobro segun toggle Con/Sin IGV — ESPEJO EXACTO de mesas.js cobrar:
-  // precio cobrado por item = conIgv ? precioConIgv : precioConIgv/(1+tasa) (redondeo comercial).
+  // Precio cobrado por item segun toggle Con/Sin IGV — ESPEJO del POS (itemPrecio/addToCart):
+  //   informal: el precio guardado es la BASE -> Con IGV simula (x(1+tasa)); Sin IGV = base.
+  //   formal:   el precio guardado YA incluye IGV -> Sin IGV = /(1+tasa).
+  const precioCobradoItem = (precioFinal, con) => {
+    const pf = precioComercial(parseFloat(precioFinal) || 0, precioMode);
+    if (esInformal) return con ? precioComercial(pf * (1 + tasaIgvPOS), precioMode) : pf;
+    return con ? pf : (tasaIgvPOS > 0 ? precioComercial(pf / (1 + tasaIgvPOS), precioMode) : pf);
+  };
+
   const cobroDesglose = useMemo(() => {
     let cobrado = 0;
     for (const i of allItems) {
-      const pCon = precioComercial(parseFloat(i.precio_unitario), precioMode);
-      const pCobrado = conIgv
-        ? pCon
-        : (igvRateEmpresa > 0 ? precioComercial(pCon / (1 + igvRateEmpresa), precioMode) : pCon);
-      cobrado += (pCobrado * parseFloat(i.cantidad)) - (parseFloat(i.descuento) || 0);
+      cobrado += (precioCobradoItem(i.precio_unitario, conIgv) * parseFloat(i.cantidad)) - (parseFloat(i.descuento) || 0);
     }
     cobrado = Math.round(cobrado * 100) / 100;
-    const { base, igv } = (conIgv && igvRateEmpresa > 0)
-      ? desglosarIGV(cobrado, igvRateEmpresa)
+    const { base, igv } = (conIgv && tasaIgvPOS > 0)
+      ? desglosarIGV(cobrado, tasaIgvPOS)
       : { base: cobrado, igv: 0 };
     return { base, igv, cobrado };
-  }, [allItems, conIgv, igvRateEmpresa, precioMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allItems, conIgv, tasaIgvPOS, esInformal, precioMode]);
 
   const total = cobroDesglose.cobrado;
 
@@ -321,26 +323,21 @@ export default function MesaDetailPage() {
     if (!sesion || allItems.length === 0) return;
     setCobrando(true);
     try {
-      // El back es autoridad de precios: recibe la DECISION (con_igv) y recalcula.
+      // El back es autoridad de precios: recibe la DECISION (con_igv) y la tasa
+      // efectiva (igual que el POS, con fallback) y recalcula identico.
       const res = await api.post(`/mesas/sesion/${sesion.id}/cobrar`, {
-        con_igv: ventaConIgv, metodo_pago: metodoPagoFinal, pago_detalle: pagoDetalle, comision_tarjeta: comisionTarjeta,
+        con_igv: ventaConIgv, igv_rate: tasaIgvPOS, metodo_pago: metodoPagoFinal, pago_detalle: pagoDetalle, comision_tarjeta: comisionTarjeta,
       });
       const venta = res?.data || res;
       setLastSaleId(venta.id);
       setLastSaleCode(venta.codigo_pedido || venta.nro_pedido);
       // lastSaleItems para la boleta: precio cobrado + tasa efectiva por item (espejo del back).
-      const itemIgvRate = ventaConIgv ? igvRateEmpresa : 0;
-      setLastSaleItems(allItems.map(i => {
-        const pCon = precioComercial(parseFloat(i.precio_unitario), precioMode);
-        const pCobrado = ventaConIgv
-          ? pCon
-          : (igvRateEmpresa > 0 ? precioComercial(pCon / (1 + igvRateEmpresa), precioMode) : pCon);
-        return {
-          producto_id: i.producto_id, producto_nombre: i.nombre,
-          cantidad: parseFloat(i.cantidad), precio_unitario: pCobrado,
-          igv_rate: itemIgvRate, descuento: parseFloat(i.descuento) || 0,
-        };
-      }));
+      const itemIgvRate = ventaConIgv ? tasaIgvPOS : 0;
+      setLastSaleItems(allItems.map(i => ({
+        producto_id: i.producto_id, producto_nombre: i.nombre,
+        cantidad: parseFloat(i.cantidad), precio_unitario: precioCobradoItem(i.precio_unitario, ventaConIgv),
+        igv_rate: itemIgvRate, descuento: parseFloat(i.descuento) || 0,
+      })));
       setShowCobrar(false);
       toast.success('Mesa cobrada');
     } catch (err) {
@@ -572,7 +569,7 @@ export default function MesaDetailPage() {
               <PagoSheet
                 conIgv={conIgv}
                 setConIgv={setConIgv}
-                tasaIgv={igvRateEmpresa}
+                tasaIgv={tasaIgvPOS}
                 precioMode={precioMode}
                 base={cobroDesglose.base}
                 igv={cobroDesglose.igv}
