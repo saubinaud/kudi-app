@@ -280,6 +280,12 @@ export default function MesaDetailPage() {
     } catch { toast.error('Error generando precuenta'); }
   };
 
+  // Total corriente del pedido (con IGV) — para el panel y el boton "Cobrar".
+  const subtotal = useMemo(() =>
+    allItems.reduce((sum, i) => sum + (parseFloat(i.precio_unitario) * parseFloat(i.cantidad)) - (parseFloat(i.descuento) || 0), 0),
+    [allItems]
+  );
+
   // Tasa IGV efectiva de la empresa (igual que el back: 0 si informal). Los items
   // de mesa se guardan con precio CON IGV (precio_final).
   const esFormal = user?.tipo_negocio === 'formal';
