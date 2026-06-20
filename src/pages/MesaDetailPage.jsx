@@ -425,6 +425,30 @@ export default function MesaDetailPage() {
         {/* Session panel */}
         <div className="lg:w-80 xl:w-96 flex-shrink-0">
           <div className={cx.card + ' p-4 lg:sticky lg:top-4'}>
+            <AnimatePresence mode="wait">
+            {showCobrar ? (
+            <motion.div key="cobro" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} transition={{ duration: 0.15 }} className="space-y-4 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+              {/* Cobro INLINE — mismo diseño que el POS (no modal). */}
+              <button onClick={() => setShowCobrar(false)} className="flex items-center gap-1 text-xs text-stone-500 hover:text-stone-800 transition-colors duration-100 -mb-1">
+                <ArrowLeft size={12} /> Volver al pedido
+              </button>
+              <h3 className="font-bold text-stone-800 text-sm">Cobrar Mesa {mesaInfo.numero}</h3>
+              <PagoSheet
+                conIgv={conIgv}
+                setConIgv={setConIgv}
+                tasaIgv={tasaIgvPOS}
+                precioMode={precioMode}
+                base={cobroDesglose.base}
+                igv={cobroDesglose.igv}
+                comisionPosPct={comisionPosPct}
+                metodosPago={metodosPago}
+                confirmLabel="Confirmar cobro"
+                confirming={cobrando}
+                onConfirm={handleCobrar}
+              />
+            </motion.div>
+            ) : (
+            <motion.div key="pedido" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.15 }}>
             <h3 className="font-bold text-stone-800 text-sm mb-3 flex items-center justify-between">
               <span>Pedido · {allItems.length} items</span>
               <span className="text-base font-bold text-[var(--accent)]">{formatCurrency(subtotal)}</span>
@@ -495,6 +519,9 @@ export default function MesaDetailPage() {
                 </>
               )}
             </div>
+            </motion.div>
+            )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
@@ -549,36 +576,6 @@ export default function MesaDetailPage() {
                 </div>
               </div>
               <button onClick={() => setShowPrecuenta(false)} className={cx.btnSecondary + ' w-full mt-5'}>Cerrar</button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Cobrar */}
-      <AnimatePresence>
-        {showCobrar && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowCobrar(false)} />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto p-6">
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="text-lg font-bold text-stone-900">Cobrar Mesa {mesaInfo.numero}</h3>
-                <button onClick={() => setShowCobrar(false)} className={cx.btnIcon}><X size={16} /></button>
-              </div>
-              {/* Momento de pago COMPARTIDO con el POS (tras la precuenta). */}
-              <PagoSheet
-                conIgv={conIgv}
-                setConIgv={setConIgv}
-                tasaIgv={tasaIgvPOS}
-                precioMode={precioMode}
-                base={cobroDesglose.base}
-                igv={cobroDesglose.igv}
-                comisionPosPct={comisionPosPct}
-                metodosPago={metodosPago}
-                confirmLabel="Confirmar cobro"
-                confirming={cobrando}
-                onConfirm={handleCobrar}
-              />
             </motion.div>
           </div>
         )}
