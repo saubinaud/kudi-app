@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
  * Tooltip — aparece después de un delay al mantener el mouse sobre el children.
  * Usa portal + fixed positioning para nunca cortarse por overflow.
  */
-export default function Tooltip({ text, delay = 1500, position = 'top', children }) {
+export default function Tooltip({ text, delay = 1500, position = 'top', wide = false, children }) {
   const [show, setShow] = useState(false);
   const [coords, setCoords] = useState({ x: 0, y: 0 });
   const timerRef = useRef(null);
@@ -58,8 +58,8 @@ export default function Tooltip({ text, delay = 1500, position = 'top', children
         <AnimatePresence>
           {show && (
             <motion.span
-              className={`fixed z-[9999] px-2.5 py-1.5 rounded-lg bg-[#0A2F24] text-white text-[11px] font-medium whitespace-nowrap pointer-events-none shadow-lg ${transformOrigin[position]}`}
-              style={{ left: coords.x, top: coords.y }}
+              className={`fixed z-[9999] px-2.5 py-1.5 rounded-lg bg-[#0A2F24] text-white text-[11px] font-medium pointer-events-none shadow-lg ${wide ? 'whitespace-normal leading-snug text-left' : 'whitespace-nowrap'} ${transformOrigin[position]}`}
+              style={{ left: coords.x, top: coords.y, maxWidth: wide ? 260 : undefined }}
               initial={motionProps[position].initial}
               animate={motionProps[position].animate}
               exit={motionProps[position].initial}

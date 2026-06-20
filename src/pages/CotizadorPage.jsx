@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
@@ -7,7 +7,7 @@ import { useToast } from '../context/ToastContext';
 import { useCalculadorCostos } from '../hooks/useCalculadorCostos';
 import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
-import { round2 } from '../utils/redondeo';
+import { round2, precioComercial } from '../utils/redondeo';
 import { derivarPrecios, margenAPorcentaje } from '../utils/precios';
 import { API_BASE } from '../config/api';
 import SearchableSelect from '../components/SearchableSelect';
@@ -390,6 +390,9 @@ export default function CotizadorPage() {
   );
   const [incluirComision, setIncluirComision] = useState(false);
   const comisionPosPct = parseFloat(user?.comision_pos) || 0;
+  // Redondeo comercial del precio cobrado (con IGV). Solo DISPLAY en cotizador:
+  // no cambia el precio_final guardado.
+  const precioMode = user?.precio_decimales || 'variable';
   const [tipoPresentacion, setTipoPresentacion] = useState('unidad');
   const [unidadesPorProducto, setUnidadesPorProducto] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -418,14 +421,18 @@ export default function CotizadorPage() {
   const [categoriasMargenes, setCategoriasMargenes] = useState([]);
   const [categoriaAutoDetectada, setCategoriaAutoDetectada] = useState(false);
 
-  // Auto-detect category from product name (debounced)
+  // Re-categoriza al cambiar el NOMBRE mientras la categoria sea AUTO (puesta por el algoritmo).
+  // Respeta el override MANUAL del usuario. Salta la carga inicial para no pisar la categoria guardada.
+  const skipAutoCatRef = useRef(true);
   useEffect(() => {
-    if (!nombre || nombre.length < 3 || categoriaMargerId) return;
+    if (skipAutoCatRef.current) { skipAutoCatRef.current = false; return; }
+    if (!nombre || nombre.length < 3) return;
+    if (categoriaMargerId && !categoriaAutoDetectada) return; // categoria elegida a mano: respetar
     const timer = setTimeout(() => {
       api.get(`/margenes/sugerir?nombre=${encodeURIComponent(nombre)}`)
         .then(r => {
           const sugerida = r?.data || r;
-          if (sugerida?.id && !categoriaMargerId) {
+          if (sugerida?.id) {
             setCategoriaMargenId(sugerida.id);
             setCategoriaAutoDetectada(true);
           }
@@ -433,7 +440,7 @@ export default function CotizadorPage() {
         .catch(() => {});
     }, 1200);
     return () => clearTimeout(timer);
-  }, [nombre]);
+  }, [nombre]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Pack cost: suma en tiempo real del costo EFECTIVO FRESCO de cada componente.
   // pendingPackItems ya trae costo_efectivo (leido del catalogo, no snapshot). BUG #1.
@@ -535,6 +542,7 @@ export default function CotizadorPage() {
     api.get(`/productos/${id}`)
       .then((data) => {
         const p = data.data || data;
+        skipAutoCatRef.current = true; // no re-categorizar al cargar; respetar la categoria guardada
         setNombre(p.nombre || '');
         setDescripcion(p.descripcion || '');
         setImagenUrl(p.imagen_url || '');
@@ -559,6 +567,8 @@ export default function CotizadorPage() {
         }
         setCostoGuardado(parseFloat(p.costo_neto) || parseFloat(p.costo_compra) || 0);
         if (p.categoria_margen_id) setCategoriaMargenId(p.categoria_margen_id);
+        // Origen de la categoria guardada: true=algoritmo (re-categorizable), false=manual (respetar). Default true.
+        setCategoriaAutoDetectada(p.categoria_margen_auto !== false);
         if (p.variantes) setVariantes(p.variantes);
 
         if (p.preparaciones?.length) {
@@ -914,6 +924,7 @@ export default function CotizadorPage() {
         ...costos,
         precioFinal,  // siempre el precio exacto del usuario
         categoria_margen_id: categoriaMargerId || null,
+        categoria_margen_auto: categoriaMargerId ? categoriaAutoDetectada : true,
       };
 
       if (tipoProducto === 'no_transformable' && selectedInventarioId) {
@@ -1810,7 +1821,7 @@ export default function CotizadorPage() {
                 <CustomSelect
                   options={[{ value: null, label: 'Sin categoría' }, ...categoriasMargenes.map(c => ({ value: c.id, label: c.nombre }))]}
                   value={categoriaMargerId}
-                  onChange={setCategoriaMargenId}
+                  onChange={(v) => { setCategoriaMargenId(v); setCategoriaAutoDetectada(false); }}
                   placeholder="Seleccionar categoría"
                   compact
                 />
@@ -1952,6 +1963,12 @@ export default function CotizadorPage() {
                     <span className="text-stone-600 text-sm">Precio final</span>
                     <EditablePrice value={precioFinal} onChange={(v) => setPrecioFinal(round2(v))} className="text-2xl font-bold text-stone-900" />
                   </div>
+                  {precioMode !== 'exacto' && precioFinal > 0 && precioComercial(precioFinal, precioMode) !== round2(precioFinal) && (
+                    <div className="flex justify-between items-center text-[11px] text-stone-400 -mt-1">
+                      <span>Se cobrara (redondeo {precioMode})</span>
+                      <span className="font-semibold text-stone-500">{formatCurrency(precioComercial(precioFinal, precioMode))}</span>
+                    </div>
+                  )}
                   {costos.precioVenta > 0 && costos.costoNeto > 0 && (
                     <div className="flex justify-between items-center bg-emerald-50 rounded-lg px-3 py-2 mt-1">
                       <span className="text-xs text-emerald-700">Ganancia por producto</span>
@@ -1992,6 +2009,15 @@ export default function CotizadorPage() {
                     <span className="text-stone-600 text-sm">Precio final</span>
                     <EditablePrice value={precioFinalPorcion ?? costos.precioFinalPorcion} onChange={(v) => setPrecioFinalPorcion(round2(v))} className="text-2xl font-bold text-stone-900" />
                   </div>
+                  {(() => {
+                    const pf = precioFinalPorcion ?? costos.precioFinalPorcion;
+                    return precioMode !== 'exacto' && pf > 0 && precioComercial(pf, precioMode) !== round2(pf) && (
+                      <div className="flex justify-between items-center text-[11px] text-stone-400">
+                        <span>Se cobrara (redondeo {precioMode})</span>
+                        <span className="font-semibold text-stone-500">{formatCurrency(precioComercial(pf, precioMode))}</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </>
             ) : (
@@ -2083,6 +2109,12 @@ export default function CotizadorPage() {
                     <span className="text-stone-600 text-sm">Precio final</span>
                     <EditablePrice value={precioFinal} onChange={(v) => setPrecioFinal(round2(v))} className="text-2xl font-bold text-stone-900" />
                   </div>
+                  {precioMode !== 'exacto' && precioFinal > 0 && precioComercial(precioFinal, precioMode) !== round2(precioFinal) && (
+                    <div className="flex justify-between items-center text-[11px] text-stone-400 mb-1">
+                      <span>Se cobrara (redondeo {precioMode})</span>
+                      <span className="font-semibold text-stone-500">{formatCurrency(precioComercial(precioFinal, precioMode))}</span>
+                    </div>
+                  )}
                   {costos.precioVenta > 0 && costos.costoNeto > 0 && (
                     <div className="flex justify-between items-center bg-emerald-50 rounded-lg px-3 py-2 mb-2">
                       <span className="text-xs text-emerald-700">Ganancia por unidad</span>

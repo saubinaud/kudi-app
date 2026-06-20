@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
+import { precioComercial } from '../utils/redondeo';
 import ProductGrid from '../components/ProductGrid';
 import { ArrowLeft, Clock, Users, Minus, Plus, Trash2, X, Package, CheckCircle, Banknote, CreditCard, Smartphone, Send, FileText, ShoppingCart } from 'lucide-react';
 
@@ -75,6 +76,8 @@ export default function MesaDetailPage() {
 
   const tasaIgvPOS = parseFloat(user?.igv_rate) || 0.18;
   const comisionPosPct = parseFloat(user?.comision_pos) || 0;
+  // Redondeo comercial del precio cobrado (con IGV). DEFAULT 'variable'.
+  const precioMode = user?.precio_decimales || 'variable';
 
   // Load mesa + session in one call, and products in parallel
   useEffect(() => {
@@ -130,12 +133,13 @@ export default function MesaDetailPage() {
     return productos.filter(p => p.nombre.toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q));
   }, [productos, posSearch]);
 
-  const getDisplayPrice = (p) => parseFloat(p.precio_final) || 0;
+  // Precio cobrado (con IGV) redondeado comercialmente, coherente con el POS.
+  const getDisplayPrice = (p) => precioComercial(parseFloat(p.precio_final) || 0, precioMode);
 
   // Add product (to local items if no session, or to DB if session exists)
   const addProduct = async (product) => {
     if (product.variantes?.length > 0) { setVariantModal(product); return; }
-    const precio = parseFloat(product.precio_final) || 0;
+    const precio = precioComercial(parseFloat(product.precio_final) || 0, precioMode);
 
     if (sesion) {
       // Session exists: check for existing pending item
@@ -171,7 +175,8 @@ export default function MesaDetailPage() {
 
   const addVariant = async (product, variant) => {
     setVariantModal(null);
-    const precio = parseFloat(variant.precio_final) || parseFloat(product.precio_final) || 0;
+    const precioRaw = parseFloat(variant.precio_final) || parseFloat(product.precio_final) || 0;
+    const precio = precioComercial(precioRaw, precioMode);
     const nombre = `${product.nombre} — ${variant.nombre}`;
 
     if (sesion) {
@@ -499,7 +504,7 @@ export default function MesaDetailPage() {
                 <button key={v.id} onClick={() => addVariant(variantModal, v)}
                   className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-stone-200 hover:border-stone-400 hover:bg-stone-50 transition-colors">
                   <span className="text-sm font-medium text-stone-700">{v.nombre}</span>
-                  <span className="text-sm font-bold text-[var(--accent)]">{formatCurrency(v.precio_final)}</span>
+                  <span className="text-sm font-bold text-[var(--accent)]">{formatCurrency(precioComercial(parseFloat(v.precio_final) || 0, precioMode))}</span>
                 </button>
               ))}
             </div>

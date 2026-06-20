@@ -243,6 +243,27 @@ export default function PerfilPage() {
                   />
                 </div>
               </div>
+              <div>
+                <label className={cx.label}>Redondeo del precio cobrado</label>
+                <CustomSelect
+                  value={profileForm.precio_decimales || 'variable'}
+                  onChange={v => setProfileForm({ ...profileForm, precio_decimales: v })}
+                  options={[
+                    { value: 'variable', label: 'Hacia arriba a S/0.10 (recomendado)' },
+                    { value: 'cercano', label: 'Al S/0.10 mas cercano' },
+                    { value: 'enteros', label: 'Al sol entero mas cercano' },
+                    { value: 'exacto', label: 'Exacto, con centimos (sin redondeo)' },
+                  ]}
+                />
+                <p className="text-[10px] text-stone-400 mt-1.5 leading-relaxed">
+                  {{
+                    variable: 'Redondea SIEMPRE hacia arriba al multiplo de S/0.10. Nunca pierdes margen y facilita el vuelto (no hay monedas de 1-9 centimos). Ej: S/21.24 se cobra S/21.30.',
+                    cercano: 'Redondea al S/0.10 mas cercano (arriba o abajo). Ej: S/21.24 se cobra S/21.20; S/21.26 se cobra S/21.30.',
+                    enteros: 'Redondea al sol entero mas cercano. Ej: S/21.24 se cobra S/21.',
+                    exacto: 'No redondea: cobras el precio con centimos tal cual. Ej: S/21.24 se cobra S/21.24.',
+                  }[profileForm.precio_decimales || 'variable']}
+                </p>
+              </div>
               <div className="flex gap-2 pt-2">
                 <button onClick={handleSaveProfile} disabled={savingProfile} className={cx.btnPrimary + ' flex items-center gap-2'}>
                   {savingProfile ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Save size={16} /> Guardar</>}
@@ -258,6 +279,13 @@ export default function PerfilPage() {
               <div><label className={cx.label}>Razon social</label><p className="text-stone-800 text-sm">{user?.razon_social || '-'}</p></div>
               <div><label className={cx.label}>IGV</label><p className="text-stone-800 text-sm">{user?.tipo_negocio === 'informal' ? 'No incluye IGV' : `Incluye IGV (${igvDisplay}%)`}</p></div>
               <div><label className={cx.label}>Pais</label><p className="text-stone-800 text-sm">{getPaisByCode(user?.pais)?.name || user?.pais || '-'}</p></div>
+              <div><label className={cx.label}>Redondeo</label><p className="text-stone-800 text-sm">{{
+                variable: 'Hacia arriba a S/0.10',
+                decimales: 'Hacia arriba a S/0.10',
+                cercano: 'Al S/0.10 mas cercano',
+                enteros: 'Al sol entero',
+                exacto: 'Exacto (con centimos)',
+              }[user?.precio_decimales || 'variable']}</p></div>
             </div>
           )}
         </div>

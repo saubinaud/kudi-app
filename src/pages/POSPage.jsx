@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
 import { desglosarIGV } from '../utils/igv';
+import { precioComercial } from '../utils/redondeo';
 import CustomSelect from '../components/CustomSelect';
 import SegmentedControl from '../components/SegmentedControl';
 import UbigeoSelect from '../components/UbigeoSelect';
@@ -36,6 +37,9 @@ export default function POSPage() {
 
   // Search
   const [posSearch, setPosSearch] = useState('');
+
+  // Redondeo comercial del precio cobrado (con IGV). DEFAULT 'variable' (hacia arriba a .10).
+  const precioMode = user?.precio_decimales || 'variable';
 
   // Cart
   const [cartItems, setCartItems] = useState([]);
@@ -156,6 +160,9 @@ export default function POSPage() {
           precioSinIgv = tasaIgv > 0 ? Math.round(cp / (1 + tasaIgv) * 100) / 100 : cp;
         }
       }
+      // Redondeo comercial del precio COBRADO (con IGV). El desglose base/IGV
+      // del carrito sale de este precio ya redondeado.
+      precioConIgv = precioComercial(precioConIgv, precioMode);
       return { ...item, precio_con_igv: precioConIgv, precio_sin_igv: precioSinIgv };
     }));
   }, [selectedCanal]); // eslint-disable-line
@@ -252,6 +259,9 @@ export default function POSPage() {
         precioSinIgv = esInformal ? cp : (tasaIgv > 0 ? Math.round(cp / (1 + tasaIgv) * 100) / 100 : cp);
       }
     }
+    // Redondeo comercial del precio COBRADO segun config de la empresa (ambos modos: con y sin IGV).
+    precioConIgv = precioComercial(precioConIgv, precioMode);
+    precioSinIgv = precioComercial(precioSinIgv, precioMode);
     setCartItems(prev => [...prev, {
       producto_id: product.id || product.value,
       variante_id: null,
@@ -286,11 +296,13 @@ export default function POSPage() {
       imagen_url: product.imagen_url || null,
       precio_con_igv: (() => {
         const vp = parseFloat(variant.precio_final) || parseFloat(product.precio_final) || 0;
-        return user?.tipo_negocio === 'informal' ? Math.round(vp * (1 + tasaIgvPOS) * 100) / 100 : vp;
+        const conIgvRaw = user?.tipo_negocio === 'informal' ? Math.round(vp * (1 + tasaIgvPOS) * 100) / 100 : vp;
+        // Redondeo comercial del precio COBRADO (con IGV).
+        return precioComercial(conIgvRaw, precioMode);
       })(),
-      precio_sin_igv: user?.tipo_negocio === 'informal'
+      precio_sin_igv: precioComercial(user?.tipo_negocio === 'informal'
         ? (parseFloat(variant.precio_final) || parseFloat(product.precio_final) || 0)
-        : (parseFloat(variant.precio_venta) || parseFloat(product.precio_venta) || parseFloat(variant.precio_final) || 0),
+        : (parseFloat(variant.precio_venta) || parseFloat(product.precio_venta) || parseFloat(variant.precio_final) || 0), precioMode),
       cantidad: 1,
       descuento: 0,
       descuento_tipo: 'monto',
@@ -906,7 +918,18 @@ export default function POSPage() {
                   )}
                 </div>
                 <div className="flex justify-between items-baseline mb-3 pt-1 border-t border-stone-200">
-                  <span className="text-stone-500 text-sm">Total a cobrar</span>
+                  <span className="text-stone-500 text-sm flex items-center gap-1.5">
+                    Total a cobrar
+                    {conIgv && precioMode !== 'exacto' && (
+                      <Tooltip
+                        delay={200}
+                        wide
+                        text="El precio se redondea a S/0.10 para facilitar el cobro (no hay monedas de 1-9 centimos). Por eso S/21.24 se cobra S/21.30. Configurable en tu perfil."
+                      >
+                        <span className="w-4 h-4 rounded-full bg-stone-200 text-stone-500 text-[10px] font-bold flex items-center justify-center cursor-help">?</span>
+                      </Tooltip>
+                    )}
+                  </span>
                   <span className="text-2xl font-bold text-[#0A2F24]">{formatCurrency(cartTotal)}</span>
                 </div>
                 <button
@@ -1039,15 +1062,18 @@ export default function POSPage() {
             onSearchChange={setPosSearch}
             onProductClick={addToCart}
             loading={false}
-            getDisplayPrice={(p) =>
-              selectedCanal
+            getDisplayPrice={(p) => {
+              const raw = selectedCanal
                 ? ((p.precios_canal || []).find(pc => pc.canal_id === selectedCanal)?.precio_override || p.precio_final)
                 : selectedCarta
                   ? ((p.precios_categoria || []).find(pc => pc.categoria_id === selectedCarta)?.precio || p.precio_final)
                   : (conIgv
                     ? (user?.tipo_negocio === 'informal' ? Math.round(parseFloat(p.precio_final) * (1 + tasaIgvPOS) * 100) / 100 : p.precio_final)
-                    : (user?.tipo_negocio === 'informal' ? p.precio_final : (p.precio_venta || p.precio_final)))
-            }
+                    : (user?.tipo_negocio === 'informal' ? p.precio_final : (p.precio_venta || p.precio_final)));
+              // Mostrar el precio comercial cobrado (con IGV) cuando se muestra con IGV.
+              // Sin IGV (informal sin conIgv, o precio_venta) se deja sin redondear comercialmente.
+              return conIgv ? precioComercial(parseFloat(raw) || 0, precioMode) : raw;
+            }}
           >
             {/* Canal tabs — segmented control with framer-motion */}
             {canales.length > 0 && (() => {

@@ -14,26 +14,16 @@ export function formatPercent(n) {
   return `${pct.toFixed(1)}%`;
 }
 
-export function precioComercial(precio, modo = 'variable') {
-  if (!precio || precio <= 0) return 0;
-
-  // Round to 2 decimals first to avoid floating point noise (16.0099999 → 16.01)
-  const p = Math.round(precio * 100) / 100;
-
-  if (modo === 'enteros') {
-    // Round to nearest integer (not always up)
-    return Math.round(p);
-  }
-
-  // 'decimales' and 'variable': round up to nearest .10
-  return Math.ceil(p * 10) / 10;
-}
+// precioComercial — fuente de verdad UNICA en utils/redondeo.js (espejo back/front).
+// Se RE-EXPORTA aqui para no romper imports existentes (DashboardPage, etc.).
+export { precioComercial } from './redondeo';
+import { precioComercial as _precioComercial } from './redondeo';
 
 // Helper to get both versions
 export function preciosRecomendados(precio) {
   return {
-    conDecimales: precioComercial(precio, 'decimales'),
-    sinDecimales: precioComercial(precio, 'enteros'),
+    conDecimales: _precioComercial(precio, 'variable'),
+    sinDecimales: _precioComercial(precio, 'enteros'),
   };
 }
 
