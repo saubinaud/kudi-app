@@ -9,49 +9,14 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { Plus, Save, X, Trash2, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
 import { useTerminos } from '../context/TerminosContext';
 
-// Normalize unit: l → L, handle case variations
-function normU(u) {
-  if (!u) return '';
-  if (u === 'l') return 'L';
-  return u;
-}
-
-// Factor to convert 1 unit of 'de' into 'a'
-// Ej: factorConversion('g', 'kg') = 0.001 (1g = 0.001kg)
-const FACTORES = {
-  'g→kg': 0.001, 'kg→g': 1000,
-  'g→oz': 0.03527, 'oz→g': 28.3495,
-  'kg→oz': 35.274, 'oz→kg': 0.02835,
-  'ml→L': 0.001, 'L→ml': 1000, 'cm→mt': 0.01, 'mt→cm': 100,
-};
-
-function convertirUnidad(valor, deUnidad, aUnidad) {
-  const de = normU(deUnidad);
-  const a = normU(aUnidad);
-  if (!de || !a || de === a) return valor;
-  const key = `${de}→${a}`;
-  if (FACTORES[key]) return valor * FACTORES[key];
-  return valor;
-}
-
-function getUnidadesCompatibles(unidadBase) {
-  if (!unidadBase) return ['g', 'kg', 'ml', 'L', 'uni', 'oz'];
-  const u = normU(unidadBase);
-  const grupos = [
-    ['g', 'kg', 'oz'],
-    ['ml', 'L'],
-    ['uni'], ['cm', 'mt'],
-  ];
-  for (const grupo of grupos) {
-    if (grupo.includes(u)) return grupo;
-  }
-  return [u];
-}
+import { convertirUnidad, mismaFamilia, getUnidadesCompatibles, normU } from '../utils/unidades';
 
 function costoEnUsoUnidad(ins) {
   const original = normU(ins.unidad_medida);
   const uso = normU(ins.uso_unidad);
   if (!uso || !original || uso === original) return Number(ins.costo_unitario) || 0;
+  // Familias incompatibles: no inventar conversión, usar costo base
+  if (!mismaFamilia(uso, original)) return Number(ins.costo_unitario) || 0;
   // costo_unitario es por unidad original (ej: S/10 por kg)
   // Si uso_unidad = g: costo_por_g = costo_por_kg × convertir(1g → kg) = 10 × 0.001 = 0.01
   const factor = convertirUnidad(1, uso, original);

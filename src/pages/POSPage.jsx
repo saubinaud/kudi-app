@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
+import { desglosarIGV } from '../utils/igv';
 import CustomSelect from '../components/CustomSelect';
 import SegmentedControl from '../components/SegmentedControl';
 import UbigeoSelect from '../components/UbigeoSelect';
@@ -168,22 +169,18 @@ export default function POSPage() {
     [cartItems, conIgv]
   );
 
-  // Base (sin IGV) e IGV del carrito
+  // Base (sin IGV) e IGV del carrito.
+  // La DECISION de aplicar IGV (conIgv + tasa>0; informal y formal comparten el
+  // mismo desglose, validado por el fundador) se mantiene aqui; el desglose
+  // aritmetico se delega a desglosarIGV (fuente unica, espejo del back).
   const cartDesglose = useMemo(() => {
     if (!conIgv || tasaIgvPOS === 0) {
       // Sin IGV: todo es base, no hay IGV
       return { base: cartSubtotal, igv: 0, total: cartSubtotal };
     }
-    if (esInformal) {
-      // Informal + Con IGV: el precio mostrado YA tiene IGV sumado
-      // Base = total / (1 + tasa), IGV = total - base
-      const base = Math.round(cartSubtotal / (1 + tasaIgvPOS) * 100) / 100;
-      const igv = Math.round((cartSubtotal - base) * 100) / 100;
-      return { base, igv, total: cartSubtotal };
-    }
-    // Formal: precio incluye IGV
-    const base = Math.round(cartSubtotal / (1 + tasaIgvPOS) * 100) / 100;
-    const igv = Math.round((cartSubtotal - base) * 100) / 100;
+    // Con IGV: el precio mostrado YA incluye IGV -> base = total/(1+tasa), igv = total-base
+    const { base, igv } = desglosarIGV(cartSubtotal, tasaIgvPOS);
+    // total mostrado = subtotal del carrito sin re-redondear (comportamiento previo)
     return { base, igv, total: cartSubtotal };
   }, [cartSubtotal, conIgv, tasaIgvPOS, esInformal]);
 

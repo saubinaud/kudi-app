@@ -33,13 +33,15 @@ import {
 import { useTerminos } from '../context/TerminosContext';
 import Tooltip from '../components/Tooltip';
 
-function normU(u) { if (!u) return ''; if (u === 'l') return 'L'; return u; }
-const FACTORES = { 'g→kg': 0.001, 'kg→g': 1000, 'g→oz': 0.03527, 'oz→g': 28.3495, 'kg→oz': 35.274, 'oz→kg': 0.02835, 'ml→L': 0.001, 'L→ml': 1000 };
+import { convertirUnidad, mismaFamilia } from '../utils/unidades';
+
+// costo por unidadOriginal (ej: S/10 por kg) → costo por usoUnidad (ej: por g)
+// factor = convertir(1 usoUnidad → unidadOriginal); costo_uso = cuBase × factor
 function costoConvertido(cuBase, unidadOriginal, usoUnidad) {
-  const o = normU(unidadOriginal), u = normU(usoUnidad);
-  if (!u || !o || u === o) return cuBase;
-  const f = FACTORES[`${u}→${o}`];
-  return f ? cuBase * f : cuBase;
+  if (!usoUnidad || !unidadOriginal || usoUnidad === unidadOriginal) return cuBase;
+  if (!mismaFamilia(usoUnidad, unidadOriginal)) return cuBase; // incompatibles: no inventar conversión
+  const factor = convertirUnidad(1, usoUnidad, unidadOriginal);
+  return factor > 0 ? cuBase * factor : cuBase;
 }
 
 export default function DashboardPage() {

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency, formatDate, formatDateTime, formatSmartDate } from '../utils/format';
+import { desglosarIGV } from '../utils/igv';
 import SearchableSelect from '../components/SearchableSelect';
 import CustomSelect from '../components/CustomSelect';
 import PeriodoSelector from '../components/PeriodoSelector';
@@ -1993,9 +1994,9 @@ export default function PLVentasPage() {
                   const descuento = parseFloat(ventaDetalle.descuento || 0) + parseFloat(ventaDetalle.descuento_global || 0);
                   const envio = parseFloat(ventaDetalle.costo_envio || 0);
                   const total = parseFloat(ventaDetalle.total || 0);
+                  // Desglose unificado (U6): misma formula que POS/mesa/P&L (round2). La FUENTE de la tasa (localStorage) queda como estaba; revisar si deberia venir del comprobante/venta.
                   const igvRate = parseFloat(localStorage.getItem('nodum_igv_rate') || '0.105');
-                  const baseImponible = total / (1 + igvRate);
-                  const igv = total - baseImponible;
+                  const { base: baseImponible, igv } = desglosarIGV(total, igvRate);
 
                   return (
                     <>

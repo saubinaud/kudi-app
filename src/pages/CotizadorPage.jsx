@@ -7,6 +7,8 @@ import { useToast } from '../context/ToastContext';
 import { useCalculadorCostos } from '../hooks/useCalculadorCostos';
 import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
+import { round2 } from '../utils/redondeo';
+import { derivarPrecios, margenAPorcentaje } from '../utils/precios';
 import { API_BASE } from '../config/api';
 import SearchableSelect from '../components/SearchableSelect';
 import CustomSelect from '../components/CustomSelect';
@@ -25,47 +27,14 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { useTerminos } from '../context/TerminosContext';
-
-function normU(u) {
-  if (!u) return '';
-  if (u === 'l') return 'L';
-  return u;
-}
-
-const FACTORES = {
-  'g→kg': 0.001, 'kg→g': 1000,
-  'g→oz': 0.03527, 'oz→g': 28.3495,
-  'kg→oz': 35.274, 'oz→kg': 0.02835,
-  'ml→L': 0.001, 'L→ml': 1000, 'cm→mt': 0.01, 'mt→cm': 100,
-};
-
-function convertirUnidad(valor, deUnidad, aUnidad) {
-  const de = normU(deUnidad);
-  const a = normU(aUnidad);
-  if (!de || !a || de === a) return valor;
-  const key = `${de}→${a}`;
-  if (FACTORES[key]) return valor * FACTORES[key];
-  return valor;
-}
-
-function getUnidadesCompatibles(unidadBase) {
-  if (!unidadBase) return ['g', 'kg', 'ml', 'L', 'uni', 'oz'];
-  const u = normU(unidadBase);
-  const grupos = [
-    ['g', 'kg', 'oz'],
-    ['ml', 'L'],
-    ['uni'], ['cm', 'mt'],
-  ];
-  for (const grupo of grupos) {
-    if (grupo.includes(u)) return grupo;
-  }
-  return [u];
-}
+import { convertirUnidad, mismaFamilia, getUnidadesCompatibles, normU } from '../utils/unidades';
 
 function costoEnUsoUnidad(ins) {
   const original = normU(ins.unidad_medida);
   const uso = normU(ins.uso_unidad);
   if (!uso || !original || uso === original) return Number(ins.costo_unitario) || 0;
+  // Familias incompatibles: no inventar conversión, usar costo base
+  if (!mismaFamilia(uso, original)) return Number(ins.costo_unitario) || 0;
   const factor = convertirUnidad(1, uso, original);
   return factor > 0 ? (Number(ins.costo_unitario) || 0) * factor : (Number(ins.costo_unitario) || 0);
 }
@@ -152,10 +121,25 @@ function PackItemsEditor({ productoId, onItemsChange }) {
       .catch(() => toast.error('Error cargando productos'));
   }, []);
 
-  // Notify parent of items changes (for saving with the product)
+  // Costo EFECTIVO FRESCO de un componente: se lee del catalogo cargado (allProducts),
+  // NO del snapshot congelado guardado al agregar el item. BUG #1.
+  //   costoEfectivo = costo_neto>0 ? costo_neto : (costo_compra de variante || 0)
+  const getCostoEfectivo = (itemProductoId) => {
+    const prod = allProducts.find(p => p.id === itemProductoId);
+    if (!prod) return 0;
+    const neto = parseFloat(prod.costo_neto) || 0;
+    if (neto > 0) return neto;
+    const variante = (prod.variantes || []).find(v => parseFloat(v.costo_compra) > 0);
+    return variante ? parseFloat(variante.costo_compra) || 0 : 0;
+  };
+
+  // Notify parent of items changes (for saving with the product).
+  // Se adjunta el costo EFECTIVO fresco para que el costeo use precios actuales.
   useEffect(() => {
-    if (onItemsChange) onItemsChange(items);
-  }, [items]);
+    if (onItemsChange) {
+      onItemsChange(items.map(i => ({ ...i, costo_efectivo: getCostoEfectivo(i.item_producto_id) })));
+    }
+  }, [items, allProducts]);
 
   const handleAdd = async (product) => {
     if (!product) return;
@@ -216,7 +200,7 @@ function PackItemsEditor({ productoId, onItemsChange }) {
     }
   };
 
-  const totalCosto = items.reduce((s, i) => s + (Number(i.costo_neto) || 0) * (Number(i.cantidad) || 1), 0);
+  const totalCosto = items.reduce((s, i) => s + getCostoEfectivo(i.item_producto_id) * (Number(i.cantidad) || 1), 0);
 
   if (loadingItems) {
     return <div className="space-y-2 py-4">{[1,2].map(i => <div key={i} className="bg-stone-100 rounded-xl h-10 animate-pulse" />)}</div>;
@@ -251,7 +235,12 @@ function PackItemsEditor({ productoId, onItemsChange }) {
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-stone-800 truncate">{item.nombre || item.item_nombre || '--'}</p>
-                <p className="text-[10px] text-stone-400">{formatCurrency(Number(item.costo_neto) || 0)} c/u</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[10px] text-stone-400">{formatCurrency(getCostoEfectivo(item.item_producto_id))} c/u</p>
+                  {getCostoEfectivo(item.item_producto_id) === 0 && (
+                    <span className="text-[9px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-1 py-px">sin costo</span>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-lg">
                 <button
@@ -269,7 +258,7 @@ function PackItemsEditor({ productoId, onItemsChange }) {
                   className="w-7 h-7 flex items-center justify-center text-stone-500 hover:text-stone-800 transition-colors duration-100 rounded-r-lg hover:bg-stone-50 text-xs"
                 >+</button>
               </div>
-              <span className="text-sm font-semibold text-stone-800 w-20 text-right">{formatCurrency((Number(item.costo_neto) || 0) * (Number(item.cantidad) || 1))}</span>
+              <span className="text-sm font-semibold text-stone-800 w-20 text-right">{formatCurrency(getCostoEfectivo(item.item_producto_id) * (Number(item.cantidad) || 1))}</span>
               <button onClick={() => handleRemove(item.id)} className="text-stone-300 hover:text-rose-500 transition-colors duration-100 opacity-0 group-hover:opacity-100">
                 <Trash2 size={13} />
               </button>
@@ -326,7 +315,10 @@ function PackItemsEditor({ productoId, onItemsChange }) {
                   </div>
                 )}
                 <p className="text-[10px] font-medium text-stone-800 truncate">{p.nombre}</p>
-                <p className="text-[10px] text-stone-400">{formatCurrency(p.costo_neto || 0)}</p>
+                <p className="text-[10px] text-stone-400">{formatCurrency(getCostoEfectivo(p.id))}</p>
+                {getCostoEfectivo(p.id) === 0 && (
+                  <span className="inline-block text-[8px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-1 mt-0.5">sin costo</span>
+                )}
               </button>
             ))}
           </div>
@@ -443,11 +435,15 @@ export default function CotizadorPage() {
     return () => clearTimeout(timer);
   }, [nombre]);
 
-  // Pack cost: sum item costs in real-time from pendingPackItems
+  // Pack cost: suma en tiempo real del costo EFECTIVO FRESCO de cada componente.
+  // pendingPackItems ya trae costo_efectivo (leido del catalogo, no snapshot). BUG #1.
   const packCosto = useMemo(() => {
     if (tipoProducto !== 'pack' || !pendingPackItems?.length) return 0;
     return pendingPackItems.reduce((sum, item) => {
-      return sum + (parseFloat(item.costo_neto) || 0) * (Number(item.cantidad) || 1);
+      const efectivo = item.costo_efectivo != null
+        ? parseFloat(item.costo_efectivo) || 0
+        : parseFloat(item.costo_neto) || 0;
+      return sum + efectivo * (Number(item.cantidad) || 1);
     }, 0);
   }, [tipoProducto, pendingPackItems]);
 
@@ -971,7 +967,7 @@ export default function CotizadorPage() {
       const pv = costos.costoNeto / (1 - margenDec);
       const conIgv = pv * (1 + igvDec);
       const conComision = comDec > 0 ? conIgv / (1 - comDec) : conIgv;
-      setPrecioFinal(Math.round(conComision * 100) / 100);
+      setPrecioFinal(round2(conComision));
     }
   }, [igvRate, costos.costoNeto, incluirComision, comisionPosPct]);
 
@@ -983,7 +979,7 @@ export default function CotizadorPage() {
       const pv = costos.costoNetoPorcion / (1 - margenDec);
       const conIgv = pv * (1 + igvDec);
       const conComision = comDec > 0 ? conIgv / (1 - comDec) : conIgv;
-      setPrecioFinalPorcion(Math.round(conComision * 100) / 100);
+      setPrecioFinalPorcion(round2(conComision));
     }
   }, [igvRate, costos.costoNetoPorcion, incluirComision, comisionPosPct]);
 
@@ -1261,7 +1257,14 @@ export default function CotizadorPage() {
                         <td className="px-4 py-2.5 text-stone-400 font-mono text-xs">{v.sku}</td>
                         <td className="px-4 py-2.5 text-right text-stone-700">{v.precio_final ? formatCurrency(parseFloat(v.precio_final)) : '--'}</td>
                         <td className="px-4 py-2.5 text-right text-stone-500">{v.costo_compra && parseFloat(v.costo_compra) > 0 ? formatCurrency(parseFloat(v.costo_compra)) : '--'}</td>
-                        <td className="px-4 py-2.5 text-right text-stone-500">{v.costo_compra && parseFloat(v.costo_compra) > 0 && v.precio_final ? ((1 - parseFloat(v.costo_compra) / (parseFloat(v.precio_final) / 1.18)) * 100).toFixed(1) + '%' : '--'}</td>
+                        <td className="px-4 py-2.5 text-right text-stone-500">{v.costo_compra && parseFloat(v.costo_compra) > 0 && v.precio_final
+                          ? margenAPorcentaje(derivarPrecios({
+                              costoNeto: parseFloat(v.costo_compra),
+                              precioFinal: parseFloat(v.precio_final),
+                              // IGV real: del producto/empresa (decimal), nunca un 1.18 literal.
+                              igvRate: v.igv_rate != null ? parseFloat(v.igv_rate) : (igvRate / 100),
+                            }).margen).toFixed(1) + '%'
+                          : '--'}</td>
                         <td className={'px-4 py-2.5 text-right font-semibold' + (parseFloat(v.stock_actual) <= 0 ? ' text-rose-500' : ' text-stone-700')}>
                           {user?.stock_entero ? Math.round(parseFloat(v.stock_actual) || 0) : parseFloat(v.stock_actual || 0)}
                         </td>
@@ -1590,7 +1593,10 @@ export default function CotizadorPage() {
                         const costoPrep = (prep.insumos || []).reduce((s, i) => s + costoEnUsoUnidad(i) * (Number(i.cantidad) || 0), 0);
                         const rendimiento = Number(prep.capacidad) || 0;
                         const cantPorUni = Number(prep.cantidad_por_unidad) || 0;
-                        const cantEnUnidadPrep = convertirUnidad(cantPorUni, prep.porcion_unidad || prep.unidad, prep.unidad);
+                        const porcionU = normU(prep.porcion_unidad || prep.unidad);
+                        const rendU = normU(prep.unidad);
+                        const incompat = porcionU && rendU && porcionU !== rendU && !mismaFamilia(porcionU, rendU);
+                        const cantEnUnidadPrep = incompat ? 0 : convertirUnidad(cantPorUni, porcionU, rendU);
                         const alcanzaPara = rendimiento > 0 && cantEnUnidadPrep > 0 ? Math.floor(rendimiento / cantEnUnidadPrep) : 0;
                         const costoPorUni = rendimiento > 0 && cantEnUnidadPrep > 0 ? (costoPrep / rendimiento) * cantEnUnidadPrep : costoPrep;
                         return (
@@ -1615,8 +1621,8 @@ export default function CotizadorPage() {
                                 />
                               </div>
                             </td>
-                            <td className={cx.td + ' text-stone-600'}>{alcanzaPara > 0 ? `${alcanzaPara} ${alcanzaPara === 1 ? 'producto' : 'productos'}` : '--'}</td>
-                            <td className={cx.td + ' text-right text-[var(--accent)] font-semibold'}>{formatCurrency(costoPorUni)}</td>
+                            <td className={cx.td + ' text-stone-600'}>{incompat ? <span className="text-amber-600 text-xs">unidades incompatibles, revisa</span> : (alcanzaPara > 0 ? `${alcanzaPara} ${alcanzaPara === 1 ? 'producto' : 'productos'}` : '--')}</td>
+                            <td className={cx.td + ' text-right text-[var(--accent)] font-semibold'}>{incompat ? <span className="text-amber-600 text-xs font-normal">{porcionU} vs {rendU}</span> : formatCurrency(costoPorUni)}</td>
                           </tr>
                         );
                       })}
@@ -1628,7 +1634,10 @@ export default function CotizadorPage() {
                       const costoPrep = (prep.insumos || []).reduce((s, i) => s + costoEnUsoUnidad(i) * (Number(i.cantidad) || 0), 0);
                       const rendimiento = Number(prep.capacidad) || 0;
                       const cantPorUni = Number(prep.cantidad_por_unidad) || 0;
-                      const cantEnUnidadPrep = convertirUnidad(cantPorUni, prep.porcion_unidad || prep.unidad, prep.unidad);
+                      const porcionU = normU(prep.porcion_unidad || prep.unidad);
+                      const rendU = normU(prep.unidad);
+                      const incompat = porcionU && rendU && porcionU !== rendU && !mismaFamilia(porcionU, rendU);
+                      const cantEnUnidadPrep = incompat ? 0 : convertirUnidad(cantPorUni, porcionU, rendU);
                       const alcanzaPara = rendimiento > 0 && cantEnUnidadPrep > 0 ? Math.floor(rendimiento / cantEnUnidadPrep) : 0;
                       const costoPorUni = rendimiento > 0 && cantEnUnidadPrep > 0 ? (costoPrep / rendimiento) * cantEnUnidadPrep : costoPrep;
                       return (
@@ -1658,8 +1667,14 @@ export default function CotizadorPage() {
                               </div>
                             </div>
                             <div className="text-xs text-stone-500">
-                              {alcanzaPara > 0 && <p>{alcanzaPara} {alcanzaPara === 1 ? 'producto' : 'productos'}/tanda</p>}
-                              <p className="text-[var(--accent)] font-semibold">{formatCurrency(costoPorUni)}</p>
+                              {incompat ? (
+                                <p className="text-amber-600">unidades incompatibles, revisa ({porcionU} vs {rendU})</p>
+                              ) : (
+                                <>
+                                  {alcanzaPara > 0 && <p>{alcanzaPara} {alcanzaPara === 1 ? 'producto' : 'productos'}/tanda</p>}
+                                  <p className="text-[var(--accent)] font-semibold">{formatCurrency(costoPorUni)}</p>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1812,12 +1827,18 @@ export default function CotizadorPage() {
             {/* Pack items desglose */}
             {tipoProducto === 'pack' && pendingPackItems?.length > 0 && (
               <div className="space-y-1 pb-3 mb-1 border-b border-stone-100">
-                {pendingPackItems.map((item, i) => (
-                  <div key={item.id || i} className="flex justify-between text-xs">
-                    <span className="text-stone-400 truncate mr-2">{item.nombre} {item.cantidad > 1 ? `×${item.cantidad}` : ''}</span>
-                    <span className="text-stone-500 shrink-0">{formatCurrency((parseFloat(item.costo_neto) || 0) * (Number(item.cantidad) || 1))}</span>
-                  </div>
-                ))}
+                {pendingPackItems.map((item, i) => {
+                  const efectivo = item.costo_efectivo != null ? parseFloat(item.costo_efectivo) || 0 : parseFloat(item.costo_neto) || 0;
+                  return (
+                    <div key={item.id || i} className="flex justify-between text-xs">
+                      <span className="text-stone-400 truncate mr-2 flex items-center gap-1.5">
+                        {item.nombre} {item.cantidad > 1 ? `×${item.cantidad}` : ''}
+                        {efectivo === 0 && <span className="text-[9px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-1">sin costo</span>}
+                      </span>
+                      <span className="text-stone-500 shrink-0">{formatCurrency(efectivo * (Number(item.cantidad) || 1))}</span>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -1929,7 +1950,7 @@ export default function CotizadorPage() {
                   )}
                   <div id="cotizador-precio" className="flex justify-between items-baseline pt-1">
                     <span className="text-stone-600 text-sm">Precio final</span>
-                    <EditablePrice value={precioFinal} onChange={(v) => setPrecioFinal(Math.round(v * 100) / 100)} className="text-2xl font-bold text-stone-900" />
+                    <EditablePrice value={precioFinal} onChange={(v) => setPrecioFinal(round2(v))} className="text-2xl font-bold text-stone-900" />
                   </div>
                   {costos.precioVenta > 0 && costos.costoNeto > 0 && (
                     <div className="flex justify-between items-center bg-emerald-50 rounded-lg px-3 py-2 mt-1">
@@ -1969,7 +1990,7 @@ export default function CotizadorPage() {
                   </div>
                   <div className="flex justify-between items-baseline pt-1">
                     <span className="text-stone-600 text-sm">Precio final</span>
-                    <EditablePrice value={precioFinalPorcion ?? costos.precioFinalPorcion} onChange={(v) => setPrecioFinalPorcion(Math.round(v * 100) / 100)} className="text-2xl font-bold text-stone-900" />
+                    <EditablePrice value={precioFinalPorcion ?? costos.precioFinalPorcion} onChange={(v) => setPrecioFinalPorcion(round2(v))} className="text-2xl font-bold text-stone-900" />
                   </div>
                 </div>
               </>
@@ -2060,7 +2081,7 @@ export default function CotizadorPage() {
                 <div className="pt-4">
                   <div id="cotizador-precio" className="flex justify-between items-baseline mb-1">
                     <span className="text-stone-600 text-sm">Precio final</span>
-                    <EditablePrice value={precioFinal} onChange={(v) => setPrecioFinal(Math.round(v * 100) / 100)} className="text-2xl font-bold text-stone-900" />
+                    <EditablePrice value={precioFinal} onChange={(v) => setPrecioFinal(round2(v))} className="text-2xl font-bold text-stone-900" />
                   </div>
                   {costos.precioVenta > 0 && costos.costoNeto > 0 && (
                     <div className="flex justify-between items-center bg-emerald-50 rounded-lg px-3 py-2 mb-2">
