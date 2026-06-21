@@ -956,7 +956,7 @@ export default function PLVentasPage() {
                     <td className={cx.td + ' text-center'} onClick={e => e.stopPropagation()}>
                       {v.facturado ? (
                         <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 whitespace-nowrap">
-                          {v.tipo_comprobante === 'factura' ? 'Factura' : 'Boleta'}
+                          {v.comprobante_tipo_doc === '01' ? 'Factura' : 'Boleta'}{v.comprobante_serie && v.comprobante_correlativo ? ` ${v.comprobante_serie}-${v.comprobante_correlativo}` : ''}
                         </span>
                       ) : (
                         <button
