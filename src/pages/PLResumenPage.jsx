@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
 import PeriodoSelector from '../components/PeriodoSelector';
+import InfoTip from '../components/InfoTip';
 import {
   UtensilsCrossed, TrendingUp, TrendingDown, Percent,
   Receipt, ShoppingCart, Target, ArrowUpRight, ArrowDownRight,
@@ -207,7 +208,7 @@ export default function PLResumenPage() {
               <PLRow label="Descuentos" amount={-data.ingresos.descuentos} negative indent />
               {data.ingresos.igv_ventas > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-stone-500 pl-4">IGV por pagar</span>
+                  <span className="text-stone-500 pl-4">IGV por pagar<InfoTip wide text="El IGV es parte del precio que cobras pero NO es tu ingreso: lo recaudas para SUNAT. Por eso se descuenta de tus ventas brutas." /></span>
                   <span className="text-rose-500 font-medium tabular-nums">-{fmt(data.ingresos.igv_ventas)}</span>
                 </div>
               )}
@@ -226,7 +227,7 @@ export default function PLResumenPage() {
             </div>
             <div className="px-3 sm:px-6 py-3 border-t border-stone-200 bg-stone-50/50">
               <div className="flex justify-between text-sm font-bold">
-                <span className="text-stone-700">Ingresos netos</span>
+                <span className="text-stone-700">Ingresos netos<InfoTip wide text="Lo que realmente entra a tu negocio: ventas brutas menos IGV, comisiones y descuentos. Es normal que sea bastante menor que las ventas brutas — esa diferencia no la pierdes, son impuestos y comisiones." /></span>
                 <span className="text-stone-900 tabular-nums">{fmt(data.ingresos.netos)}</span>
               </div>
             </div>
@@ -342,7 +343,7 @@ export default function PLResumenPage() {
             {/* UTILIDAD NETA — BIG, prominent */}
             <div className="px-3 sm:px-6 py-5 border-t-2 border-stone-400">
               <div className="flex justify-between items-baseline">
-                <span className="text-lg font-bold text-stone-900">Utilidad neta</span>
+                <span className="text-lg font-bold text-stone-900">Utilidad neta<InfoTip wide text="Tu ganancia real tras costos y gastos. Puede salir negativa en meses de baja venta o mucha inversión/compra — no es un error del sistema, es una señal para revisar precios o gastos." /></span>
                 <div className="text-right">
                   <span className={`text-2xl font-bold tabular-nums ${parseFloat(data.utilidad_neta) >= 0 ? 'text-teal-600' : 'text-rose-600'}`}>
                     {fmt(data.utilidad_neta)}

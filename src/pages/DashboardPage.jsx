@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { useTerminos } from '../context/TerminosContext';
 import Tooltip from '../components/Tooltip';
+import InfoTip from '../components/InfoTip';
 
 import { convertirUnidad, mismaFamilia } from '../utils/unidades';
 
@@ -989,7 +990,7 @@ export default function DashboardPage() {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h2 className="text-xl font-bold text-stone-900">{detailModal.nombre}</h2>
-                  <p className="text-sm text-stone-500 mt-1">Margen: {formatPercent(detailModal.margen)}</p>
+                  <p className="text-sm text-stone-500 mt-1">Margen: {formatPercent(detailModal.margen)}<InfoTip wide text="El margen se calcula sobre el PRECIO de venta (no sobre el costo). Ej: si cuesta 6 y vendes a 10, el margen es 40% (no 67%). Si sale negativo, tu costo supera tu precio — revisa el precio." /></p>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-stone-900">{formatCurrency(precioComercial(detailModal.precio_final, precioMode))}</p>
