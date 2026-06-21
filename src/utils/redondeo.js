@@ -48,11 +48,14 @@ export function round4(n) {
  * @returns {number}
  */
 export function precioComercial(precio, modo = 'variable') {
-  if (!Number.isFinite(precio) || precio <= 0) return 0;
+  // Robusto a strings: NUMERIC del API llega como "17.6800". Number.isFinite("17.68")
+  // es false -> antes devolvia 0 (precio sugerido en 0 en la seccion de productos).
+  const n = parseFloat(precio);
+  if (!Number.isFinite(n) || n <= 0) return 0;
 
   // Normalizar a 2 decimales primero, para matar ruido de punto flotante
   // (16.0099999 -> 16.01) antes de decidir el redondeo comercial.
-  const p = round2(precio);
+  const p = round2(n);
 
   switch (modo) {
     case 'exacto':
