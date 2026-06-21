@@ -390,6 +390,20 @@ export default function CotizadorPage() {
   );
   const [incluirComision, setIncluirComision] = useState(false);
   const comisionPosPct = parseFloat(user?.comision_pos) || 0;
+
+  // P1b: aviso (no bloqueante) si el producto podria estar exonerado de IGV por ley.
+  const [avisoExonerado, setAvisoExonerado] = useState(null);
+  useEffect(() => {
+    if (!nombre || !(igvRate > 0)) { setAvisoExonerado(null); return; }
+    const t = setTimeout(async () => {
+      try {
+        const r = await api.get(`/productos/check-exonerado?nombre=${encodeURIComponent(nombre)}`);
+        const d = r?.data || r;
+        setAvisoExonerado(d?.exonerado ? d : null);
+      } catch { setAvisoExonerado(null); }
+    }, 500);
+    return () => clearTimeout(t);
+  }, [nombre, igvRate]);
   // Redondeo comercial del precio cobrado (con IGV). Solo DISPLAY en cotizador:
   // no cambia el precio_final guardado.
   const precioMode = user?.precio_decimales || 'variable';
@@ -1136,6 +1150,12 @@ export default function CotizadorPage() {
                 <div>
                   <label className={cx.label}>Nombre del producto</label>
                   <input id="cotizador-nombre" type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} className={cx.input} placeholder={`Ej: Mi ${(t.productos || 'producto').toLowerCase().replace(/s$/, '')}`} autoFocus />
+                  {avisoExonerado && (
+                    <div className="mt-1.5 flex items-start gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+                      <span>⚠️</span>
+                      <span>Este producto podría estar <b>exonerado de IGV por ley</b> (Apéndice I — {avisoExonerado.categoria}). Le estás aplicando IGV; revísalo si corresponde.</span>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className={cx.label}>Presentación<InfoTip text="'Por unidad' si vendes items individuales. 'Presentación entera' si vendes algo divisible en porciones." /></label>
