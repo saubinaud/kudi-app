@@ -145,7 +145,7 @@ export default function PerfilPage() {
   const handleSaveAjustes = async () => {
     setSavingAjustes(true);
     try {
-      const data = await api.put('/auth/ajustes', { tarifa_mo_global: ajustesForm.tarifa_mo_global !== '' ? Number(ajustesForm.tarifa_mo_global) : null, margen_minimo_global: Number(ajustesForm.margen_minimo_global) || 33, comision_pos: ajustesForm.comision_pos !== '' ? Number(ajustesForm.comision_pos) : 0 });
+      const data = await api.put('/auth/ajustes', { tarifa_mo_global: ajustesForm.tarifa_mo_global !== '' ? Number(ajustesForm.tarifa_mo_global) : null, margen_minimo_global: Number(ajustesForm.margen_minimo_global) || 33, comision_pos: ajustesForm.comision_pos !== '' ? Number(ajustesForm.comision_pos) : 0, impedir_venta_sin_stock: !!ajustesForm.impedir_venta_sin_stock });
       setUser({ ...user, ...data.data });
       localStorage.setItem('nodum_user', JSON.stringify({ ...user, ...data.data }));
       toast.success('Ajustes actualizados');
@@ -396,7 +396,7 @@ export default function PerfilPage() {
         <div className={cx.card + ' p-5'}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-stone-900">Ajustes globales</h3>
-            {!editingAjustes && <button onClick={() => { setAjustesForm({ tarifa_mo_global: user?.tarifa_mo_global || '', margen_minimo_global: user?.margen_minimo_global || 33, comision_pos: user?.comision_pos || 0 }); setEditingAjustes(true); }} className={cx.btnGhost + ' flex items-center gap-1'}><Pencil size={16} /> Editar</button>}
+            {!editingAjustes && <button onClick={() => { setAjustesForm({ tarifa_mo_global: user?.tarifa_mo_global || '', margen_minimo_global: user?.margen_minimo_global || 33, comision_pos: user?.comision_pos || 0, impedir_venta_sin_stock: user?.impedir_venta_sin_stock || false }); setEditingAjustes(true); }} className={cx.btnGhost + ' flex items-center gap-1'}><Pencil size={16} /> Editar</button>}
           </div>
           {editingAjustes ? (
             <div className="space-y-4 max-w-sm">
@@ -413,6 +413,13 @@ export default function PerfilPage() {
                 <input type="number" step="0.1" min="0" max="20" value={ajustesForm.comision_pos} onChange={e => setAjustesForm({ ...ajustesForm, comision_pos: e.target.value })} className={cx.input} placeholder="Ej: 3.5" />
                 <p className="text-[11px] text-stone-400 mt-1">Se suma al total cuando el cliente paga con tarjeta</p>
               </div>
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={!!ajustesForm.impedir_venta_sin_stock} onChange={e => setAjustesForm({ ...ajustesForm, impedir_venta_sin_stock: e.target.checked })} className="w-4 h-4 rounded" />
+                  <span className="text-sm font-medium text-stone-700">Impedir vender sin stock</span>
+                </label>
+                <p className="text-[11px] text-stone-400 mt-1">Por defecto se permite vender aunque no haya stock (queda en negativo, con aviso). Actívalo para bloquear la venta de productos sin stock disponible.</p>
+              </div>
               <div className="flex gap-2">
                 <button onClick={handleSaveAjustes} disabled={savingAjustes} className={cx.btnPrimary + ' flex items-center gap-2'}>
                   {savingAjustes ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Save size={16} /> Guardar</>}
@@ -425,6 +432,7 @@ export default function PerfilPage() {
               <div><label className={cx.label}>Tarifa MO / hora</label><p className="text-stone-800 text-sm">{user?.tarifa_mo_global ? `${user?.simbolo || 'S/'} ${Number(user.tarifa_mo_global).toFixed(2)}` : 'No configurada'}</p></div>
               <div><label className={cx.label}>Margen minimo</label><p className="text-stone-800 text-sm">{user?.margen_minimo_global || 33}%</p></div>
               <div><label className={cx.label}>Comisión POS tarjeta</label><p className="text-stone-800 text-sm">{user?.comision_pos ? `${Number(user.comision_pos)}%` : 'No configurada'}</p></div>
+              <div><label className={cx.label}>Venta sin stock</label><p className="text-stone-800 text-sm">{user?.impedir_venta_sin_stock ? 'Bloqueada' : 'Permitida'}</p></div>
             </div>
           )}
         </div>

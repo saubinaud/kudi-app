@@ -1125,7 +1125,11 @@ export default function PLVentasPage() {
                       )}
                       <div className="flex gap-2 flex-wrap">
                         {v.facturado && (
-                          <span className={cx.badge('bg-emerald-50 text-emerald-600')}>Facturado</span>
+                          <span className={cx.badge('bg-emerald-50 text-emerald-600')}>
+                            {v.comprobante_serie && v.comprobante_correlativo
+                              ? `${v.comprobante_tipo_doc === '01' ? 'Factura' : 'Boleta'} ${v.comprobante_serie}-${v.comprobante_correlativo}`
+                              : 'Facturado'}
+                          </span>
                         )}
                         {!v.facturado && (
                           <button onClick={() => openEmitirModal(v)} className={cx.btnGhost + ' text-xs text-[var(--accent)] flex items-center gap-1'}>
@@ -1926,7 +1930,12 @@ export default function PLVentasPage() {
                 {ventaDetalle.facturado && (
                   <div>
                     <p className="text-[10px] text-stone-400 uppercase tracking-wider">Comprobante</p>
-                    <p className="text-sm font-medium text-emerald-700">{ventaDetalle.tipo_comprobante === 'factura' ? 'Factura' : 'Boleta'}</p>
+                    <p className="text-sm font-medium text-emerald-700">
+                      {ventaDetalle.comprobante_tipo_doc === '01' ? 'Factura' : 'Boleta'}
+                      {ventaDetalle.comprobante_serie && ventaDetalle.comprobante_correlativo
+                        ? ` ${ventaDetalle.comprobante_serie}-${ventaDetalle.comprobante_correlativo}`
+                        : ''}
+                    </p>
                   </div>
                 )}
               </div>
