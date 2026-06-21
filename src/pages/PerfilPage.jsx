@@ -94,9 +94,13 @@ export default function PerfilPage() {
     try {
       const data = await api.put('/auth/perfil', { ...profileForm });
       const updatedUser = data.data?.user || data.data;
-      setUser(updatedUser);
-      localStorage.setItem('nodum_user', JSON.stringify(updatedUser));
-      localStorage.setItem('nodum_moneda_simbolo', updatedUser.simbolo || 'S/');
+      // MERGE, no reemplazar: el endpoint de perfil no devuelve plan/trial_ends_at/
+      // comision_pos. Reemplazar los borraba y ocultaba modulos del sidebar (ej. Mesas
+      // requiere plan 'empresario') hasta recargar. El merge preserva esos campos.
+      const mergedUser = { ...user, ...updatedUser };
+      setUser(mergedUser);
+      localStorage.setItem('nodum_user', JSON.stringify(mergedUser));
+      localStorage.setItem('nodum_moneda_simbolo', mergedUser.simbolo || 'S/');
       toast.success('Perfil actualizado');
       if (profileForm.giro_negocio_id !== (user?.giro_negocio_id || '')) { window.location.reload(); return; }
       setEditing(false);
