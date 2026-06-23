@@ -111,7 +111,9 @@ export default function MesasPage() {
 
   const handleDuplicarMesa = async (mesaId) => {
     const mesa = mesas.find(m => m.id === mesaId);
-    if (!mesa || !selectedPiso) return;
+    if (!mesa) return;
+    const pisoId = mesa.piso_id || selectedPiso; // robusto: no depende de selectedPiso (falla en onboarding)
+    if (!pisoId) return;
     const w = mesa.ancho ?? 3, h = mesa.alto ?? 2;
     // Find first free spot: try right, then below, then further right
     const candidates = [
@@ -120,7 +122,7 @@ export default function MesasPage() {
       { x: (mesa.pos_x ?? 0) + w + 1, y: (mesa.pos_y ?? 0) + h + 1 },
       { x: (mesa.pos_x ?? 0) + (w + 1) * 2, y: mesa.pos_y ?? 0 },
     ];
-    const pisoMesas = mesas.filter(m => m.piso_id === selectedPiso);
+    const pisoMesas = mesas.filter(m => m.piso_id === pisoId);
     const overlaps = (x, y) => pisoMesas.some(m => {
       const mx = m.pos_x ?? 0, my = m.pos_y ?? 0, mw = m.ancho ?? 3, mh = m.alto ?? 2;
       return x < mx + mw && x + w > mx && y < my + mh && y + h > my;
@@ -128,15 +130,19 @@ export default function MesasPage() {
     const spot = candidates.find(c => !overlaps(c.x, c.y)) || candidates[0];
     try {
       const res = await api.post('/mesas', {
-        piso_id: selectedPiso,
+        piso_id: pisoId,
         pos_x: spot.x,
         pos_y: spot.y,
         ancho: w,
         alto: h,
         capacidad: mesa.capacidad ?? 4,
-        redondeo: mesa.redondeo ?? 15,
+        nombre: mesa.nombre || null,
       });
-      const newMesa = res?.data || res;
+      let newMesa = res?.data || res;
+      // POST /mesas no acepta redondeo: copiarlo con un PUT posterior si la original lo tenía.
+      if (mesa.redondeo != null && mesa.redondeo !== newMesa.redondeo) {
+        try { await api.put(`/mesas/${newMesa.id}`, { redondeo: mesa.redondeo }); newMesa = { ...newMesa, redondeo: mesa.redondeo }; } catch {}
+      }
       setMesas(prev => [...prev, newMesa]);
       toast.success(`Mesa ${newMesa.numero} creada`);
     } catch (err) {
@@ -615,7 +621,20 @@ export default function MesasPage() {
             <div className="space-y-3 mb-6">
               {configPisos.map(piso => (
                 <div key={piso.id} className="flex items-center gap-3 px-4 py-3 bg-stone-50 rounded-xl">
-                  <span className="font-medium text-stone-800 text-sm flex-1">{piso.nombre}</span>
+                  <input
+                    type="text"
+                    defaultValue={piso.nombre}
+                    onBlur={async (e) => {
+                      const val = e.target.value.trim();
+                      if (!val || val === piso.nombre) return;
+                      try {
+                        await api.put(`/mesas/pisos/${piso.id}`, { nombre: val });
+                        setConfigPisos(prev => prev.map(p => p.id === piso.id ? { ...p, nombre: val } : p));
+                        setPisos(prev => prev.map(p => p.id === piso.id ? { ...p, nombre: val } : p));
+                      } catch { toast.error('No se pudo renombrar el piso'); }
+                    }}
+                    className="font-medium text-stone-800 text-sm flex-1 bg-transparent border border-transparent hover:border-stone-200 focus:border-stone-300 rounded-lg px-2 py-1 focus:outline-none"
+                  />
                   <div className="flex items-center gap-1.5">
                     <Users size={12} className="text-stone-400" />
                     <input

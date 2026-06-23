@@ -416,9 +416,9 @@ export default function PerfilPage() {
               <div>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={!!ajustesForm.impedir_venta_sin_stock} onChange={e => setAjustesForm({ ...ajustesForm, impedir_venta_sin_stock: e.target.checked })} className="w-4 h-4 rounded" />
-                  <span className="text-sm font-medium text-stone-700">Impedir vender sin stock</span>
+                  <span className="text-sm font-medium text-stone-700">Bloquear venta cuando no haya stock</span>
                 </label>
-                <p className="text-[11px] text-stone-400 mt-1">Por defecto se permite vender aunque no haya stock (queda en negativo, con aviso). Actívalo para bloquear la venta de productos sin stock disponible.</p>
+                <p className="text-[11px] text-stone-400 mt-1">⚠️ <b>Desmarcado (recomendado):</b> se permite vender aunque no haya stock (queda en negativo, con aviso). <b>Marcado:</b> se bloquea la venta de productos sin stock disponible.</p>
               </div>
               <div className="flex gap-2">
                 <button onClick={handleSaveAjustes} disabled={savingAjustes} className={cx.btnPrimary + ' flex items-center gap-2'}>

@@ -1194,7 +1194,7 @@ export default function CotizadorPage() {
                 {imagenUrl && imagenUrl.trim() ? (
                   <div className="flex items-start gap-3">
                     <img src={imagenUrl.trim()} alt="Producto" className="w-20 h-20 rounded-xl object-cover border border-stone-200" onError={(e) => { e.target.style.display = 'none'; }} />
-                    <div className="flex-1 space-y-1">
+                    <div className="flex-1 min-w-0 space-y-1">
                       <p className="text-[10px] text-stone-400 truncate">{imagenUrl}</p>
                       <button onClick={() => setImagenUrl('')} className="text-xs text-rose-500 hover:text-rose-700 flex items-center gap-1">
                         <Trash2 size={12} /> Quitar imagen
