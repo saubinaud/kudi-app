@@ -10,6 +10,7 @@ import { precioComercial } from '../utils/redondeo';
 import { desglosarIGV } from '../utils/igv';
 import ProductGrid from '../components/ProductGrid';
 import PagoSheet from '../components/PagoSheet';
+import { API_BASE } from '../config/api';
 import { ArrowLeft, Clock, Users, Minus, Plus, Trash2, X, Package, CheckCircle, Banknote, CreditCard, Smartphone, Send, FileText, ShoppingCart } from 'lucide-react';
 
 function formatTimer(abiertaAt) {
@@ -69,6 +70,7 @@ export default function MesaDetailPage() {
   const [lastSaleCode, setLastSaleCode] = useState(null);
   const [lastSaleItems, setLastSaleItems] = useState([]);
   const [emittingBoleta, setEmittingBoleta] = useState(false);
+  const [lastSaleConIgv, setLastSaleConIgv] = useState(true); // sin IGV -> ticket referencial, no boleta
 
   const tasaIgvPOS = parseFloat(user?.igv_rate) || 0; // tasa real configurada (empresa), no se asume 18%
   const comisionPosPct = parseFloat(user?.comision_pos) || 0;
@@ -331,6 +333,7 @@ export default function MesaDetailPage() {
       const venta = res?.data || res;
       setLastSaleId(venta.id);
       setLastSaleCode(venta.codigo_pedido || venta.nro_pedido);
+      setLastSaleConIgv(ventaConIgv); // sin IGV -> ticket referencial; con IGV -> boleta
       // lastSaleItems para la boleta: precio cobrado + tasa efectiva por item (espejo del back).
       const itemIgvRate = ventaConIgv ? tasaIgvPOS : 0;
       setLastSaleItems(allItems.map(i => ({
@@ -590,6 +593,7 @@ export default function MesaDetailPage() {
             <h3 className="text-xl font-bold text-stone-900 mb-1">Mesa cobrada</h3>
             {lastSaleCode && <p className="text-sm text-stone-500 font-mono mb-4">{lastSaleCode}</p>}
             <div className="space-y-2">
+              {lastSaleConIgv ? (
               <button disabled={emittingBoleta} onClick={async () => {
                 setEmittingBoleta(true);
                 try {
@@ -602,6 +606,14 @@ export default function MesaDetailPage() {
               }} className={cx.btnPrimary + ' w-full py-2.5 text-sm'}>
                 {emittingBoleta ? <span className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Emitiendo...</span> : 'Emitir boleta'}
               </button>
+              ) : (
+              <button onClick={() => {
+                window.open(`${API_BASE.replace('/api','')}/api/ticket/venta/${lastSaleId}?token=${localStorage.getItem('nodum_token')}`, '_blank');
+                navigate(`/mesas${mesaInfo?.piso_id ? `?piso=${mesaInfo.piso_id}` : ''}`);
+              }} className={cx.btnPrimary + ' w-full py-2.5 text-sm'} title="Venta sin IGV: no se emite comprobante oficial SUNAT">
+                Ticket referencial
+              </button>
+              )}
               <button onClick={() => navigate(`/mesas${mesaInfo?.piso_id ? `?piso=${mesaInfo.piso_id}` : ''}`)} className={cx.btnGhost + ' w-full py-2.5 text-sm'}>Volver a mesas</button>
             </div>
           </motion.div>

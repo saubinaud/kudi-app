@@ -14,6 +14,7 @@ import { X, Package, CheckCircle, Minus, Plus, ShoppingCart, Banknote, CreditCar
 import Tooltip from '../components/Tooltip';
 import ProductGrid from '../components/ProductGrid';
 import PagoSheet from '../components/PagoSheet';
+import { API_BASE } from '../config/api';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -86,6 +87,7 @@ export default function POSPage() {
   const [lastSaleCode, setLastSaleCode] = useState(null);
   const [emittingBoleta, setEmittingBoleta] = useState(false);
   const [lastSaleItems, setLastSaleItems] = useState([]);
+  const [lastSaleConIgv, setLastSaleConIgv] = useState(true); // si la venta fue sin IGV -> ticket referencial, no boleta
   const [lastClienteId, setLastClienteId] = useState(null);
 
   // Fetch products + zonas on mount
@@ -389,6 +391,7 @@ export default function POSPage() {
       const saleData = result?.data || result;
       setLastSaleId(saleData?.id);
       setLastSaleCode(saleData?.codigo_pedido);
+      setLastSaleConIgv(ventaConIgv); // sin IGV -> ticket referencial; con IGV -> boleta
       toast.success('Venta registrada');
       if (caja) loadCaja(); // refresh counters
       setLastSaleItems(cartItems.map(i => ({
@@ -1065,6 +1068,7 @@ export default function POSPage() {
               <p className="text-sm text-stone-500 font-mono mb-4">{lastSaleCode}</p>
             )}
             <div className="space-y-2">
+              {lastSaleConIgv ? (
               <button
                 disabled={emittingBoleta}
                 onClick={async () => {
@@ -1099,6 +1103,18 @@ export default function POSPage() {
                   </span>
                 ) : 'Emitir boleta'}
               </button>
+              ) : (
+              <button
+                onClick={() => {
+                  window.open(`${API_BASE.replace('/api','')}/api/ticket/venta/${lastSaleId}?token=${localStorage.getItem('nodum_token')}`, '_blank');
+                  setLastSaleId(null);
+                }}
+                className={cx.btnPrimary + ' w-full py-2.5 text-sm'}
+                title="Venta sin IGV: no se emite comprobante oficial SUNAT"
+              >
+                Ticket referencial
+              </button>
+              )}
               <button
                 onClick={() => setLastSaleId(null)}
                 className={cx.btnGhost + ' w-full py-2.5 text-sm'}
