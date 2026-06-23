@@ -750,7 +750,7 @@ export default function PLVentasPage() {
   const ventaDisplayName = (v) => {
     if (v.shopify_order_name) return `Shopify ${v.shopify_order_name}`;
     if (v.items?.length > 1) return `${v.items.length} productos`;
-    return v.items?.[0]?.producto_nombre || v.producto_nombre || '-';
+    return v.items?.[0]?.producto_nombre || v.items?.[0]?.descripcion_custom || v.producto_nombre || '-';
   };
 
   return (
@@ -1036,7 +1036,7 @@ export default function PLVentasPage() {
                           {v.items.map((item, idx) => (
                             <div key={idx} className="flex justify-between items-start text-xs gap-2">
                               <div className="min-w-0">
-                                <span className="text-stone-700">{item.producto_nombre}</span>
+                                <span className="text-stone-700">{item.producto_nombre || item.descripcion_custom || 'Producto'}</span>
                                 {item.variante_nombre && <span className="text-stone-400 ml-1">({item.variante_nombre})</span>}
                                 <span className="text-stone-500"> x{item.cantidad}</span>
                                 {item.stock_descontado && (
@@ -1777,7 +1777,7 @@ export default function PLVentasPage() {
                     {emitirModal.items.map((item, idx) => (
                       <div key={idx} className="flex justify-between text-sm">
                         <div>
-                          <span className="text-stone-800">{item.producto_nombre}</span>
+                          <span className="text-stone-800">{item.producto_nombre || item.descripcion_custom || 'Producto'}</span>
                           {item.variante_nombre && <span className="text-stone-400 text-xs ml-1">({item.variante_nombre})</span>}
                           <span className="text-stone-500"> x{item.cantidad}</span>
                         </div>
@@ -1986,7 +1986,7 @@ export default function PLVentasPage() {
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-stone-800 truncate">{item.producto_nombre}{item.variante_nombre ? ` · ${item.variante_nombre}` : ''}</p>
+                        <p className="text-sm font-medium text-stone-800 truncate">{item.producto_nombre || item.descripcion_custom || 'Producto'}{item.variante_nombre ? ` · ${item.variante_nombre}` : ''}</p>
                         <p className="text-[10px] text-stone-400 font-mono">{item.producto_sku || ''}</p>
                       </div>
                       <div className="text-right flex-shrink-0">
