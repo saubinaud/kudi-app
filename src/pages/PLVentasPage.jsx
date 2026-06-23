@@ -168,6 +168,15 @@ export default function PLVentasPage() {
   const [selectedVenta, setSelectedVenta] = useState(null);
   const [ventaDetalle, setVentaDetalle] = useState(null);
 
+  // Venta rápida (Plan 1): vender con solo monto + cliente
+  const [rapidaOpen, setRapidaOpen] = useState(false);
+  const [rapidaForm, setRapidaForm] = useState({ monto_total: '', con_igv: true, fecha: todayStr(), cuenta_id: '', cliente_id: '', nota: '' });
+  const [savingRapida, setSavingRapida] = useState(false);
+  // Completar una venta rápida con los productos reales (Fase 4)
+  const [agregarTarget, setAgregarTarget] = useState(null);
+  const [agregarItems, setAgregarItems] = useState([]);
+  const [savingAgregar, setSavingAgregar] = useState(false);
+
   // Section tabs + estado filter
   const [seccionTab, setSeccionTab] = useState('todas');
   const [estadoFilter, setEstadoFilter] = useState('todos');
@@ -347,6 +356,88 @@ export default function PLVentasPage() {
       }
       return { ...item, precio_unitario: precio };
     }));
+  };
+
+  // ===== Venta rápida (Plan 1) =====
+  const openRapida = () => {
+    setRapidaForm({ monto_total: '', con_igv: true, fecha: todayStr(), cuenta_id: '', cliente_id: '', nota: '' });
+    setRapidaOpen(true);
+  };
+
+  const saveRapida = async () => {
+    const monto = parseFloat(rapidaForm.monto_total);
+    if (!Number.isFinite(monto) || monto <= 0) { toast.error('Ingresa un monto mayor a 0'); return; }
+    setSavingRapida(true);
+    try {
+      await api.post('/pl/ventas/rapida', {
+        monto_total: monto,
+        con_igv: rapidaForm.con_igv,
+        fecha: rapidaForm.fecha,
+        cuenta_id: rapidaForm.cuenta_id || null,
+        cliente_id: rapidaForm.cliente_id || null,
+        nota: rapidaForm.nota || null,
+      });
+      toast.success('Venta rápida registrada');
+      setRapidaOpen(false);
+      loadVentas(periodo);
+    } catch (err) {
+      toast.error(err.message || 'Error registrando venta rápida');
+    } finally {
+      setSavingRapida(false);
+    }
+  };
+
+  // ===== Completar venta rápida con productos reales (Fase 4) =====
+  const openAgregar = (venta) => {
+    setAgregarTarget(venta);
+    setAgregarItems([{ _id: Date.now(), producto_id: null, variante_id: null, cantidad: 1, precio_unitario: '' }]);
+  };
+  const updateAgregarItem = (id, patch) => setAgregarItems(prev => prev.map(i => i._id === id ? { ...i, ...patch } : i));
+  const addAgregarItem = () => setAgregarItems(prev => [...prev, { _id: Date.now() + Math.random(), producto_id: null, variante_id: null, cantidad: 1, precio_unitario: '' }]);
+  const removeAgregarItem = (id) => setAgregarItems(prev => prev.filter(i => i._id !== id));
+  const selectAgregarProducto = (id, producto) => {
+    if (!producto) { updateAgregarItem(id, { producto_id: null, producto_nombre: '', variante_id: null, precio_unitario: '' }); return; }
+    const hasVariants = producto.variantes && producto.variantes.length > 0;
+    updateAgregarItem(id, {
+      producto_id: producto.id,
+      producto_nombre: producto.nombre,
+      variante_id: null,
+      precio_unitario: hasVariants ? '' : (parseFloat(producto.precio_final) || ''),
+    });
+  };
+
+  const saveAgregar = async () => {
+    const valid = agregarItems.filter(i => i.producto_id);
+    if (valid.length === 0) { toast.error('Agrega al menos un producto'); return; }
+    // Validar variante seleccionada cuando el producto la requiere
+    const missingVar = valid.find(i => {
+      const vs = getProductVariantes(i.producto_id);
+      return vs && vs.length > 0 && !i.variante_id;
+    });
+    if (missingVar) {
+      const prod = enrichedProductos.find(p => p.id === missingVar.producto_id);
+      toast.error(`Selecciona una variante para "${prod?.nombre || 'producto'}"`);
+      return;
+    }
+    setSavingAgregar(true);
+    try {
+      await api.patch(`/pl/ventas/${agregarTarget.id}/agregar-items`, {
+        items: valid.map(i => ({
+          producto_id: i.producto_id,
+          variante_id: i.variante_id || null,
+          cantidad: parseInt(i.cantidad) || 1,
+          ...(i.precio_unitario !== '' && i.precio_unitario != null ? { precio_unitario: parseFloat(i.precio_unitario) } : {}),
+        })),
+      });
+      toast.success('Productos agregados — COGS y stock actualizados');
+      setAgregarTarget(null);
+      if (selectedVenta) openDetalle(selectedVenta);
+      loadVentas(periodo);
+    } catch (err) {
+      toast.error(err.message || 'Error agregando productos');
+    } finally {
+      setSavingAgregar(false);
+    }
   };
 
   // Helper to get variants for a product
@@ -777,6 +868,9 @@ export default function PLVentasPage() {
           />
         </div>
         <div className="flex items-center gap-3">
+          <button onClick={openRapida} className={cx.btnSecondary + ' flex items-center gap-2'}>
+            <DollarSign size={16} /> Venta rápida
+          </button>
           <button onClick={openNewVenta} className={cx.btnPrimary + ' flex items-center gap-2'}>
             <Plus size={16} /> Registrar venta
           </button>
@@ -1759,6 +1853,140 @@ export default function PLVentasPage() {
         </div>
       )}
 
+      {/* Venta rápida modal (Plan 1) */}
+      {rapidaOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setRapidaOpen(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-lg font-bold text-stone-900">Venta rápida</h3>
+                <button onClick={() => setRapidaOpen(false)} className={cx.btnIcon}><X size={16} /></button>
+              </div>
+              <p className="text-xs text-stone-400 mb-4">Vende con solo monto y cliente. Luego puedes abrir la orden y agregar los productos.</p>
+              <div className="space-y-4">
+                <div>
+                  <label className={cx.label}>Monto cobrado (S/)</label>
+                  <input type="number" inputMode="decimal" step="0.01" min="0" autoFocus
+                    value={rapidaForm.monto_total}
+                    onChange={e => setRapidaForm(f => ({ ...f, monto_total: e.target.value }))}
+                    className={cx.input + ' text-lg font-bold'} placeholder="0.00" />
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={rapidaForm.con_igv}
+                    onChange={e => setRapidaForm(f => ({ ...f, con_igv: e.target.checked }))}
+                    className="accent-[var(--accent)] w-4 h-4" />
+                  <span className="text-sm text-stone-700">Con IGV (permite emitir boleta)</span>
+                </label>
+                {!rapidaForm.con_igv && (
+                  <p className="text-[11px] text-amber-600 -mt-2">Sin IGV solo permite ticket referencial, no boleta oficial.</p>
+                )}
+                <div>
+                  <label className={cx.label}>Fecha</label>
+                  <input type="date" value={rapidaForm.fecha}
+                    onChange={e => setRapidaForm(f => ({ ...f, fecha: e.target.value }))} className={cx.input} />
+                </div>
+                {cuentas.length > 0 && (
+                  <div>
+                    <label className={cx.label}>Cuenta de ingreso</label>
+                    <CustomSelect options={[{ value: '', label: 'Sin especificar' }, ...cuentas]}
+                      value={rapidaForm.cuenta_id}
+                      onChange={v => setRapidaForm(f => ({ ...f, cuenta_id: v }))}
+                      placeholder="¿A qué cuenta entró?" />
+                  </div>
+                )}
+                <div>
+                  <label className={cx.label}>Cliente (opcional)</label>
+                  <CustomSelect options={[{ value: '', label: 'Sin cliente (Varios)' }, ...ventaClientes]}
+                    value={rapidaForm.cliente_id || ''}
+                    onChange={v => setRapidaForm(f => ({ ...f, cliente_id: v }))}
+                    placeholder="Buscar por DNI/RUC/nombre..." />
+                </div>
+                <div>
+                  <label className={cx.label}>Nota (opcional)</label>
+                  <input type="text" value={rapidaForm.nota}
+                    onChange={e => setRapidaForm(f => ({ ...f, nota: e.target.value }))}
+                    className={cx.input} placeholder="Ej: cliente pidió boleta" />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button onClick={saveRapida} disabled={savingRapida} className={cx.btnPrimary + ' flex-1'}>
+                  {savingRapida ? 'Guardando...' : 'Registrar venta'}
+                </button>
+                <button onClick={() => setRapidaOpen(false)} className={cx.btnSecondary}>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Completar venta rápida — agregar productos (Fase 4) */}
+      {agregarTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setAgregarTarget(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-lg font-bold text-stone-900">Agregar productos</h3>
+                <button onClick={() => setAgregarTarget(null)} className={cx.btnIcon}><X size={16} /></button>
+              </div>
+              <p className="text-xs text-stone-400 mb-4">{agregarTarget.nro_pedido || agregarTarget.codigo_pedido} · Total cobrado <span className="font-semibold text-stone-600">{formatCurrency(agregarTarget.total)}</span> (no cambia)</p>
+              <div className="space-y-2">
+                <label className={cx.label}>Productos vendidos</label>
+                {agregarItems.map(item => {
+                  const variantes = item.producto_id ? getProductVariantes(item.producto_id) : null;
+                  return (
+                  <div key={item._id} className="bg-white rounded-xl border border-stone-200 p-3 space-y-2.5">
+                    <div className="flex items-start gap-2.5">
+                      <div className="flex-1 min-w-0">
+                        <SearchableSelect options={enrichedProductos} value={item.producto_id}
+                          onChange={prod => selectAgregarProducto(item._id, prod)} placeholder="Producto..." />
+                      </div>
+                      {agregarItems.length > 1 && (
+                        <button onClick={() => removeAgregarItem(item._id)} className={cx.btnIcon + ' hover:text-rose-600 flex-shrink-0 mt-1'}>
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-0 bg-stone-100 rounded-lg">
+                        <button type="button" onClick={() => updateAgregarItem(item._id, { cantidad: Math.max(1, (parseInt(item.cantidad) || 1) - 1) })} className="w-7 h-7 flex items-center justify-center text-stone-500 hover:text-stone-800 rounded-l-lg hover:bg-stone-50"><Minus size={12} /></button>
+                        <span className="text-sm font-bold w-7 text-center text-stone-800">{item.cantidad}</span>
+                        <button type="button" onClick={() => updateAgregarItem(item._id, { cantidad: (parseInt(item.cantidad) || 1) + 1 })} className="w-7 h-7 flex items-center justify-center text-stone-500 hover:text-stone-800 rounded-r-lg hover:bg-stone-50"><Plus size={12} /></button>
+                      </div>
+                      <span className="text-xs text-stone-400">x</span>
+                      <input type="number" step="0.01" min="0" value={item.precio_unitario}
+                        onChange={e => updateAgregarItem(item._id, { precio_unitario: e.target.value })}
+                        className={cx.input + ' w-24 text-sm text-center'} placeholder="Precio" />
+                    </div>
+                    {variantes && variantes.length > 0 && (
+                      <div>
+                        <label className={cx.label}>Variante</label>
+                        <select className={cx.input} value={item.variante_id || ''} onChange={e => updateAgregarItem(item._id, { variante_id: e.target.value || null })}>
+                          <option value="">Seleccionar...</option>
+                          {variantes.map(v => (<option key={v.id} value={v.id}>{v.nombre} — Stock: {v.stock_actual}</option>))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                  );
+                })}
+                <button onClick={addAgregarItem} className={cx.btnGhost + ' text-xs flex items-center gap-1'}>
+                  <Plus size={16} /> Agregar otro
+                </button>
+              </div>
+              <p className="text-[11px] text-stone-400 mt-3">Esto registra el costo (COGS) y descuenta stock. El total cobrado y la boleta no cambian.</p>
+              <div className="flex gap-3 mt-5">
+                <button onClick={saveAgregar} disabled={savingAgregar} className={cx.btnPrimary + ' flex-1'}>
+                  {savingAgregar ? 'Guardando...' : 'Guardar productos'}
+                </button>
+                <button onClick={() => setAgregarTarget(null)} className={cx.btnSecondary}>Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Emitir comprobante modal */}
       {emitirModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1974,7 +2202,20 @@ export default function PLVentasPage() {
 
               {/* Products */}
               <div>
-                <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-3">Productos</p>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider">Productos</p>
+                  {ventaDetalle.es_rapida && !ventaDetalle.items_completados && (
+                    <span className="text-[10px] font-semibold text-amber-700 bg-amber-100 rounded-full px-2 py-0.5">Sin productos</span>
+                  )}
+                </div>
+                {ventaDetalle.es_rapida && !ventaDetalle.items_completados && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3">
+                    <p className="text-xs text-stone-600">Venta rápida sin desglose. Agrega los productos reales para registrar el <span className="font-semibold">costo (COGS)</span> y descontar <span className="font-semibold">stock</span>. El monto cobrado y la boleta no cambian.</p>
+                    <button onClick={() => openAgregar(ventaDetalle)} className={cx.btnPrimary + ' text-xs flex items-center gap-1.5 mt-2.5'}>
+                      <Plus size={14} /> Agregar productos
+                    </button>
+                  </div>
+                )}
                 <div className="bg-stone-50 rounded-xl overflow-hidden">
                   {(ventaDetalle.items || []).map((item, idx) => (
                     <div key={item.id || idx} className={`flex items-center gap-3 px-4 py-3 ${idx > 0 ? 'border-t border-stone-200' : ''}`}>
