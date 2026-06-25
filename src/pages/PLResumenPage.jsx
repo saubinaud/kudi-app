@@ -249,6 +249,12 @@ export default function PLResumenPage() {
               {data.cogs.costo_producto > 0 && (
                 <PLRow label="Costo de producto" amount={data.cogs.costo_producto} indent note={pct(data.cogs.costo_producto, ingresosNetos)} />
               )}
+              {data.cogs.mo_absorbido > 0 && (
+                <PLRow label="Mano de obra" amount={data.cogs.mo_absorbido} indent note={pct(data.cogs.mo_absorbido, ingresosNetos)} />
+              )}
+              {data.cogs.cif_absorbido > 0 && (
+                <PLRow label="Costos indirectos (CIF)" amount={data.cogs.cif_absorbido} indent note={pct(data.cogs.cif_absorbido, ingresosNetos)} />
+              )}
             </div>
             <div className="px-3 sm:px-6 py-3 border-t border-stone-200 bg-stone-50/50">
               <div className="flex justify-between text-sm font-bold">
@@ -290,7 +296,12 @@ export default function PLResumenPage() {
 
             {/* GASTOS OPERATIVOS */}
             <div className="px-3 sm:px-6 py-4 bg-stone-50 border-t border-b border-stone-100">
-              <p className="text-xs font-bold text-stone-500 uppercase tracking-wider">Gastos operativos</p>
+              <p className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
+                Gastos operativos
+                {data.variacion_absorcion && (data.variacion_absorcion.mo_absorbido > 0 || data.variacion_absorcion.cif_absorbido > 0) && (
+                  <InfoTip wide text="Solo gastos administrativos y otros. La mano de obra y los costos indirectos (CIF) NO aparecen aquí: ya están dentro del costo de ventas (COGS), absorbidos en cada producto vendido. La diferencia entre lo absorbido y el gasto real se muestra abajo como 'Variación de absorción'." />
+                )}
+              </p>
             </div>
             <div className="px-3 sm:px-6 py-3 space-y-2">
               <PLRow label="Gastos fijos" amount={data.gastos.fijos} indent />
@@ -302,6 +313,46 @@ export default function PLResumenPage() {
                 <span className="text-stone-900 tabular-nums">{fmt(data.gastos.total)}</span>
               </div>
             </div>
+
+            {/* VARIACIÓN DE ABSORCIÓN */}
+            {data.variacion_absorcion && (data.variacion_absorcion.mo_absorbido > 0 || data.variacion_absorcion.cif_absorbido > 0 || data.variacion_absorcion.total !== 0) && (
+              <>
+                <div className="px-3 sm:px-6 py-4 bg-stone-50 border-t border-b border-stone-100">
+                  <p className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center">
+                    Variación de absorción
+                    <InfoTip wide text="Compara lo que cargaste a tus productos (absorbido) contra lo que realmente gastaste en mano de obra y costos indirectos. Si es positivo (sub-absorción) gastaste más de lo previsto: hay capacidad ociosa o costos extra. Si es negativo (sobre-absorción) gastaste menos: es un crédito a tu favor." />
+                  </p>
+                </div>
+                <div className="px-3 sm:px-6 py-3 space-y-2">
+                  {data.variacion_absorcion.mo_absorbido > 0 && (
+                    <PLRow
+                      label="Mano de obra"
+                      amount={data.variacion_absorcion.mo_absorbido}
+                      indent
+                      note={`Real: ${fmt(data.variacion_absorcion.mo_real)}`}
+                    />
+                  )}
+                  {data.variacion_absorcion.cif_absorbido > 0 && (
+                    <PLRow
+                      label="Costos indirectos (CIF)"
+                      amount={data.variacion_absorcion.cif_absorbido}
+                      indent
+                      note={`Real: ${fmt(data.variacion_absorcion.cif_real)}`}
+                    />
+                  )}
+                </div>
+                <div className="px-3 sm:px-6 py-3 border-t border-stone-200 bg-stone-50/50">
+                  <div className="flex justify-between text-sm font-bold">
+                    <span className="text-stone-700">
+                      Total variación{data.variacion_absorcion.total > 0 ? ' (sub-absorción)' : data.variacion_absorcion.total < 0 ? ' (sobre-absorción)' : ''}
+                    </span>
+                    <span className={`tabular-nums ${data.variacion_absorcion.total > 0 ? 'text-rose-500' : data.variacion_absorcion.total < 0 ? 'text-teal-600' : 'text-stone-900'}`}>
+                      {data.variacion_absorcion.total > 0 ? '+' : ''}{fmt(data.variacion_absorcion.total)}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* DESMEDROS */}
             {data.desmedros?.total > 0 && (
