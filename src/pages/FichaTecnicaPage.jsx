@@ -45,10 +45,44 @@ export default function FichaTecnicaPage() {
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [openSections, setOpenSections] = useState({});
+  // Última tasa CONGELADA del período más reciente (fuente única de absorción)
+  const [tasaPeriodo, setTasaPeriodo] = useState(null);
 
   useEffect(() => {
     loadFicha();
   }, [id]);
+
+  // Resolver la tasa del período: tomamos el período más reciente con tasa congelada.
+  // Si no hay tasa congelada -> tasaPeriodo queda en null y la ficha usa la tarifa manual (fallback).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const perRes = await api.get('/pl/periodos');
+        const periodos = perRes?.data || perRes || [];
+        if (!Array.isArray(periodos) || periodos.length === 0) return;
+        // /pl/periodos viene ordenado por fecha_inicio DESC -> recorremos buscando la 1ra congelada
+        for (const per of periodos) {
+          if (cancelled) return;
+          try {
+            const tRes = await api.get(`/tasas/${per.id}`);
+            const t = tRes?.data ?? tRes;
+            if (t && t.congelada_at && t.tasa_mo_hora != null) {
+              if (!cancelled) setTasaPeriodo({
+                periodo_id: per.id,
+                periodo_nombre: t.periodo_nombre || per.nombre || `Período #${per.id}`,
+                congelada_at: t.congelada_at,
+                tasa_mo_hora: t.tasa_mo_hora != null ? parseFloat(t.tasa_mo_hora) : null,
+                tasa_maquina_hora: t.tasa_maquina_hora != null ? parseFloat(t.tasa_maquina_hora) : null,
+              });
+              return;
+            }
+          } catch { /* período sin tasa: seguimos */ }
+        }
+      } catch { /* sin períodos / sin permisos: fallback a manual */ }
+    })();
+    return () => { cancelled = true; };
+  }, [id]); // eslint-disable-line
 
   const loadFicha = async () => {
     setLoading(true);
@@ -69,6 +103,7 @@ export default function FichaTecnicaPage() {
     setEditForm({
       tiempo_activo_min: p.tiempo_activo_min ?? '',
       tiempo_horno_min: p.tiempo_horno_min ?? '',
+      tiempo_maquina_min: p.tiempo_maquina_min ?? '',
       tarifa_mo_override: p.tarifa_mo_override ?? '',
       margen_minimo_override: p.margen_minimo_override ?? '',
       cif_gas_unitario: p.cif_gas_unitario ?? '',
@@ -88,6 +123,7 @@ export default function FichaTecnicaPage() {
       await api.put(`/productos/${id}/ficha-tecnica`, {
         tiempo_activo_min: editForm.tiempo_activo_min || null,
         tiempo_horno_min: editForm.tiempo_horno_min || null,
+        tiempo_maquina_min: editForm.tiempo_maquina_min || null,
         tarifa_mo_override: editForm.tarifa_mo_override || null,
         margen_minimo_override: editForm.margen_minimo_override || null,
         cif_gas_unitario: editForm.cif_gas_unitario || null,
@@ -228,27 +264,19 @@ export default function FichaTecnicaPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Field label="Tamano tanda" value={`${producto.unidades_por_producto || 1} unidades`} />
             <Field
-              label="Tiempo activo MO"
+              label="Tiempo activo MO (persona)"
               value={`${calculos.tiempo_activo} min`}
               edit={<EditInput value={editForm.tiempo_activo_min} onChange={v => ef('tiempo_activo_min', v)} placeholder="min" suffix="min" />}
+            />
+            <Field
+              label="Tiempo de maquina activa"
+              value={`${producto.tiempo_maquina_min || 0} min`}
+              edit={<EditInput value={editForm.tiempo_maquina_min} onChange={v => ef('tiempo_maquina_min', v)} placeholder="min" suffix="min" />}
             />
             <Field
               label="Tiempo horno/reposo"
               value={`${producto.tiempo_horno_min || 0} min`}
               edit={<EditInput value={editForm.tiempo_horno_min} onChange={v => ef('tiempo_horno_min', v)} placeholder="min" suffix="min" />}
-            />
-            <Field
-              label="Tarifa MO"
-              value={`${simbolo} ${calculos.tarifa_mo}/hora`}
-              accent={!!producto.tarifa_mo_override}
-              edit={
-                <EditInput
-                  value={editForm.tarifa_mo_override}
-                  onChange={v => ef('tarifa_mo_override', v)}
-                  placeholder={user_settings?.tarifa_mo_global ? `Global: ${user_settings.tarifa_mo_global}` : '0'}
-                  suffix="/hora"
-                />
-              }
             />
           </div>
         </Section>
@@ -367,15 +395,58 @@ export default function FichaTecnicaPage() {
 
         {/* Section 6 — Mano de obra */}
         <Section title={`${hasMermaPrep ? '6' : '5'}. Mano de obra`} number={6} {...sectionProps(6)}>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
+          <div className="space-y-3">
+            {/* Origen de la tarifa: tasa del período (absorcion real) o manual (fallback) */}
+            {tasaPeriodo && tasaPeriodo.tasa_mo_hora != null && !producto.tarifa_mo_override ? (
+              <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                <p className="text-[11px] font-medium text-blue-700">Tasa de MO del mes</p>
+                <p className="text-sm font-bold text-blue-900">{simbolo} {tasaPeriodo.tasa_mo_hora.toFixed(2)}/hora</p>
+                <p className="text-[10px] text-blue-600 mt-1">
+                  Derivada de tus sueldos operativos del periodo {tasaPeriodo.periodo_nombre}
+                  {tasaPeriodo.congelada_at ? ` (congelada ${formatDate(tasaPeriodo.congelada_at)})` : ''}.
+                </p>
+              </div>
+            ) : (
+              <div className="p-3 bg-stone-50 border border-stone-200 rounded-lg">
+                <p className="text-[11px] font-medium text-stone-600">
+                  {producto.tarifa_mo_override ? 'Tarifa MO manual (override del producto)' : 'Usando tarifa MO manual'}
+                </p>
+                <p className="text-[10px] text-stone-400 mt-1">
+                  {tasaPeriodo
+                    ? 'Hay una tasa congelada del periodo, pero este producto tiene un override manual que la reemplaza.'
+                    : 'Aun no hay una tasa de MO congelada del periodo. Congela las tasas en P&L > Tasas para usar tu costo real.'}
+                </p>
+              </div>
+            )}
+
+            <Field
+              label="Tarifa MO override (opcional)"
+              value={`${simbolo} ${calculos.tarifa_mo}/hora`}
+              accent={!!producto.tarifa_mo_override}
+              edit={
+                <EditInput
+                  value={editForm.tarifa_mo_override}
+                  onChange={v => ef('tarifa_mo_override', v)}
+                  placeholder={
+                    tasaPeriodo?.tasa_mo_hora != null
+                      ? `Tasa periodo: ${tasaPeriodo.tasa_mo_hora.toFixed(2)}`
+                      : (user_settings?.tarifa_mo_global ? `Global: ${user_settings.tarifa_mo_global}` : '0')
+                  }
+                  suffix="/hora"
+                />
+              }
+            />
+
+            <div className="flex justify-between text-sm pt-1">
               <span className="text-stone-500 flex items-center gap-1"><Clock size={14} /> Tiempo activo</span>
               <span className="text-stone-700">{calculos.tiempo_activo} min</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-stone-500 flex items-center gap-1">
-                <DollarSign size={14} /> Tarifa MO
-                <span className="text-[10px] text-stone-400 ml-1">({producto.tarifa_mo_override ? 'producto' : 'global'})</span>
+                <DollarSign size={14} /> Tarifa MO aplicada
+                <span className="text-[10px] text-stone-400 ml-1">
+                  ({producto.tarifa_mo_override ? 'override' : (tasaPeriodo?.tasa_mo_hora != null ? 'tasa periodo' : 'global')})
+                </span>
               </span>
               <span className="text-stone-700">{simbolo} {calculos.tarifa_mo}/hora</span>
             </div>
@@ -393,8 +464,31 @@ export default function FichaTecnicaPage() {
         {/* Section 7 — CIF */}
         <Section title={`${hasMermaPrep ? '7' : '6'}. CIF (Costos indirectos)`} number={7} {...sectionProps(7)}>
           <div className="space-y-3">
+            {/* Absorcion por maquina: tasa_maquina_hora del periodo x tiempo de maquina */}
+            {tasaPeriodo && tasaPeriodo.tasa_maquina_hora != null && (
+              <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                <p className="text-[11px] font-medium text-blue-700">Tasa de maquina del mes</p>
+                <p className="text-sm font-bold text-blue-900">{simbolo} {tasaPeriodo.tasa_maquina_hora.toFixed(2)}/hora</p>
+                {(producto.tiempo_maquina_min || 0) > 0 ? (
+                  <p className="text-[10px] text-blue-600 mt-1">
+                    CIF maquina: {simbolo} {(tasaPeriodo.tasa_maquina_hora * (producto.tiempo_maquina_min || 0) / 60).toFixed(2)}
+                    {' '}({producto.tiempo_maquina_min} min de maquina del periodo {tasaPeriodo.periodo_nombre}).
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-blue-600 mt-1">
+                    Asigna un "Tiempo de maquina activa" en la seccion de Produccion para absorber este CIF.
+                  </p>
+                )}
+              </div>
+            )}
+            {!tasaPeriodo && (
+              <p className="text-[10px] text-stone-400">
+                Aun no hay una tasa de maquina congelada del periodo. El CIF se calcula con los valores manuales de abajo.
+              </p>
+            )}
+
             <Field
-              label="Gas / electricidad por unidad"
+              label="Gas / electricidad por unidad (residual manual)"
               value={formatCurrency(calculos.cif_gas)}
               edit={
                 <div>
