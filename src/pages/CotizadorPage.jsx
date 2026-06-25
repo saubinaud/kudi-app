@@ -133,11 +133,29 @@ function PackItemsEditor({ productoId, onItemsChange }) {
     return variante ? parseFloat(variante.costo_compra) || 0 : 0;
   };
 
+  // Desglose FRESCO de un componente (insumos/empaque/MO/CIF) leido del catalogo.
+  // Permite que el resumen del pack sume cada categoria por separado (Fase C),
+  // en vez de lumpear todo en "costo items del pack".
+  const getDesglose = (itemProductoId) => {
+    const prod = allProducts.find(p => p.id === itemProductoId);
+    return {
+      costo_insumos: parseFloat(prod?.costo_insumos) || 0,
+      costo_empaque: parseFloat(prod?.costo_empaque) || 0,
+      costo_mo: parseFloat(prod?.costo_mo) || 0,
+      costo_cif: parseFloat(prod?.costo_cif) || 0,
+    };
+  };
+
   // Notify parent of items changes (for saving with the product).
-  // Se adjunta el costo EFECTIVO fresco para que el costeo use precios actuales.
+  // Se adjunta el costo EFECTIVO fresco + el desglose por categoria para que el
+  // costeo use precios actuales y el resumen muestre las 5 categorias.
   useEffect(() => {
     if (onItemsChange) {
-      onItemsChange(items.map(i => ({ ...i, costo_efectivo: getCostoEfectivo(i.item_producto_id) })));
+      onItemsChange(items.map(i => ({
+        ...i,
+        costo_efectivo: getCostoEfectivo(i.item_producto_id),
+        ...getDesglose(i.item_producto_id),
+      })));
     }
   }, [items, allProducts]);
 
@@ -479,6 +497,31 @@ export default function CotizadorPage() {
     packCosto,
     costoBaseManual
   );
+
+  // ── Fase C: desglose del PACK en 5 categorias (Insumos, Empaque, MO, CIF, Mercaderia) ──
+  // Cada componente aporta su propio costo_insumos/empaque/mo/cif (× cantidad), leido fresco
+  // del catalogo. A eso se suma el costo PROPIO del pack (empaque/MO de ensamble, etc.) que
+  // ya calcula el hook (costos.costoInsumosProducto / costoEmpaque / costoMo / costoCif).
+  // Mercaderia es DERIVADA = max(0, costoNeto - insumos - empaque - mo - cif): cubre los
+  // componentes comprados/reventa cuyo costo no se desglosa en el modulo. El total = costoNeto.
+  const packDesglose = useMemo(() => {
+    if (tipoProducto !== 'pack') return null;
+    const comp = (pendingPackItems || []).reduce((acc, it) => {
+      const q = Number(it.cantidad) || 1;
+      acc.insumos += (parseFloat(it.costo_insumos) || 0) * q;
+      acc.empaque += (parseFloat(it.costo_empaque) || 0) * q;
+      acc.mo += (parseFloat(it.costo_mo) || 0) * q;
+      acc.cif += (parseFloat(it.costo_cif) || 0) * q;
+      return acc;
+    }, { insumos: 0, empaque: 0, mo: 0, cif: 0 });
+    const insumos = round2(comp.insumos + (Number(costos.costoInsumosProducto) || 0));
+    const empaque = round2(comp.empaque + (Number(costos.costoEmpaque) || 0));
+    const mo = round2(comp.mo + (Number(costos.costoMo) || 0));
+    const cif = round2(comp.cif + (Number(costos.costoCif) || 0));
+    const total = Number(costos.costoNeto) || 0;
+    const mercaderia = round2(Math.max(0, total - insumos - empaque - mo - cif));
+    return { insumos, empaque, mo, cif, mercaderia, total };
+  }, [tipoProducto, pendingPackItems, costos]);
 
   const enrichedInsumos = useMemo(() => {
     // Group by normalized name
@@ -1873,9 +1916,52 @@ export default function CotizadorPage() {
               </div>
             )}
 
+            {/* Pack — desglose por categoria (Fase C): 5 lineas que suman el costo neto.
+                Cada componente aporta sus insumos/empaque/MO/CIF; Mercaderia es el residual
+                derivado (componentes comprados/reventa). Ocultar cada fila si es 0. */}
+            {tipoProducto === 'pack' && packDesglose && packDesglose.total > 0 && (
+              <div className="space-y-3 pb-4 border-b border-stone-100">
+                {packDesglose.insumos > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-stone-500">Insumos</span>
+                    <span className="text-stone-800 font-medium">{formatCurrency(packDesglose.insumos)}</span>
+                  </div>
+                )}
+                {packDesglose.empaque > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-stone-500">Empaque</span>
+                    <span className="text-stone-800 font-medium">{formatCurrency(packDesglose.empaque)}</span>
+                  </div>
+                )}
+                {packDesglose.mo > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-stone-500">Mano de obra<InfoTip text="Incluye el tiempo de armado del pack más la mano de obra de cada componente." /></span>
+                    <span className="text-stone-800 font-medium">{formatCurrency(packDesglose.mo)}</span>
+                  </div>
+                )}
+                {packDesglose.cif > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-stone-500">CIF</span>
+                    <span className="text-stone-800 font-medium">{formatCurrency(packDesglose.cif)}</span>
+                  </div>
+                )}
+                {packDesglose.mercaderia > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-stone-500">Mercadería<InfoTip text="Costo de productos comprados o de reventa incluidos en el pack." /></span>
+                    <span className="text-stone-800 font-medium">{formatCurrency(packDesglose.mercaderia)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm font-semibold pt-2">
+                  <span className="text-stone-600">Costo neto</span>
+                  <span className="text-stone-800">{formatCurrency(packDesglose.total)}</span>
+                </div>
+              </div>
+            )}
+
             {tipoPresentacion === 'entero' ? (
               <>
-                {/* Cost lines — additive display */}
+                {/* Cost lines — additive display (los packs ya muestran su desglose de 5 categorias arriba) */}
+                {tipoProducto !== 'pack' && (
                 <div className="space-y-3 pb-4 border-b border-stone-100">
                   {costos.costoInsumosProducto > 0 && (
                     <div className="flex justify-between text-sm">
@@ -1912,6 +1998,7 @@ export default function CotizadorPage() {
                     <span className="text-stone-800">{formatCurrency(costos.costoNeto)}</span>
                   </div>
                 </div>
+                )}
 
                 {(comisionPosPct > 0 || user?.tipo_negocio === 'informal') && (
                   <div className="py-3 border-b border-stone-100 space-y-2">
@@ -2042,6 +2129,8 @@ export default function CotizadorPage() {
               </>
             ) : (
               <>
+                {/* Los packs ya muestran su desglose de 5 categorias arriba */}
+                {tipoProducto !== 'pack' && (
                 <div className="space-y-3 pb-4 border-b border-stone-100">
                   <div className="flex justify-between text-sm">
                     <span className="text-stone-500">Costo {(t.insumos || 'insumos').toLowerCase()}</span>
@@ -2056,6 +2145,7 @@ export default function CotizadorPage() {
                     <span className="text-stone-800">{formatCurrency(costos.costoNeto)}</span>
                   </div>
                 </div>
+                )}
 
                 {(comisionPosPct > 0 || user?.tipo_negocio === 'informal') && (
                   <div className="py-3 border-b border-stone-100 space-y-2">

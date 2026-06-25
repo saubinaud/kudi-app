@@ -244,17 +244,36 @@ export default function PLResumenPage() {
               <p className="text-xs font-bold text-stone-500 uppercase tracking-wider">Costo de ventas</p>
             </div>
             <div className="px-3 sm:px-6 py-3 space-y-2">
-              <PLRow label="Insumos" amount={data.cogs.insumos} indent note={pct(data.cogs.insumos, ingresosNetos)} />
-              <PLRow label="Empaque" amount={data.cogs.empaque} indent />
-              {data.cogs.costo_producto > 0 && (
-                <PLRow label="Costo de producto" amount={data.cogs.costo_producto} indent note={pct(data.cogs.costo_producto, ingresosNetos)} />
-              )}
-              {data.cogs.mo_absorbido > 0 && (
-                <PLRow label="Mano de obra" amount={data.cogs.mo_absorbido} indent note={pct(data.cogs.mo_absorbido, ingresosNetos)} />
-              )}
-              {data.cogs.cif_absorbido > 0 && (
-                <PLRow label="Costos indirectos (CIF)" amount={data.cogs.cif_absorbido} indent note={pct(data.cogs.cif_absorbido, ingresosNetos)} />
-              )}
+              {/* COGS en 5 categorias que SUMAN cogs.total (ocultar-si-0).
+                  Mercaderia = residual DERIVADO = max(0, total - insumos - empaque - mo - cif):
+                  cubre productos comprados/reventa cuyo costo no se desglosa en el modulo. */}
+              {(() => {
+                const cInsumos = Number(data.cogs.insumos) || 0;
+                const cEmpaque = Number(data.cogs.empaque) || 0;
+                const cMo = Number(data.cogs.mo_absorbido) || 0;
+                const cCif = Number(data.cogs.cif_absorbido) || 0;
+                const cTotal = Number(data.cogs.total) || 0;
+                const cMercaderia = Math.max(0, cTotal - cInsumos - cEmpaque - cMo - cCif);
+                return (
+                  <>
+                    {cInsumos > 0 && (
+                      <PLRow label="Insumos" amount={cInsumos} indent note={pct(cInsumos, ingresosNetos)} />
+                    )}
+                    {cEmpaque > 0 && (
+                      <PLRow label="Empaque" amount={cEmpaque} indent note={pct(cEmpaque, ingresosNetos)} />
+                    )}
+                    {cMo > 0 && (
+                      <PLRow label="Mano de obra" amount={cMo} indent note={pct(cMo, ingresosNetos)} />
+                    )}
+                    {cCif > 0 && (
+                      <PLRow label="Costos indirectos (CIF)" amount={cCif} indent note={pct(cCif, ingresosNetos)} />
+                    )}
+                    {cMercaderia > 0 && (
+                      <PLRow label="Mercadería" amount={cMercaderia} indent note={pct(cMercaderia, ingresosNetos)} />
+                    )}
+                  </>
+                );
+              })()}
             </div>
             <div className="px-3 sm:px-6 py-3 border-t border-stone-200 bg-stone-50/50">
               <div className="flex justify-between text-sm font-bold">
