@@ -15,6 +15,22 @@ import {
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
+// Naturaleza del gasto — clasificación base para el modelo de costeo por absorción.
+// Solo etiqueta; NO altera ningún cálculo ni el P&L en esta fase.
+const NATURALEZA_HINTS = {
+  operativo_mo: 'Sueldos del personal operativo (cocina, producción). Alimentan la tasa de mano de obra.',
+  cif: 'Costos indirectos de fabricación: gas, luz, depreciación, mantenimiento de máquina.',
+  administrativo: 'Gastos administrativos (contador, dirección). No entran al costo del producto.',
+  otro: 'Sin clasificar. No afecta el costeo. Es el valor por defecto.',
+};
+
+const NATURALEZA_LABELS = {
+  operativo_mo: 'Operativo (MO)',
+  cif: 'CIF',
+  administrativo: 'Administrativo',
+  otro: 'Otro',
+};
+
 function todayStr() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
 }
@@ -55,7 +71,7 @@ export default function PLGastosPage() {
   const [creatingPeriodo, setCreatingPeriodo] = useState(false);
   const [copyingRecurrentes, setCopyingRecurrentes] = useState(false);
   const [catModalOpen, setCatModalOpen] = useState(false);
-  const [catForm, setCatForm] = useState({ nombre: '', tipo: 'fijo', recurrente: false, monto_default: '', subcategorias: [] });
+  const [catForm, setCatForm] = useState({ nombre: '', tipo: 'fijo', naturaleza: 'otro', recurrente: false, monto_default: '', subcategorias: [] });
   const [editingCat, setEditingCat] = useState(null);
 
   // Modal form
@@ -245,7 +261,7 @@ export default function PLGastosPage() {
   // Category management
   const openNewCat = () => {
     setEditingCat(null);
-    setCatForm({ nombre: '', tipo: 'fijo', recurrente: false, monto_default: '', subcategorias: [] });
+    setCatForm({ nombre: '', tipo: 'fijo', naturaleza: 'otro', recurrente: false, monto_default: '', subcategorias: [] });
     setCatModalOpen(true);
   };
 
@@ -254,6 +270,7 @@ export default function PLGastosPage() {
     setCatForm({
       nombre: cat.nombre,
       tipo: cat.tipo,
+      naturaleza: cat.naturaleza || 'otro',
       recurrente: cat.recurrente,
       monto_default: cat.monto_default ? parseFloat(cat.monto_default) : '',
       subcategorias: cat.subcategorias || [],
@@ -271,6 +288,7 @@ export default function PLGastosPage() {
         await api.put(`/pl/categorias/${editingCat.id}`, {
           nombre: catForm.nombre,
           tipo: catForm.tipo,
+          naturaleza: catForm.naturaleza || 'otro',
           recurrente: catForm.recurrente,
           monto_default: catForm.monto_default || null,
           subcategorias: catForm.subcategorias || [],
@@ -280,6 +298,7 @@ export default function PLGastosPage() {
         await api.post('/pl/categorias', {
           nombre: catForm.nombre,
           tipo: catForm.tipo,
+          naturaleza: catForm.naturaleza || 'otro',
           recurrente: catForm.recurrente,
           monto_default: catForm.monto_default || null,
           subcategorias: catForm.subcategorias || [],
@@ -689,6 +708,11 @@ export default function PLGastosPage() {
                         {cat.recurrente && (
                           <span className={cx.badge('bg-teal-50 text-teal-600')}>recurrente</span>
                         )}
+                        {cat.naturaleza && cat.naturaleza !== 'otro' && (
+                          <span className={cx.badge('bg-violet-50 text-violet-600')}>
+                            {NATURALEZA_LABELS[cat.naturaleza]}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         <button onClick={() => openEditCat(cat)} className={cx.btnIcon + ' !p-1'}><Pencil size={12} /></button>
@@ -739,6 +763,24 @@ export default function PLGastosPage() {
                       />
                     </div>
                   </div>
+                  {/* Naturaleza — clasificación para el modelo de costeo */}
+                  <div>
+                    <label className={cx.label}>Naturaleza del gasto</label>
+                    <CustomSelect
+                      value={catForm.naturaleza || 'otro'}
+                      onChange={(v) => setCatForm((f) => ({ ...f, naturaleza: v }))}
+                      options={[
+                        { value: 'operativo_mo', label: 'Operativo (MO)' },
+                        { value: 'cif', label: 'CIF' },
+                        { value: 'administrativo', label: 'Administrativo' },
+                        { value: 'otro', label: 'Otro' },
+                      ]}
+                    />
+                    <p className="mt-1.5 text-[11px] leading-relaxed text-stone-500">
+                      {NATURALEZA_HINTS[catForm.naturaleza || 'otro']}
+                    </p>
+                  </div>
+
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -785,7 +827,7 @@ export default function PLGastosPage() {
                     {editingCat ? 'Guardar' : 'Crear categoria'}
                   </button>
                   {editingCat && (
-                    <button onClick={() => { setEditingCat(null); setCatForm({ nombre: '', tipo: 'fijo', recurrente: false, monto_default: '', subcategorias: [] }); }} className={cx.btnSecondary}>
+                    <button onClick={() => { setEditingCat(null); setCatForm({ nombre: '', tipo: 'fijo', naturaleza: 'otro', recurrente: false, monto_default: '', subcategorias: [] }); }} className={cx.btnSecondary}>
                       Cancelar
                     </button>
                   )}
