@@ -5,7 +5,8 @@ import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
-import { User, Lock, Save, Pencil, X, Upload, Loader2, Settings, CreditCard, Building2, Activity, Users, Plus, ToggleLeft, ToggleRight, RotateCcw } from 'lucide-react';
+import { User, Lock, Save, Pencil, X, Upload, Loader2, Settings, CreditCard, Building2, Activity, Users, Plus, ToggleLeft, ToggleRight, RotateCcw, Cog, Trash2, Check } from 'lucide-react';
+import ConfirmDialog from '../components/ConfirmDialog';
 import CustomSelect from '../components/CustomSelect';
 import { PAISES, getPaisByCode } from '../config/paises';
 import { API_BASE } from '../config/api';
@@ -145,7 +146,15 @@ export default function PerfilPage() {
   const handleSaveAjustes = async () => {
     setSavingAjustes(true);
     try {
-      const data = await api.put('/auth/ajustes', { tarifa_mo_global: ajustesForm.tarifa_mo_global !== '' ? Number(ajustesForm.tarifa_mo_global) : null, margen_minimo_global: Number(ajustesForm.margen_minimo_global) || 33, comision_pos: ajustesForm.comision_pos !== '' ? Number(ajustesForm.comision_pos) : 0, impedir_venta_sin_stock: !!ajustesForm.impedir_venta_sin_stock });
+      const data = await api.put('/auth/ajustes', {
+        tarifa_mo_global: ajustesForm.tarifa_mo_global !== '' ? Number(ajustesForm.tarifa_mo_global) : null,
+        margen_minimo_global: Number(ajustesForm.margen_minimo_global) || 33,
+        comision_pos: ajustesForm.comision_pos !== '' ? Number(ajustesForm.comision_pos) : 0,
+        impedir_venta_sin_stock: !!ajustesForm.impedir_venta_sin_stock,
+        operarios_count: ajustesForm.operarios_count !== '' ? Number(ajustesForm.operarios_count) : 1,
+        jornada_horas_dia: ajustesForm.jornada_horas_dia !== '' ? Number(ajustesForm.jornada_horas_dia) : 8,
+        dias_laborables_mes: ajustesForm.dias_laborables_mes !== '' ? Number(ajustesForm.dias_laborables_mes) : 22,
+      });
       setUser({ ...user, ...data.data });
       localStorage.setItem('nodum_user', JSON.stringify({ ...user, ...data.data }));
       toast.success('Ajustes actualizados');
@@ -396,14 +405,45 @@ export default function PerfilPage() {
         <div className={cx.card + ' p-5'}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-stone-900">Ajustes globales</h3>
-            {!editingAjustes && <button onClick={() => { setAjustesForm({ tarifa_mo_global: user?.tarifa_mo_global || '', margen_minimo_global: user?.margen_minimo_global || 33, comision_pos: user?.comision_pos || 0, impedir_venta_sin_stock: user?.impedir_venta_sin_stock || false }); setEditingAjustes(true); }} className={cx.btnGhost + ' flex items-center gap-1'}><Pencil size={16} /> Editar</button>}
+            {!editingAjustes && <button onClick={() => { setAjustesForm({ tarifa_mo_global: user?.tarifa_mo_global || '', margen_minimo_global: user?.margen_minimo_global || 33, comision_pos: user?.comision_pos || 0, impedir_venta_sin_stock: user?.impedir_venta_sin_stock || false, operarios_count: user?.operarios_count ?? 1, jornada_horas_dia: user?.jornada_horas_dia ?? 8, dias_laborables_mes: user?.dias_laborables_mes ?? 22 }); setEditingAjustes(true); }} className={cx.btnGhost + ' flex items-center gap-1'}><Pencil size={16} /> Editar</button>}
           </div>
           {editingAjustes ? (
             <div className="space-y-4 max-w-sm">
               <div>
                 <label className={cx.label}>Tarifa mano de obra / hora ({user?.simbolo || 'S/'})</label>
                 <input type="number" step="0.01" min="0" placeholder="Ej: 15.00" value={ajustesForm.tarifa_mo_global} onChange={e => setAjustesForm({ ...ajustesForm, tarifa_mo_global: e.target.value })} className={cx.input} />
+                <p className="text-[11px] text-stone-400 mt-1">Valor manual usado hoy en el costeo. Puedes derivarlo de la tasa calculada en P&amp;L → Tasas del período.</p>
               </div>
+
+              {/* ── Capacidad (modelo de costeo por absorción) ── */}
+              <div className="border-t border-stone-100 pt-4">
+                <p className="text-sm font-semibold text-stone-700 mb-1">Capacidad del taller</p>
+                <p className="text-[11px] text-stone-400 mb-3 leading-relaxed">Capacidad <b>teórica</b> mensual. Define cuántas horas-hombre tienes disponibles para repartir el costo de mano de obra. No afecta todavía el costo de tus productos.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className={cx.label}>Operarios</label>
+                    <input type="number" step="1" min="1" value={ajustesForm.operarios_count} onChange={e => setAjustesForm({ ...ajustesForm, operarios_count: e.target.value })} className={cx.input} placeholder="1" />
+                  </div>
+                  <div>
+                    <label className={cx.label}>Horas / día</label>
+                    <input type="number" step="0.5" min="0" value={ajustesForm.jornada_horas_dia} onChange={e => setAjustesForm({ ...ajustesForm, jornada_horas_dia: e.target.value })} className={cx.input} placeholder="8" />
+                  </div>
+                  <div>
+                    <label className={cx.label}>Días laborables / mes</label>
+                    <input type="number" step="1" min="1" max="31" value={ajustesForm.dias_laborables_mes} onChange={e => setAjustesForm({ ...ajustesForm, dias_laborables_mes: e.target.value })} className={cx.input} placeholder="22" />
+                  </div>
+                </div>
+                <div className="mt-3 rounded-lg bg-[var(--accent-light)] border border-emerald-100 px-3 py-2">
+                  <p className="text-[11px] text-stone-500">Horas-hombre / mes (capacidad teórica)</p>
+                  <p className="text-sm font-bold text-stone-800 tabular-nums">
+                    {((Number(ajustesForm.operarios_count) || 0) * (Number(ajustesForm.jornada_horas_dia) || 0) * (Number(ajustesForm.dias_laborables_mes) || 0)).toLocaleString('es-PE', { maximumFractionDigits: 2 })} h
+                  </p>
+                  <p className="text-[10px] text-stone-400 mt-0.5">
+                    {ajustesForm.operarios_count || 0} operarios × {ajustesForm.jornada_horas_dia || 0} h/día × {ajustesForm.dias_laborables_mes || 0} días
+                  </p>
+                </div>
+              </div>
+
               <div>
                 <label className={cx.label}>Margen minimo objetivo (%)</label>
                 <input type="number" step="0.1" min="0" max="99" value={ajustesForm.margen_minimo_global} onChange={e => setAjustesForm({ ...ajustesForm, margen_minimo_global: e.target.value })} className={cx.input} />
@@ -433,10 +473,22 @@ export default function PerfilPage() {
               <div><label className={cx.label}>Margen minimo</label><p className="text-stone-800 text-sm">{user?.margen_minimo_global || 33}%</p></div>
               <div><label className={cx.label}>Comisión POS tarjeta</label><p className="text-stone-800 text-sm">{user?.comision_pos ? `${Number(user.comision_pos)}%` : 'No configurada'}</p></div>
               <div><label className={cx.label}>Venta sin stock</label><p className="text-stone-800 text-sm">{user?.impedir_venta_sin_stock ? 'Bloqueada' : 'Permitida'}</p></div>
+              <div className="col-span-2 border-t border-stone-100 pt-3 mt-1">
+                <label className={cx.label}>Capacidad del taller</label>
+                <p className="text-stone-800 text-sm">
+                  {user?.operarios_count ?? 1} operarios · {user?.jornada_horas_dia ?? 8} h/día · {user?.dias_laborables_mes ?? 22} días/mes
+                </p>
+                <p className="text-[11px] text-stone-400 mt-0.5">
+                  = {((Number(user?.operarios_count ?? 1)) * (Number(user?.jornada_horas_dia ?? 8)) * (Number(user?.dias_laborables_mes ?? 22))).toLocaleString('es-PE', { maximumFractionDigits: 2 })} horas-hombre / mes
+                </p>
+              </div>
             </div>
           )}
         </div>
       )}
+
+      {/* Máquinas */}
+      {tab === 'ajustes' && <MaquinasConfig api={api} toast={toast} simbolo={user?.simbolo || 'S/'} />}
 
       {/* Márgenes por categoría */}
       {tab === 'ajustes' && <MargenesConfig api={api} toast={toast} />}
@@ -722,6 +774,161 @@ function MargenesConfig({ api, toast }) {
         {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={16} />}
         Guardar márgenes
       </button>
+    </div>
+  );
+}
+
+// ── Máquinas (CIF por hora-máquina) ──
+function MaquinasConfig({ api, toast, simbolo }) {
+  const [maquinas, setMaquinas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ nombre: '', descripcion: '', horas_disponibles_mes: 160 });
+  const [editId, setEditId] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [delTarget, setDelTarget] = useState(null);
+
+  useEffect(() => {
+    api.get('/maquinas')
+      .then(r => setMaquinas(r?.data || r || []))
+      .catch(() => setMaquinas([]))
+      .finally(() => setLoading(false));
+  }, []); // eslint-disable-line
+
+  const totalHoras = maquinas.reduce((s, m) => s + (Number(m.horas_disponibles_mes) || 0), 0);
+
+  const handleCreate = async () => {
+    if (!form.nombre.trim()) { toast.error('Ponle un nombre a la máquina'); return; }
+    setCreating(true);
+    try {
+      const r = await api.post('/maquinas', {
+        nombre: form.nombre.trim(),
+        descripcion: form.descripcion.trim() || null,
+        horas_disponibles_mes: form.horas_disponibles_mes !== '' ? Number(form.horas_disponibles_mes) : 160,
+      });
+      setMaquinas(prev => [...prev, r?.data || r]);
+      setForm({ nombre: '', descripcion: '', horas_disponibles_mes: 160 });
+      toast.success('Máquina agregada');
+    } catch (err) { toast.error(err.message || 'Error creando máquina'); }
+    finally { setCreating(false); }
+  };
+
+  const startEdit = (m) => {
+    setEditId(m.id);
+    setEditForm({ nombre: m.nombre, descripcion: m.descripcion || '', horas_disponibles_mes: m.horas_disponibles_mes ?? 160 });
+  };
+
+  const handleSaveEdit = async (id) => {
+    if (!editForm.nombre.trim()) { toast.error('Ponle un nombre a la máquina'); return; }
+    setSavingEdit(true);
+    try {
+      const r = await api.put(`/maquinas/${id}`, {
+        nombre: editForm.nombre.trim(),
+        descripcion: editForm.descripcion?.trim() || null,
+        horas_disponibles_mes: editForm.horas_disponibles_mes !== '' ? Number(editForm.horas_disponibles_mes) : 160,
+      });
+      const updated = r?.data || r;
+      setMaquinas(prev => prev.map(m => m.id === id ? { ...m, ...updated } : m));
+      setEditId(null);
+      toast.success('Máquina actualizada');
+    } catch (err) { toast.error(err.message || 'Error guardando'); }
+    finally { setSavingEdit(false); }
+  };
+
+  const handleDelete = async () => {
+    const id = delTarget?.id;
+    setDelTarget(null);
+    if (!id) return;
+    try {
+      await api.del(`/maquinas/${id}`);
+      setMaquinas(prev => prev.filter(m => m.id !== id));
+      toast.success('Máquina eliminada');
+    } catch (err) { toast.error(err.message || 'Error eliminando'); }
+  };
+
+  if (loading) return <div className={cx.skeleton + ' h-48 rounded-xl mt-4'} />;
+
+  return (
+    <div className={cx.card + ' p-5 mt-4'}>
+      <div className="flex items-center gap-2 mb-1">
+        <Cog size={18} className="text-stone-400" />
+        <h3 className="text-lg font-semibold text-stone-900">Máquinas</h3>
+      </div>
+      <p className="text-xs text-stone-400 mb-4 leading-relaxed">
+        Las horas-máquina disponibles reparten los <b>costos indirectos de fabricación (CIF)</b> por hora.
+        El total alimenta la tasa hora-máquina en P&amp;L → Tasas del período. No afecta todavía el costo de tus productos.
+      </p>
+
+      {/* Total */}
+      <div className="mb-4 flex items-center justify-between rounded-lg bg-[var(--accent-light)] border border-emerald-100 px-4 py-2.5">
+        <span className="text-sm font-medium text-stone-600">Horas-máquina / mes (total)</span>
+        <span className="text-base font-bold text-stone-800 tabular-nums">
+          {totalHoras.toLocaleString('es-PE', { maximumFractionDigits: 2 })} h
+        </span>
+      </div>
+
+      {/* Lista */}
+      {maquinas.length === 0 ? (
+        <p className="text-sm text-stone-400 py-4 text-center">No hay máquinas configuradas todavía.</p>
+      ) : (
+        <div className="space-y-2 mb-4">
+          {maquinas.map(m => (
+            <div key={m.id} className="rounded-lg border border-stone-200 px-3 py-2.5">
+              {editId === m.id ? (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-2">
+                    <input type="text" value={editForm.nombre} onChange={e => setEditForm({ ...editForm, nombre: e.target.value })} className={cx.input + ' text-sm'} placeholder="Nombre" />
+                    <input type="number" step="0.1" min="0" value={editForm.horas_disponibles_mes} onChange={e => setEditForm({ ...editForm, horas_disponibles_mes: e.target.value })} className={cx.input + ' text-sm'} placeholder="Horas/mes" />
+                  </div>
+                  <input type="text" value={editForm.descripcion} onChange={e => setEditForm({ ...editForm, descripcion: e.target.value })} className={cx.input + ' text-sm'} placeholder="Descripción (opcional)" />
+                  <div className="flex gap-2">
+                    <button onClick={() => handleSaveEdit(m.id)} disabled={savingEdit} className={cx.btnPrimary + ' flex items-center gap-1.5 min-h-[44px]'}>
+                      {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Guardar
+                    </button>
+                    <button onClick={() => setEditId(null)} className={cx.btnSecondary + ' min-h-[44px]'}><X size={14} /> Cancelar</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-stone-800 truncate">{m.nombre}</p>
+                    {m.descripcion && <p className="text-[11px] text-stone-400 truncate">{m.descripcion}</p>}
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-sm text-stone-600 tabular-nums">{Number(m.horas_disponibles_mes || 0).toLocaleString('es-PE', { maximumFractionDigits: 2 })} h/mes</span>
+                    <button onClick={() => startEdit(m)} className={cx.btnIcon} title="Editar"><Pencil size={15} /></button>
+                    <button onClick={() => setDelTarget(m)} className="p-2 text-stone-300 hover:text-rose-500 rounded-lg transition-colors" title="Eliminar"><Trash2 size={15} /></button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Agregar */}
+      <div className="border-t border-stone-100 pt-4">
+        <p className="text-sm font-semibold text-stone-700 mb-2">Agregar máquina</p>
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-2 mb-2">
+          <input type="text" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} className={cx.input + ' text-sm'} placeholder="Ej: Horno industrial" />
+          <input type="number" step="0.1" min="0" value={form.horas_disponibles_mes} onChange={e => setForm({ ...form, horas_disponibles_mes: e.target.value })} className={cx.input + ' text-sm'} placeholder="Horas/mes" />
+        </div>
+        <input type="text" value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} className={cx.input + ' text-sm mb-2'} placeholder="Descripción (opcional)" />
+        <button onClick={handleCreate} disabled={creating || !form.nombre.trim()} className={cx.btnPrimary + ' flex items-center gap-2 min-h-[44px]'}>
+          {creating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} Agregar máquina
+        </button>
+      </div>
+
+      <ConfirmDialog
+        open={!!delTarget}
+        title="Eliminar máquina"
+        message={delTarget ? `¿Eliminar "${delTarget.nombre}"? Sus horas dejarán de contar para la tasa hora-máquina.` : ''}
+        confirmText="Eliminar"
+        confirmStyle="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setDelTarget(null)}
+      />
     </div>
   );
 }

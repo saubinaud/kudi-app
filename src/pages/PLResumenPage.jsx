@@ -131,6 +131,13 @@ export default function PLResumenPage() {
             onChange={setPeriodo}
           />
         </div>
+        <button
+          onClick={() => navigate('/pl/tasas')}
+          className={cx.btnSecondary + ' flex items-center gap-2 self-start'}
+          title="Tasas de mano de obra y hora-máquina del período"
+        >
+          <Target size={14} /> Tasas del período
+        </button>
       </div>
 
       {loadingData ? (

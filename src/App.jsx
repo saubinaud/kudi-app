@@ -23,6 +23,7 @@ import ProyeccionPage from './pages/ProyeccionPage';
 import ActividadPage from './pages/ActividadPage';
 import PLTimelinePage from './pages/PLTimelinePage';
 import PLResumenPage from './pages/PLResumenPage';
+import TasasPeriodoPage from './pages/TasasPeriodoPage';
 import PLVentasPage from './pages/PLVentasPage';
 import PLGastosPage from './pages/PLGastosPage';
 import PLComprasPage from './pages/PLComprasPage';
@@ -56,6 +57,7 @@ const ROUTE_MODULES = {
   '/empaques-predeterminados': 'Plantillas empaque', '/pos': 'Caja', '/mesas': 'Mesas',
   '/pl': 'P&L', '/pl/ventas': 'Ventas', '/pl/gastos': 'Gastos',
   '/pl/compras': 'Compras', '/pl/cashflow': 'Cashflow', '/pl/resumen': 'Resumen P&L',
+  '/pl/tasas': 'Tasas período',
   '/stock': 'Stock', '/perdidas': 'Pérdidas', '/clientes': 'Clientes',
   '/pedidos': 'Pedidos', '/comprobantes': 'Facturación', '/analisis': 'Análisis',
   '/canales': 'Canales', '/comisiones': 'Comisiones', '/proveedores': 'Proveedores',
@@ -116,6 +118,7 @@ export default function App() {
               <Route path="/actividad" element={<ActividadPage />} />
               <Route path="/pl" element={<PLTimelinePage />} />
               <Route path="/pl/resumen" element={<PLResumenPage />} />
+              <Route path="/pl/tasas" element={<TasasPeriodoPage />} />
               <Route path="/pos" element={<POSPage />} />
               <Route path="/mesas" element={<MesasPage />} />
               <Route path="/mesas/:mesaId" element={<MesaDetailPage />} />
