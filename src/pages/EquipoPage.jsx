@@ -17,9 +17,9 @@ import {
 // Las 3 secciones de la planilla. Cada una está predestinada a conectar con la
 // naturaleza del gasto (conexión real pendiente — por ahora solo estructura).
 const SECCIONES = [
-  { key: 'produccion', label: 'Producción', sub: 'Mano de obra → costo de productos', icon: Factory, color: 'bg-violet-50 text-violet-600' },
-  { key: 'operativa', label: 'Operativa', sub: 'Atención al cliente → gastos operativos', icon: Headphones, color: 'bg-sky-50 text-sky-600' },
-  { key: 'administrativa', label: 'Administrativa', sub: 'Gestión → gastos administrativos', icon: Briefcase, color: 'bg-teal-50 text-teal-700' },
+  { key: 'produccion', label: 'Producción', sub: 'Mano de obra → costo de productos', icon: Factory, color: 'bg-stone-100 text-stone-500' },
+  { key: 'operativa', label: 'Operativa', sub: 'Atención al cliente → gastos operativos', icon: Headphones, color: 'bg-stone-100 text-stone-500' },
+  { key: 'administrativa', label: 'Administrativa', sub: 'Gestión → gastos administrativos', icon: Briefcase, color: 'bg-stone-100 text-stone-500' },
 ];
 
 const TABS = [
