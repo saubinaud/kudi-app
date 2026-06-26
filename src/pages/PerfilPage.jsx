@@ -11,7 +11,7 @@ import CustomSelect from '../components/CustomSelect';
 import { PAISES, getPaisByCode } from '../config/paises';
 import { API_BASE } from '../config/api';
 import ActividadPage from './ActividadPage';
-import EquipoPage from './EquipoPage';
+import UsuariosPanel from '../components/UsuariosPanel';
 import SegmentedControl from '../components/SegmentedControl';
 
 const PLAN_LABEL = { trial: 'Prueba gratuita', independiente: 'Independiente', emprendedor: 'Emprendedor', empresario: 'Empresario', pro: 'Pro' };
@@ -21,7 +21,7 @@ const PLAN_COLORS = { trial: 'bg-amber-50 text-amber-600', independiente: 'bg-bl
 const TABS = [
   { key: 'negocio', label: 'Mi negocio', icon: Building2 },
   { key: 'plan', label: 'Mi plan', icon: CreditCard },
-  { key: 'equipo', label: 'Equipo', icon: Users },
+  { key: 'equipo', label: 'Usuarios', icon: Users },
   { key: 'actividad', label: 'Actividad', icon: Activity },
   { key: 'seguridad', label: 'Seguridad', icon: Lock },
   { key: 'ajustes', label: 'Ajustes', icon: Settings },
@@ -494,7 +494,7 @@ export default function PerfilPage() {
       {tab === 'ajustes' && <MargenesConfig api={api} toast={toast} />}
 
       {/* ══════ Tab: Equipo ══════ */}
-      {tab === 'equipo' && <EquipoPage />}
+      {tab === 'equipo' && <UsuariosPanel />}
 
       {/* ══════ Tab: Actividad ══════ */}
       {tab === 'actividad' && <ActividadPage />}

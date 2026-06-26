@@ -158,6 +158,7 @@ export default function Layout() {
       links: [
         { to: '/pl/compras', label: 'Compras', icon: ShoppingBag, perm: 'finanzas' },
         { to: '/pl/gastos', label: 'Pagos', icon: Receipt, perm: 'finanzas' },
+        { to: '/equipo', label: 'Equipo', icon: Users, perm: 'finanzas' },
         { to: '/perdidas', label: 'Pérdidas', icon: TrendingDown, perm: 'finanzas' },
       ],
     },

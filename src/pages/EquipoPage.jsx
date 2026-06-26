@@ -1,273 +1,304 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import { cx } from '../styles/tokens';
+import { formatCurrency } from '../utils/format';
+import SegmentedControl from '../components/SegmentedControl';
 import CustomSelect from '../components/CustomSelect';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { Users, UserPlus, Crown, ShieldCheck, Store, Eye, X, Copy, Trash2, ChefHat } from 'lucide-react';
+import UsuariosPanel from '../components/UsuariosPanel';
+import {
+  Users, Plus, Pencil, Trash2, Check, X, Loader2, Factory, Headphones, Briefcase, Link2,
+} from 'lucide-react';
 
-const ROL_INFO = {
-  owner: { label: 'Dueño', icon: Crown, color: 'bg-amber-50 text-amber-700', desc: 'Acceso total' },
-  manager: { label: 'Gerente', icon: ShieldCheck, color: 'bg-sky-50 text-sky-700', desc: 'Ventas, finanzas, productos' },
-  cashier: { label: 'Cajero', icon: Store, color: 'bg-emerald-50 text-emerald-700', desc: 'Ventas y pedidos' },
-  vendedor: { label: 'Vendedor', icon: Store, color: 'bg-indigo-50 text-indigo-700', desc: 'Ventas, pedidos, clientes' },
-  repartidor: { label: 'Repartidor', icon: Store, color: 'bg-orange-50 text-orange-700', desc: 'Solo entregas' },
-  contador: { label: 'Contador', icon: ShieldCheck, color: 'bg-teal-50 text-teal-700', desc: 'Finanzas y reportes (solo lectura)' },
-  kitchen: { label: 'Cocina', icon: ChefHat, color: 'bg-violet-50 text-violet-700', desc: 'Solo ve recetas' },
-  viewer: { label: 'Visor', icon: Eye, color: 'bg-stone-100 text-stone-600', desc: 'Solo lectura' },
-};
+// Las 3 secciones de la planilla. Cada una está predestinada a conectar con la
+// naturaleza del gasto (conexión real pendiente — por ahora solo estructura).
+const SECCIONES = [
+  { key: 'produccion', label: 'Producción', sub: 'Mano de obra → costo de productos', icon: Factory, color: 'bg-violet-50 text-violet-600' },
+  { key: 'operativa', label: 'Operativa', sub: 'Atención al cliente → gastos operativos', icon: Headphones, color: 'bg-sky-50 text-sky-600' },
+  { key: 'administrativa', label: 'Administrativa', sub: 'Gestión → gastos administrativos', icon: Briefcase, color: 'bg-stone-100 text-stone-500' },
+];
+const SECCION_BY_KEY = Object.fromEntries(SECCIONES.map((s) => [s.key, s]));
+
+const TABS = [
+  { key: 'todo', label: 'Todo' },
+  { key: 'produccion', label: 'Producción' },
+  { key: 'operativa', label: 'Operativa' },
+  { key: 'administrativa', label: 'Administrativa' },
+  { key: 'usuarios', label: 'Usuarios' },
+];
 
 export default function EquipoPage() {
   const api = useApi();
   const toast = useToast();
   const { user } = useAuth();
+  const simbolo = user?.simbolo || 'S/';
 
-  const [members, setMembers] = useState([]);
+  const [tab, setTab] = useState('todo');
+  const [personal, setPersonal] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showInvite, setShowInvite] = useState(false);
-  const [inviteForm, setInviteForm] = useState({ email: '', nombre: '', rol_empresa: 'cashier' });
-  const [saving, setSaving] = useState(false);
-  const [inviteLink, setInviteLink] = useState('');
 
-  useEffect(() => { loadMembers(); }, []);
-
-  async function loadMembers() {
+  async function loadPersonal() {
     setLoading(true);
     try {
-      const res = await api.get('/equipo');
-      setMembers(res.data || res || []);
-    } catch { toast.error('Error cargando equipo'); }
+      const res = await api.get('/personal');
+      setPersonal(res.data || res || []);
+    } catch { toast.error('Error cargando personal'); }
     finally { setLoading(false); }
   }
 
-  async function handleInvite() {
-    if (!inviteForm.email || !inviteForm.nombre) { toast.error('Nombre y email requeridos'); return; }
-    setSaving(true);
-    try {
-      const res = await api.post('/equipo/invitar', inviteForm);
-      const d = res.data || res;
-      if (d.onboarding_token) {
-        const base = window.location.href.split('#')[0];
-        setInviteLink(`${base}#/onboarding?token=${d.onboarding_token}`);
-      }
-      toast.success('Invitacion creada');
-      loadMembers();
-      setInviteForm({ email: '', nombre: '', rol_empresa: 'cashier' });
-    } catch (err) { toast.error(err.message || 'Error invitando'); }
-    finally { setSaving(false); }
-  }
+  useEffect(() => { loadPersonal(); }, []); // eslint-disable-line
 
-  const [removeTarget, setRemoveTarget] = useState(null); // { id, nombre }
-  const [editComision, setEditComision] = useState({}); // { memberId: pct }
-
-  async function handleChangeRol(memberId, newRol, comisionPct) {
-    try {
-      await api.patch(`/equipo/${memberId}/rol`, { rol_empresa: newRol, comision_pct: comisionPct ?? 0 });
-      toast.success('Rol actualizado');
-      loadMembers();
-    } catch (err) { toast.error(err.message || 'Error'); }
-  }
-
-  async function handleSaveComision(memberId) {
-    const member = members.find(m => m.id === memberId);
-    if (!member) return;
-    const pct = parseFloat(editComision[memberId]) || 0;
-    try {
-      await api.patch(`/equipo/${memberId}/rol`, { rol_empresa: member.rol_empresa, comision_pct: pct });
-      toast.success('Comision actualizada');
-      loadMembers();
-    } catch (err) { toast.error(err.message || 'Error'); }
-  }
-
-  function handleRemove(memberId, nombre) {
-    setRemoveTarget({ id: memberId, nombre });
-  }
-
-  async function doRemove() {
-    const { id } = removeTarget;
-    setRemoveTarget(null);
-    try {
-      await api.del(`/equipo/${id}`);
-      toast.success('Miembro removido');
-      loadMembers();
-    } catch (err) { toast.error(err.message || 'Error'); }
-  }
-
-  if (loading) {
-    return (
-      <div className="max-w-5xl mx-auto space-y-3">
-        <div className={cx.skeleton + ' h-10 w-48'} />
-        <div className={cx.skeleton + ' h-20'} />
-        <div className={cx.skeleton + ' h-20'} />
-        <div className={cx.skeleton + ' h-20'} />
-      </div>
-    );
-  }
+  const totalPlanilla = useMemo(
+    () => personal.reduce((s, p) => s + (Number(p.sueldo) || 0), 0),
+    [personal]
+  );
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-xl font-bold text-stone-900">Mi Equipo</h1>
-          <p className="text-sm text-stone-500 mt-0.5">{members.length} miembro{members.length !== 1 ? 's' : ''}</p>
-        </div>
-        {user?.rol_empresa === 'owner' && (
-          <button onClick={() => { setShowInvite(true); setInviteLink(''); }} className={cx.btnPrimary + ' flex items-center gap-2'}>
-            <UserPlus size={16} /> Invitar
-          </button>
-        )}
+    <div className="max-w-3xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-1">
+        <Users size={20} className="text-stone-400" />
+        <h2 className="text-xl font-bold text-stone-900">Equipo</h2>
+      </div>
+      <p className="text-stone-500 text-sm mb-5">
+        Tu planilla organizada por sección. Cada persona y su sueldo; luego se conectará con tus gastos y el costeo.
+      </p>
+
+      {/* Tabs */}
+      <div className="mb-5">
+        <SegmentedControl options={TABS} value={tab} onChange={setTab} layoutId="equipo-tab" size="sm" />
       </div>
 
-      {/* Member cards */}
-      <div className="space-y-3">
-        {members.map(m => {
-          const info = ROL_INFO[m.rol_empresa] || ROL_INFO.viewer;
-          const isMe = m.id === user?.id;
-          return (
-            <div key={m.id} className={cx.card + ' p-4'}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#0A2F24] text-white flex items-center justify-center text-sm font-bold">
-                    {m.nombre?.charAt(0)?.toUpperCase() || '?'}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-stone-900">{m.nombre}{isMe ? ' (tu)' : ''}</p>
-                      <span className={cx.badge(info.color)}>{info.label}</span>
-                      {m.estado === 'pendiente' && <span className={cx.badge('bg-amber-50 text-amber-600')}>Pendiente</span>}
-                    </div>
-                    <p className="text-xs text-stone-400">{m.email}</p>
-                  </div>
-                </div>
+      {tab === 'usuarios' ? (
+        <UsuariosPanel />
+      ) : loading ? (
+        <div className="space-y-3">
+          <div className={cx.skeleton + ' h-24'} />
+          <div className={cx.skeleton + ' h-24'} />
+        </div>
+      ) : (
+        <>
+          <PersonalManager
+            seccion={tab}
+            personal={personal}
+            reload={loadPersonal}
+            api={api}
+            toast={toast}
+            simbolo={simbolo}
+          />
+          {tab === 'todo' && personal.length > 0 && (
+            <div className="mt-4 flex items-center justify-between rounded-xl bg-[var(--accent-light)] border border-emerald-100 px-4 py-3">
+              <span className="text-sm font-medium text-stone-600">Total planilla / mes</span>
+              <span className="text-base font-bold text-stone-800 tabular-nums">{formatCurrency(totalPlanilla)}</span>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
-                {/* Actions (only owner can change roles, can't change self) */}
-                {user?.rol_empresa === 'owner' && !isMe && (
-                  <div className="flex items-center gap-2">
-                    <CustomSelect
-                      compact
-                      options={[
-                        { value: 'manager', label: 'Gerente' },
-                        { value: 'cashier', label: 'Cajero' },
-                        { value: 'vendedor', label: 'Vendedor' },
-                        { value: 'repartidor', label: 'Repartidor' },
-                        { value: 'contador', label: 'Contador' },
-                        { value: 'kitchen', label: 'Cocina' },
-                        { value: 'viewer', label: 'Visor' },
-                      ]}
-                      value={m.rol_empresa}
-                      onChange={(v) => handleChangeRol(m.id, v, m.rol_empresa === 'vendedor' ? (parseFloat(m.comision_pct) || 0) : 0)}
-                    />
-                    {m.rol_empresa === 'vendedor' && (
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="number"
-                          step="0.5"
-                          min="0"
-                          max="100"
-                          value={editComision[m.id] ?? (parseFloat(m.comision_pct) || '')}
-                          onChange={(e) => setEditComision(p => ({ ...p, [m.id]: e.target.value }))}
-                          onBlur={() => handleSaveComision(m.id)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') handleSaveComision(m.id); }}
-                          className="w-16 bg-white rounded-lg px-2 py-1.5 text-xs text-center border border-stone-200"
-                          placeholder="%"
-                          title="% comision"
-                        />
-                        <span className="text-xs text-stone-400">%</span>
+// ── Gestión de personal por sección ──
+function PersonalManager({ seccion, personal, reload, api, toast, simbolo }) {
+  const seccionesAMostrar = seccion === 'todo' ? SECCIONES : SECCIONES.filter((s) => s.key === seccion);
+
+  const [editId, setEditId] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [addSeccion, setAddSeccion] = useState(null); // key de la sección donde se está agregando
+  const [addForm, setAddForm] = useState({ nombre: '', rol: '', sueldo: '' });
+  const [creating, setCreating] = useState(false);
+  const [delTarget, setDelTarget] = useState(null);
+
+  const startEdit = (p) => {
+    setAddSeccion(null);
+    setEditId(p.id);
+    setEditForm({ nombre: p.nombre, rol: p.rol || '', sueldo: p.sueldo != null ? Number(p.sueldo) : '', seccion: p.seccion });
+  };
+
+  const saveEdit = async (id) => {
+    if (!editForm.nombre?.trim()) { toast.error('Ponle un nombre'); return; }
+    setSavingEdit(true);
+    try {
+      await api.put(`/personal/${id}`, {
+        nombre: editForm.nombre.trim(),
+        rol: editForm.rol?.trim() || null,
+        sueldo: editForm.sueldo !== '' ? Number(editForm.sueldo) : 0,
+        seccion: editForm.seccion,
+      });
+      setEditId(null);
+      toast.success('Guardado');
+      await reload();
+    } catch (err) { toast.error(err.message || 'Error guardando'); }
+    finally { setSavingEdit(false); }
+  };
+
+  const openAdd = (secKey) => {
+    setEditId(null);
+    setAddSeccion(secKey);
+    setAddForm({ nombre: '', rol: '', sueldo: '' });
+  };
+
+  const handleCreate = async () => {
+    if (!addForm.nombre.trim()) { toast.error('Ponle un nombre'); return; }
+    setCreating(true);
+    try {
+      await api.post('/personal', {
+        nombre: addForm.nombre.trim(),
+        rol: addForm.rol.trim() || null,
+        sueldo: addForm.sueldo !== '' ? Number(addForm.sueldo) : 0,
+        seccion: addSeccion,
+      });
+      setAddForm({ nombre: '', rol: '', sueldo: '' });
+      setAddSeccion(null);
+      toast.success('Persona agregada');
+      await reload();
+    } catch (err) { toast.error(err.message || 'Error creando'); }
+    finally { setCreating(false); }
+  };
+
+  const handleDelete = async () => {
+    const id = delTarget?.id;
+    setDelTarget(null);
+    if (!id) return;
+    try {
+      await api.del(`/personal/${id}`);
+      toast.success('Persona eliminada');
+      await reload();
+    } catch (err) { toast.error(err.message || 'Error eliminando'); }
+  };
+
+  return (
+    <div className="space-y-4">
+      {seccionesAMostrar.map((sec) => {
+        const items = personal.filter((p) => p.seccion === sec.key);
+        const subtotal = items.reduce((s, p) => s + (Number(p.sueldo) || 0), 0);
+        const Icon = sec.icon;
+        return (
+          <div key={sec.key} className={cx.card + ' p-5'}>
+            {/* Header de sección */}
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex items-start gap-2.5 min-w-0">
+                <span className={`flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-7 h-7 rounded-lg ${sec.color}`}>
+                  <Icon size={15} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-stone-900">{sec.label}</p>
+                  <p className="text-[11px] text-stone-400">{sec.sub}</p>
+                </div>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <p className="text-sm font-bold text-stone-800 tabular-nums">{formatCurrency(subtotal)}</p>
+                <p className="text-[10px] text-stone-400">{items.length} persona{items.length !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+
+            {/* Lista */}
+            {items.length === 0 && addSeccion !== sec.key ? (
+              <p className="text-xs text-stone-400 py-2">Nadie en esta sección todavía.</p>
+            ) : (
+              <div className="space-y-2">
+                {items.map((p) => (
+                  <div key={p.id} className="rounded-lg border border-stone-200 px-3 py-2.5">
+                    {editId === p.id ? (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <label className={cx.label}>Nombre</label>
+                            <input type="text" value={editForm.nombre} onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })} className={cx.input + ' text-sm'} placeholder="Nombre" />
+                          </div>
+                          <div>
+                            <label className={cx.label}>Rol / título</label>
+                            <input type="text" value={editForm.rol} onChange={(e) => setEditForm({ ...editForm, rol: e.target.value })} className={cx.input + ' text-sm'} placeholder="Ej: Chef" />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <label className={cx.label}>Sueldo / mes ({simbolo})</label>
+                            <input type="number" step="0.01" min="0" inputMode="decimal" value={editForm.sueldo} onChange={(e) => setEditForm({ ...editForm, sueldo: e.target.value })} className={cx.input + ' text-sm'} placeholder="0.00" />
+                          </div>
+                          <div>
+                            <label className={cx.label}>Sección</label>
+                            <CustomSelect
+                              value={editForm.seccion}
+                              onChange={(v) => setEditForm({ ...editForm, seccion: v })}
+                              options={SECCIONES.map((s) => ({ value: s.key, label: s.label }))}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => saveEdit(p.id)} disabled={savingEdit} className={cx.btnPrimary + ' flex items-center gap-1.5 min-h-[44px]'}>
+                            {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Guardar
+                          </button>
+                          <button onClick={() => setEditId(null)} className={cx.btnSecondary + ' min-h-[44px]'}><X size={14} /> Cancelar</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-stone-800 truncate">{p.nombre}</p>
+                            {p.cuenta_usuario_id && (
+                              <span className={cx.badge('bg-stone-100 text-stone-500') + ' flex items-center gap-0.5'}><Link2 size={10} /> cuenta</span>
+                            )}
+                          </div>
+                          {p.rol && <p className="text-[11px] text-stone-400 truncate">{p.rol}</p>}
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-sm text-stone-700 tabular-nums">{formatCurrency(p.sueldo)}</span>
+                          <button onClick={() => startEdit(p)} className={cx.btnIcon} title="Editar"><Pencil size={15} /></button>
+                          <button onClick={() => setDelTarget(p)} className="p-2 text-stone-300 hover:text-rose-500 rounded-lg transition-colors" title="Eliminar"><Trash2 size={15} /></button>
+                        </div>
                       </div>
                     )}
-                    <button onClick={() => handleRemove(m.id, m.nombre)} className={cx.btnDanger + ' p-2'} title="Remover">
-                      <Trash2 size={14} />
-                    </button>
                   </div>
-                )}
-              </div>
-
-              {/* Pending invite: show onboarding link */}
-              {m.estado === 'pendiente' && m.onboarding_token && (
-                <div className="mt-3 flex items-center gap-2">
-                  <input type="text" readOnly
-                    value={`${window.location.href.split('#')[0]}#/onboarding?token=${m.onboarding_token}`}
-                    className={cx.input + ' text-[10px] flex-1'} />
-                  <button onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.href.split('#')[0]}#/onboarding?token=${m.onboarding_token}`);
-                    toast.success('Link copiado');
-                  }} className={cx.btnSecondary + ' flex items-center gap-1 text-xs'}>
-                    <Copy size={12} /> Copiar
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Invite modal */}
-      {showInvite && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowInvite(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-w-[95vw] p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-stone-900">Invitar miembro</h3>
-              <button onClick={() => setShowInvite(false)} className={cx.btnGhost}><X size={18} /></button>
-            </div>
-
-            {inviteLink ? (
-              <div className="space-y-3">
-                <p className="text-sm text-stone-600">Invitacion creada. Comparte este link:</p>
-                <div className="flex gap-2">
-                  <input type="text" readOnly value={inviteLink} className={cx.input + ' text-xs'} />
-                  <button onClick={() => { navigator.clipboard.writeText(inviteLink); toast.success('Link copiado'); }}
-                    className={cx.btnSecondary + ' flex items-center gap-1'}>
-                    <Copy size={14} /> Copiar
-                  </button>
-                </div>
-                <button onClick={() => { setShowInvite(false); setInviteLink(''); }} className={cx.btnGhost}>Cerrar</button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className={cx.label}>Nombre</label>
-                  <input type="text" value={inviteForm.nombre} onChange={e => setInviteForm(p => ({...p, nombre: e.target.value}))}
-                    className={cx.input} placeholder="Nombre del empleado" autoFocus />
-                </div>
-                <div>
-                  <label className={cx.label}>Email</label>
-                  <input type="email" value={inviteForm.email} onChange={e => setInviteForm(p => ({...p, email: e.target.value}))}
-                    className={cx.input} placeholder="email@ejemplo.com" />
-                </div>
-                <div>
-                  <label className={cx.label}>Rol</label>
-                  <CustomSelect
-                    value={inviteForm.rol_empresa}
-                    onChange={v => setInviteForm(p => ({...p, rol_empresa: v}))}
-                    options={[
-                      { value: 'manager', label: 'Gerente — ventas, finanzas, productos' },
-                      { value: 'cashier', label: 'Cajero — ventas y pedidos' },
-                      { value: 'vendedor', label: 'Vendedor — ventas, pedidos, clientes' },
-                      { value: 'repartidor', label: 'Repartidor — solo entregas' },
-                      { value: 'contador', label: 'Contador — finanzas (lectura)' },
-                      { value: 'kitchen', label: 'Cocina — solo ve recetas' },
-                      { value: 'viewer', label: 'Visor — solo lectura' },
-                    ]}
-                  />
-                </div>
-                <button onClick={handleInvite} disabled={saving} className={cx.btnPrimary + ' w-full'}>
-                  {saving ? 'Invitando...' : 'Enviar invitacion'}
-                </button>
+                ))}
               </div>
             )}
+
+            {/* Agregar */}
+            {addSeccion === sec.key ? (
+              <div className="mt-3 rounded-lg border border-dashed border-stone-300 p-3 space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label className={cx.label}>Nombre</label>
+                    <input type="text" autoFocus value={addForm.nombre} onChange={(e) => setAddForm({ ...addForm, nombre: e.target.value })} className={cx.input + ' text-sm'} placeholder="Nombre de la persona" />
+                  </div>
+                  <div>
+                    <label className={cx.label}>Rol / título</label>
+                    <input type="text" value={addForm.rol} onChange={(e) => setAddForm({ ...addForm, rol: e.target.value })} className={cx.input + ' text-sm'} placeholder="Ej: Cocinero" />
+                  </div>
+                </div>
+                <div>
+                  <label className={cx.label}>Sueldo / mes ({simbolo})</label>
+                  <input type="number" step="0.01" min="0" inputMode="decimal" value={addForm.sueldo} onChange={(e) => setAddForm({ ...addForm, sueldo: e.target.value })} className={cx.input + ' text-sm'} placeholder="0.00" />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={handleCreate} disabled={creating || !addForm.nombre.trim()} className={cx.btnPrimary + ' flex items-center gap-1.5 min-h-[44px]'}>
+                    {creating ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Agregar
+                  </button>
+                  <button onClick={() => setAddSeccion(null)} className={cx.btnSecondary + ' min-h-[44px]'}><X size={14} /> Cancelar</button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => openAdd(sec.key)} className="mt-3 flex items-center gap-1.5 text-sm font-medium text-[var(--accent)] hover:opacity-80 min-h-[44px]">
+                <Plus size={15} /> Agregar a {sec.label}
+              </button>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })}
 
       <ConfirmDialog
-        open={!!removeTarget}
-        title="Remover miembro"
-        message={`¿Remover a ${removeTarget?.nombre || ''} del equipo?`}
-        confirmText="Remover"
-        onConfirm={doRemove}
-        onCancel={() => setRemoveTarget(null)}
+        open={!!delTarget}
+        title="Eliminar persona"
+        message={delTarget ? `¿Eliminar a "${delTarget.nombre}" de la planilla?${delTarget.cuenta_usuario_id ? ' Su cuenta de acceso se desvincula (no se elimina).' : ''}` : ''}
+        confirmText="Eliminar"
+        confirmStyle="danger"
+        onConfirm={handleDelete}
+        onCancel={() => setDelTarget(null)}
       />
     </div>
   );
