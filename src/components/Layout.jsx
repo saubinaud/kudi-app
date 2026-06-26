@@ -40,6 +40,7 @@ import {
   Sparkles,
   LayoutGrid,
   Check,
+  Gauge,
 } from 'lucide-react';
 import NotificacionesSidebar from './NotificacionesSidebar';
 import UpdateBanner from './UpdateBanner';
@@ -167,6 +168,7 @@ export default function Layout() {
       links: [
         { to: '/pl', label: 'Timeline', icon: Activity, perm: 'finanzas', end: true },
         { to: '/pl/resumen', label: 'Estado de resultados', icon: BarChart3, perm: 'finanzas' },
+        { to: '/pl/tasas', label: 'Tasas del período', icon: Gauge, perm: 'finanzas' },
         { to: '/pl/cashflow', label: 'Flujo de Caja', icon: Wallet, perm: 'finanzas' },
         { to: '/proveedores', label: 'Proveedores', icon: Truck, perm: 'finanzas' },
       ],

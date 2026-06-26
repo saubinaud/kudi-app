@@ -31,6 +31,38 @@ const NATURALEZA_LABELS = {
   otro: 'Otro',
 };
 
+const NATURALEZA_OPTIONS = [
+  { value: 'operativo_mo', label: 'Operativo (MO)' },
+  { value: 'cif', label: 'CIF' },
+  { value: 'administrativo', label: 'Administrativo' },
+  { value: 'otro', label: 'Otro' },
+];
+
+// Color del badge/selector por naturaleza. 'otro' queda neutro (invita a clasificar).
+const NATURALEZA_BADGE = {
+  operativo_mo: 'bg-violet-50 text-violet-600',
+  cif: 'bg-sky-50 text-sky-600',
+  administrativo: 'bg-stone-100 text-stone-500',
+  otro: 'bg-stone-50 text-stone-400',
+};
+
+// Autocategorización por palabras clave (item 2). Sugiere la naturaleza a partir del
+// nombre de la categoría. Es solo una SUGERENCIA editable; nunca muta sin que el usuario aplique.
+const NATURALEZA_KEYWORDS = {
+  operativo_mo: ['sueldo', 'planilla', 'salario', 'cocina', 'produccion', 'producción', 'operario', 'operación', 'operacion', 'mano de obra', 'rxh cocina', 'rxh produccion', 'rxh producción', 'chef', 'panadero', 'ayudante', 'personal operativo', 'mozo', 'barista'],
+  cif: ['luz', 'agua', 'gas', 'energia', 'energía', 'electricidad', 'mantenimiento', 'depreciacion', 'depreciación', 'maquina', 'máquina', 'horno', 'taller', 'combustible', 'reparacion', 'reparación', 'servicios basicos', 'servicios básicos', 'alquiler local', 'internet', 'telefono', 'teléfono'],
+  administrativo: ['contador', 'contabilidad', 'direccion', 'dirección', 'renta 5ta', 'administrativo', 'gerencia', 'legal', 'oficina', 'licencia', 'software', 'publicidad', 'marketing', 'dietas directorio', 'rxh contador', 'utiles oficina', 'útiles oficina'],
+};
+
+function sugerirNaturaleza(nombre) {
+  if (!nombre) return null;
+  const n = nombre.toLowerCase().trim();
+  for (const nat of ['operativo_mo', 'cif', 'administrativo']) {
+    if (NATURALEZA_KEYWORDS[nat].some((k) => n.includes(k))) return nat;
+  }
+  return null; // sin coincidencia → no se sugiere (queda 'otro')
+}
+
 function todayStr() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
 }
@@ -324,6 +356,26 @@ export default function PLGastosPage() {
     }
   };
 
+  // Cambiar la naturaleza de una categoría a ≤1 clic, desde la lista principal (item 1).
+  // La naturaleza se rige a nivel categoría principal; propaga al P&L vía costeo.
+  const setCategoriaNaturaleza = async (catId, naturaleza) => {
+    // Optimista en el resumen para feedback inmediato; se reconcilia con loadGastos.
+    setResumen((prev) => prev ? {
+      ...prev,
+      categorias: prev.categorias.map((c) =>
+        c.categoria_id === catId ? { ...c, categoria_naturaleza: naturaleza } : c),
+    } : prev);
+    try {
+      await api.put(`/pl/categorias/${catId}`, { naturaleza });
+      toast.success(`Naturaleza: ${NATURALEZA_LABELS[naturaleza]}`);
+      await reloadCategorias();
+      if (periodo) loadGastos(periodo);
+    } catch (err) {
+      toast.error(err.message);
+      if (periodo) loadGastos(periodo); // revertir desde el servidor
+    }
+  };
+
   // Toggle accordion
   const toggleCategory = (catId) => {
     setExpanded((prev) => ({ ...prev, [catId]: !prev[catId] }));
@@ -471,7 +523,7 @@ export default function PLGastosPage() {
                   className="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-stone-50/50 transition-colors"
                   onClick={() => toggleCategory(cat.categoria_id)}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     {isExpanded
                       ? <ChevronUp size={16} className="text-stone-400 flex-shrink-0" />
                       : <ChevronDown size={16} className="text-stone-400 flex-shrink-0" />
@@ -483,7 +535,37 @@ export default function PLGastosPage() {
                       {cat.categoria_tipo}
                     </span>
                   </div>
-                  <span className={`text-sm font-semibold flex-shrink-0 ml-3 ${hasTotals ? 'text-stone-900' : 'text-stone-300'}`}>
+
+                  {/* Naturaleza — visible y editable a ≤1 clic (item 1) + sugerencia (item 2) */}
+                  <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5 flex-shrink-0 mx-3">
+                    {(() => {
+                      const natActual = cat.categoria_naturaleza || 'otro';
+                      const sug = sugerirNaturaleza(cat.categoria_nombre);
+                      return (
+                        <>
+                          {sug && natActual === 'otro' && (
+                            <button
+                              type="button"
+                              onClick={() => setCategoriaNaturaleza(cat.categoria_id, sug)}
+                              className="hidden sm:inline text-[11px] text-[var(--accent)] hover:underline whitespace-nowrap"
+                              title={`Sugerido por el nombre "${cat.categoria_nombre}". Clic para aplicar.`}
+                            >
+                              ¿{NATURALEZA_LABELS[sug]}?
+                            </button>
+                          )}
+                          <CustomSelect
+                            compact
+                            value={natActual}
+                            onChange={(v) => setCategoriaNaturaleza(cat.categoria_id, v)}
+                            options={NATURALEZA_OPTIONS}
+                            className="w-[124px]"
+                          />
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  <span className={`text-sm font-semibold flex-shrink-0 ${hasTotals ? 'text-stone-900' : 'text-stone-300'}`}>
                     {formatCurrency(catTotal)}
                   </span>
                 </div>
@@ -769,13 +851,24 @@ export default function PLGastosPage() {
                     <CustomSelect
                       value={catForm.naturaleza || 'otro'}
                       onChange={(v) => setCatForm((f) => ({ ...f, naturaleza: v }))}
-                      options={[
-                        { value: 'operativo_mo', label: 'Operativo (MO)' },
-                        { value: 'cif', label: 'CIF' },
-                        { value: 'administrativo', label: 'Administrativo' },
-                        { value: 'otro', label: 'Otro' },
-                      ]}
+                      options={NATURALEZA_OPTIONS}
                     />
+                    {/* Autocategorización por nombre (item 2) — sugerencia editable, un clic para aplicar */}
+                    {(() => {
+                      const sug = sugerirNaturaleza(catForm.nombre);
+                      if (sug && sug !== (catForm.naturaleza || 'otro')) {
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => setCatForm((f) => ({ ...f, naturaleza: sug }))}
+                            className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-[var(--accent)] hover:underline"
+                          >
+                            Sugerido por el nombre: <b>{NATURALEZA_LABELS[sug]}</b> · aplicar
+                          </button>
+                        );
+                      }
+                      return null;
+                    })()}
                     <p className="mt-1.5 text-[11px] leading-relaxed text-stone-500">
                       {NATURALEZA_HINTS[catForm.naturaleza || 'otro']}
                     </p>
@@ -793,7 +886,10 @@ export default function PLGastosPage() {
 
                   {/* Subcategorias */}
                   <div>
-                    <label className={cx.label}>Subcategorías sugeridas</label>
+                    <label className={cx.label}>Subcategorías</label>
+                    <p className="mb-2 text-[11px] leading-relaxed text-stone-400">
+                      Solo para orden y visibilidad interna. La <b>naturaleza y el cálculo del P&amp;L se rigen por esta categoría principal</b>, no por la subcategoría.
+                    </p>
                     <div className="flex flex-wrap gap-1 mb-2">
                       {(catForm.subcategorias || []).map((s, i) => (
                         <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 bg-stone-100 rounded text-xs text-stone-700">

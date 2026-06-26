@@ -814,9 +814,17 @@ function MaquinasConfig({ api, toast, simbolo }) {
     finally { setCreating(false); }
   };
 
+  // Normaliza un NUMERIC(12,4) del backend ("200.0000") a número humano (200, 18.5)
+  // para que el input no muestre decimales basura.
+  const cleanHoras = (v) => {
+    if (v == null || v === '') return '';
+    const n = Number(v);
+    return Number.isFinite(n) ? n : v;
+  };
+
   const startEdit = (m) => {
     setEditId(m.id);
-    setEditForm({ nombre: m.nombre, descripcion: m.descripcion || '', horas_disponibles_mes: m.horas_disponibles_mes ?? 160 });
+    setEditForm({ nombre: m.nombre, descripcion: m.descripcion || '', horas_disponibles_mes: cleanHoras(m.horas_disponibles_mes ?? 160) });
   };
 
   const handleSaveEdit = async (id) => {
@@ -877,11 +885,20 @@ function MaquinasConfig({ api, toast, simbolo }) {
             <div key={m.id} className="rounded-lg border border-stone-200 px-3 py-2.5">
               {editId === m.id ? (
                 <div className="space-y-2">
-                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-2">
-                    <input type="text" value={editForm.nombre} onChange={e => setEditForm({ ...editForm, nombre: e.target.value })} className={cx.input + ' text-sm'} placeholder="Nombre" />
-                    <input type="number" step="0.1" min="0" value={editForm.horas_disponibles_mes} onChange={e => setEditForm({ ...editForm, horas_disponibles_mes: e.target.value })} className={cx.input + ' text-sm'} placeholder="Horas/mes" />
+                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_160px] gap-2">
+                    <div>
+                      <label className={cx.label}>Nombre de la máquina</label>
+                      <input type="text" value={editForm.nombre} onChange={e => setEditForm({ ...editForm, nombre: e.target.value })} className={cx.input + ' text-sm'} placeholder="Ej: Horno industrial" />
+                    </div>
+                    <div>
+                      <label className={cx.label}>Horas disponibles / mes</label>
+                      <input type="number" step="0.5" min="0" inputMode="decimal" value={editForm.horas_disponibles_mes} onChange={e => setEditForm({ ...editForm, horas_disponibles_mes: e.target.value })} className={cx.input + ' text-sm'} placeholder="Ej: 200" />
+                    </div>
                   </div>
-                  <input type="text" value={editForm.descripcion} onChange={e => setEditForm({ ...editForm, descripcion: e.target.value })} className={cx.input + ' text-sm'} placeholder="Descripción (opcional)" />
+                  <div>
+                    <label className={cx.label}>Descripción (opcional)</label>
+                    <input type="text" value={editForm.descripcion} onChange={e => setEditForm({ ...editForm, descripcion: e.target.value })} className={cx.input + ' text-sm'} placeholder="Ej: 2 hornos en paralelo" />
+                  </div>
                   <div className="flex gap-2">
                     <button onClick={() => handleSaveEdit(m.id)} disabled={savingEdit} className={cx.btnPrimary + ' flex items-center gap-1.5 min-h-[44px]'}>
                       {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Guardar
@@ -910,11 +927,20 @@ function MaquinasConfig({ api, toast, simbolo }) {
       {/* Agregar */}
       <div className="border-t border-stone-100 pt-4">
         <p className="text-sm font-semibold text-stone-700 mb-2">Agregar máquina</p>
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-2 mb-2">
-          <input type="text" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} className={cx.input + ' text-sm'} placeholder="Ej: Horno industrial" />
-          <input type="number" step="0.1" min="0" value={form.horas_disponibles_mes} onChange={e => setForm({ ...form, horas_disponibles_mes: e.target.value })} className={cx.input + ' text-sm'} placeholder="Horas/mes" />
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_160px] gap-2 mb-2">
+          <div>
+            <label className={cx.label}>Nombre de la máquina</label>
+            <input type="text" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} className={cx.input + ' text-sm'} placeholder="Ej: Horno industrial" />
+          </div>
+          <div>
+            <label className={cx.label}>Horas disponibles / mes</label>
+            <input type="number" step="0.5" min="0" inputMode="decimal" value={form.horas_disponibles_mes} onChange={e => setForm({ ...form, horas_disponibles_mes: e.target.value })} className={cx.input + ' text-sm'} placeholder="Ej: 200" />
+          </div>
         </div>
-        <input type="text" value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} className={cx.input + ' text-sm mb-2'} placeholder="Descripción (opcional)" />
+        <div className="mb-2">
+          <label className={cx.label}>Descripción (opcional)</label>
+          <input type="text" value={form.descripcion} onChange={e => setForm({ ...form, descripcion: e.target.value })} className={cx.input + ' text-sm'} placeholder="Ej: 2 hornos en paralelo" />
+        </div>
         <button onClick={handleCreate} disabled={creating || !form.nombre.trim()} className={cx.btnPrimary + ' flex items-center gap-2 min-h-[44px]'}>
           {creating ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} Agregar máquina
         </button>
