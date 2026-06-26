@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
@@ -7,6 +8,7 @@ import { formatCurrency } from '../utils/format';
 import SegmentedControl from '../components/SegmentedControl';
 import CustomSelect from '../components/CustomSelect';
 import ConfirmDialog from '../components/ConfirmDialog';
+import InfoTip from '../components/InfoTip';
 import UsuariosPanel from '../components/UsuariosPanel';
 import {
   Users, Plus, Pencil, Trash2, Check, X, Loader2, Factory, Headphones, Briefcase, Link2,
@@ -17,9 +19,8 @@ import {
 const SECCIONES = [
   { key: 'produccion', label: 'Producción', sub: 'Mano de obra → costo de productos', icon: Factory, color: 'bg-violet-50 text-violet-600' },
   { key: 'operativa', label: 'Operativa', sub: 'Atención al cliente → gastos operativos', icon: Headphones, color: 'bg-sky-50 text-sky-600' },
-  { key: 'administrativa', label: 'Administrativa', sub: 'Gestión → gastos administrativos', icon: Briefcase, color: 'bg-stone-100 text-stone-500' },
+  { key: 'administrativa', label: 'Administrativa', sub: 'Gestión → gastos administrativos', icon: Briefcase, color: 'bg-teal-50 text-teal-700' },
 ];
-const SECCION_BY_KEY = Object.fromEntries(SECCIONES.map((s) => [s.key, s]));
 
 const TABS = [
   { key: 'todo', label: 'Todo' },
@@ -57,57 +58,65 @@ export default function EquipoPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-1">
-        <Users size={20} className="text-stone-400" />
+      {/* Header — sin subtítulo de página; el contexto va en un InfoTip */}
+      <div className="flex items-center gap-2.5 mb-5">
+        <Users size={22} className="text-stone-400" strokeWidth={1.75} />
         <h2 className="text-xl font-bold text-stone-900">Equipo</h2>
+        <InfoTip wide text="Tu planilla organizada por sección. Cada persona con su rol y sueldo. Más adelante cada sección se conecta con tus gastos y el costeo: Producción → mano de obra, Operativa → gastos operativos, Administrativa → gastos administrativos." />
       </div>
-      <p className="text-stone-500 text-sm mb-5">
-        Tu planilla organizada por sección. Cada persona y su sueldo; luego se conectará con tus gastos y el costeo.
-      </p>
 
       {/* Tabs */}
       <div className="mb-5">
         <SegmentedControl options={TABS} value={tab} onChange={setTab} layoutId="equipo-tab" size="sm" />
       </div>
 
-      {tab === 'usuarios' ? (
-        <UsuariosPanel />
-      ) : loading ? (
-        <div className="space-y-3">
-          <div className={cx.skeleton + ' h-24'} />
-          <div className={cx.skeleton + ' h-24'} />
-        </div>
-      ) : (
-        <>
-          <PersonalManager
-            seccion={tab}
-            personal={personal}
-            reload={loadPersonal}
-            api={api}
-            toast={toast}
-            simbolo={simbolo}
-          />
-          {tab === 'todo' && personal.length > 0 && (
-            <div className="mt-4 flex items-center justify-between rounded-xl bg-[var(--accent-light)] border border-emerald-100 px-4 py-3">
-              <span className="text-sm font-medium text-stone-600">Total planilla / mes</span>
-              <span className="text-base font-bold text-stone-800 tabular-nums">{formatCurrency(totalPlanilla)}</span>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={tab}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.18 }}
+        >
+          {tab === 'usuarios' ? (
+            <UsuariosPanel />
+          ) : loading ? (
+            <div className="space-y-3">
+              <div className={cx.skeleton + ' h-28'} />
+              <div className={cx.skeleton + ' h-28'} />
             </div>
+          ) : (
+            <>
+              <PersonalManager
+                seccion={tab}
+                personal={personal}
+                reload={loadPersonal}
+                api={api}
+                toast={toast}
+                simbolo={simbolo}
+              />
+              {tab === 'todo' && personal.length > 0 && (
+                <div className="mt-4 flex items-center justify-between rounded-xl bg-[var(--accent-light)] border border-emerald-100 px-5 py-3.5">
+                  <span className="text-sm font-semibold text-stone-600">Total planilla / mes</span>
+                  <span className="text-lg font-bold text-stone-800 tabular-nums">{formatCurrency(totalPlanilla)}</span>
+                </div>
+              )}
+            </>
           )}
-        </>
-      )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 }
 
-// ── Gestión de personal por sección ──
+// ── Gestión de personal por sección (un solo card, secciones divididas por líneas) ──
 function PersonalManager({ seccion, personal, reload, api, toast, simbolo }) {
   const seccionesAMostrar = seccion === 'todo' ? SECCIONES : SECCIONES.filter((s) => s.key === seccion);
 
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [savingEdit, setSavingEdit] = useState(false);
-  const [addSeccion, setAddSeccion] = useState(null); // key de la sección donde se está agregando
+  const [addSeccion, setAddSeccion] = useState(null);
   const [addForm, setAddForm] = useState({ nombre: '', rol: '', sueldo: '' });
   const [creating, setCreating] = useState(false);
   const [delTarget, setDelTarget] = useState(null);
@@ -171,18 +180,18 @@ function PersonalManager({ seccion, personal, reload, api, toast, simbolo }) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className={cx.card + ' divide-y divide-stone-100 overflow-hidden'}>
       {seccionesAMostrar.map((sec) => {
         const items = personal.filter((p) => p.seccion === sec.key);
         const subtotal = items.reduce((s, p) => s + (Number(p.sueldo) || 0), 0);
         const Icon = sec.icon;
         return (
-          <div key={sec.key} className={cx.card + ' p-5'}>
+          <div key={sec.key} className="px-5 py-4">
             {/* Header de sección */}
-            <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex items-start justify-between gap-3 mb-2">
               <div className="flex items-start gap-2.5 min-w-0">
-                <span className={`flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-7 h-7 rounded-lg ${sec.color}`}>
-                  <Icon size={15} />
+                <span className={`flex-shrink-0 mt-0.5 inline-flex items-center justify-center w-8 h-8 rounded-lg ${sec.color}`}>
+                  <Icon size={16} />
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-stone-900">{sec.label}</p>
@@ -195,15 +204,13 @@ function PersonalManager({ seccion, personal, reload, api, toast, simbolo }) {
               </div>
             </div>
 
-            {/* Lista */}
-            {items.length === 0 && addSeccion !== sec.key ? (
-              <p className="text-xs text-stone-400 py-2">Nadie en esta sección todavía.</p>
-            ) : (
-              <div className="space-y-2">
-                {items.map((p) => (
-                  <div key={p.id} className="rounded-lg border border-stone-200 px-3 py-2.5">
-                    {editId === p.id ? (
-                      <div className="space-y-2">
+            {/* Lista de personas — separadas por líneas, no cajas */}
+            {items.length > 0 && (
+              <div className="divide-y divide-stone-100 mb-1">
+                {items.map((p, i) => (
+                  editId === p.id ? (
+                    <div key={p.id} className="py-3">
+                      <div className="rounded-lg bg-stone-50/70 p-3 space-y-2">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <div>
                             <label className={cx.label}>Nombre</label>
@@ -228,39 +235,54 @@ function PersonalManager({ seccion, personal, reload, api, toast, simbolo }) {
                             />
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <button onClick={() => saveEdit(p.id)} disabled={savingEdit} className={cx.btnPrimary + ' flex items-center gap-1.5 min-h-[44px]'}>
+                        <div className="flex gap-2 pt-0.5">
+                          <motion.button whileTap={{ scale: 0.97 }} onClick={() => saveEdit(p.id)} disabled={savingEdit} className={cx.btnPrimary + ' flex items-center gap-1.5 min-h-[44px]'}>
                             {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Guardar
-                          </button>
+                          </motion.button>
                           <button onClick={() => setEditId(null)} className={cx.btnSecondary + ' min-h-[44px]'}><X size={14} /> Cancelar</button>
                         </div>
                       </div>
-                    ) : (
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-stone-800 truncate">{p.nombre}</p>
-                            {p.cuenta_usuario_id && (
-                              <span className={cx.badge('bg-stone-100 text-stone-500') + ' flex items-center gap-0.5'}><Link2 size={10} /> cuenta</span>
-                            )}
-                          </div>
-                          {p.rol && <p className="text-[11px] text-stone-400 truncate">{p.rol}</p>}
+                    </div>
+                  ) : (
+                    <motion.div
+                      key={p.id}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.15, delay: Math.min(i * 0.03, 0.2) }}
+                      className="flex items-center justify-between gap-3 py-2.5 group"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-stone-800 truncate">{p.nombre}</p>
+                          {p.cuenta_usuario_id && (
+                            <span className={cx.badge('bg-stone-100 text-stone-500') + ' flex items-center gap-0.5'}><Link2 size={10} /> cuenta</span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-sm text-stone-700 tabular-nums">{formatCurrency(p.sueldo)}</span>
-                          <button onClick={() => startEdit(p)} className={cx.btnIcon} title="Editar"><Pencil size={15} /></button>
-                          <button onClick={() => setDelTarget(p)} className="p-2 text-stone-300 hover:text-rose-500 rounded-lg transition-colors" title="Eliminar"><Trash2 size={15} /></button>
-                        </div>
+                        {p.rol && <p className="text-[11px] text-stone-400 truncate">{p.rol}</p>}
                       </div>
-                    )}
-                  </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <span className="text-sm font-medium text-stone-700 tabular-nums">{formatCurrency(p.sueldo)}</span>
+                        <button onClick={() => startEdit(p)} className={cx.btnIcon + ' lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-100'} title="Editar"><Pencil size={15} /></button>
+                        <button onClick={() => setDelTarget(p)} className="p-2 text-stone-300 hover:text-rose-500 rounded-lg transition-colors duration-100 lg:opacity-0 lg:group-hover:opacity-100" title="Eliminar"><Trash2 size={15} /></button>
+                      </div>
+                    </motion.div>
+                  )
                 ))}
               </div>
             )}
 
+            {items.length === 0 && addSeccion !== sec.key && (
+              <p className="text-xs text-stone-400 py-1.5">Nadie en {sec.label.toLowerCase()} todavía.</p>
+            )}
+
             {/* Agregar */}
             {addSeccion === sec.key ? (
-              <div className="mt-3 rounded-lg border border-dashed border-stone-300 p-3 space-y-2">
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.18 }}
+                className="mt-2 rounded-lg border border-dashed border-stone-300 p-3 space-y-2"
+              >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
                     <label className={cx.label}>Nombre</label>
@@ -276,14 +298,14 @@ function PersonalManager({ seccion, personal, reload, api, toast, simbolo }) {
                   <input type="number" step="0.01" min="0" inputMode="decimal" value={addForm.sueldo} onChange={(e) => setAddForm({ ...addForm, sueldo: e.target.value })} className={cx.input + ' text-sm'} placeholder="0.00" />
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={handleCreate} disabled={creating || !addForm.nombre.trim()} className={cx.btnPrimary + ' flex items-center gap-1.5 min-h-[44px]'}>
+                  <motion.button whileTap={{ scale: 0.97 }} onClick={handleCreate} disabled={creating || !addForm.nombre.trim()} className={cx.btnPrimary + ' flex items-center gap-1.5 min-h-[44px]'}>
                     {creating ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Agregar
-                  </button>
+                  </motion.button>
                   <button onClick={() => setAddSeccion(null)} className={cx.btnSecondary + ' min-h-[44px]'}><X size={14} /> Cancelar</button>
                 </div>
-              </div>
+              </motion.div>
             ) : (
-              <button onClick={() => openAdd(sec.key)} className="mt-3 flex items-center gap-1.5 text-sm font-medium text-[var(--accent)] hover:opacity-80 min-h-[44px]">
+              <button onClick={() => openAdd(sec.key)} className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-[var(--accent)] hover:opacity-80 transition-opacity duration-100 min-h-[44px]">
                 <Plus size={15} /> Agregar a {sec.label}
               </button>
             )}
