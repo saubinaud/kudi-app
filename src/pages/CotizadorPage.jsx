@@ -92,6 +92,16 @@ function InfoTip({ text }) {
   );
 }
 
+// Tag "sin costo" — pill suave del design system (sin borde, amber-50/600), reutilizable
+// en la lista del pack, el catálogo y el resumen para una sola fuente de verdad visual.
+function SinCostoTag({ className = '' }) {
+  return (
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 text-amber-600 ${className}`}>
+      sin costo
+    </span>
+  );
+}
+
 let tempId = 0;
 const newTempId = () => `temp-${++tempId}`;
 
@@ -255,9 +265,7 @@ function PackItemsEditor({ productoId, onItemsChange }) {
                 <p className="text-sm font-medium text-stone-800 truncate">{item.nombre || item.item_nombre || '--'}</p>
                 <div className="flex items-center gap-1.5">
                   <p className="text-[10px] text-stone-400">{formatCurrency(getCostoEfectivo(item.item_producto_id))} c/u</p>
-                  {getCostoEfectivo(item.item_producto_id) === 0 && (
-                    <span className="text-[9px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-1 py-px">sin costo</span>
-                  )}
+                  {getCostoEfectivo(item.item_producto_id) === 0 && <SinCostoTag />}
                 </div>
               </div>
               <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-lg">
@@ -334,9 +342,7 @@ function PackItemsEditor({ productoId, onItemsChange }) {
                 )}
                 <p className="text-[10px] font-medium text-stone-800 truncate">{p.nombre}</p>
                 <p className="text-[10px] text-stone-400">{formatCurrency(getCostoEfectivo(p.id))}</p>
-                {getCostoEfectivo(p.id) === 0 && (
-                  <span className="inline-block text-[8px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-1 mt-0.5">sin costo</span>
-                )}
+                {getCostoEfectivo(p.id) === 0 && <SinCostoTag className="mt-0.5" />}
               </button>
             ))}
           </div>
@@ -474,15 +480,20 @@ export default function CotizadorPage() {
     return () => clearTimeout(timer);
   }, [nombre]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Pack cost: suma en tiempo real del costo EFECTIVO FRESCO de cada componente.
-  // pendingPackItems ya trae costo_efectivo (leido del catalogo, no snapshot). BUG #1.
+  // FOOD COST del pack para el cotizador: el costo de cada componente SIN su MO/CIF.
+  // El cotizador se enfoca SOLO en food cost (insumos + materiales); la mano de obra y
+  // el CIF viven en la ficha técnica y el P&L, no aquí. El costo total real del pack
+  // (con MO/CIF de componentes + ensamble) lo recalcula el backend al guardar.
   const packCosto = useMemo(() => {
     if (tipoProducto !== 'pack' || !pendingPackItems?.length) return 0;
     return pendingPackItems.reduce((sum, item) => {
       const efectivo = item.costo_efectivo != null
         ? parseFloat(item.costo_efectivo) || 0
         : parseFloat(item.costo_neto) || 0;
-      return sum + efectivo * (Number(item.cantidad) || 1);
+      const mo = parseFloat(item.costo_mo) || 0;
+      const cif = parseFloat(item.costo_cif) || 0;
+      const food = Math.max(0, efectivo - mo - cif); // costo del componente sin labor/CIF
+      return sum + food * (Number(item.cantidad) || 1);
     }, 0);
   }, [tipoProducto, pendingPackItems]);
 
@@ -498,29 +509,23 @@ export default function CotizadorPage() {
     costoBaseManual
   );
 
-  // ── Fase C: desglose del PACK en 5 categorias (Insumos, Empaque, MO, CIF, Mercaderia) ──
-  // Cada componente aporta su propio costo_insumos/empaque/mo/cif (× cantidad), leido fresco
-  // del catalogo. A eso se suma el costo PROPIO del pack (empaque/MO de ensamble, etc.) que
-  // ya calcula el hook (costos.costoInsumosProducto / costoEmpaque / costoMo / costoCif).
-  // Mercaderia es DERIVADA = max(0, costoNeto - insumos - empaque - mo - cif): cubre los
-  // componentes comprados/reventa cuyo costo no se desglosa en el modulo. El total = costoNeto.
+  // ── Desglose FOOD COST del PACK (Insumos, Empaque, Mercadería) — SIN MO/CIF ──
+  // El cotizador es food cost: cada componente aporta su insumos/empaque; Mercadería es
+  // el residual derivado (componentes comprados/reventa). MO y CIF NO van aquí (ficha/P&L).
+  // El total = costos.costoNeto que ahora es food cost (packCosto ya excluye MO/CIF).
   const packDesglose = useMemo(() => {
     if (tipoProducto !== 'pack') return null;
     const comp = (pendingPackItems || []).reduce((acc, it) => {
       const q = Number(it.cantidad) || 1;
       acc.insumos += (parseFloat(it.costo_insumos) || 0) * q;
       acc.empaque += (parseFloat(it.costo_empaque) || 0) * q;
-      acc.mo += (parseFloat(it.costo_mo) || 0) * q;
-      acc.cif += (parseFloat(it.costo_cif) || 0) * q;
       return acc;
-    }, { insumos: 0, empaque: 0, mo: 0, cif: 0 });
+    }, { insumos: 0, empaque: 0 });
     const insumos = round2(comp.insumos + (Number(costos.costoInsumosProducto) || 0));
     const empaque = round2(comp.empaque + (Number(costos.costoEmpaque) || 0));
-    const mo = round2(comp.mo + (Number(costos.costoMo) || 0));
-    const cif = round2(comp.cif + (Number(costos.costoCif) || 0));
-    const total = Number(costos.costoNeto) || 0;
-    const mercaderia = round2(Math.max(0, total - insumos - empaque - mo - cif));
-    return { insumos, empaque, mo, cif, mercaderia, total };
+    const total = Number(costos.costoNeto) || 0; // food cost (packCosto sin MO/CIF)
+    const mercaderia = round2(Math.max(0, total - insumos - empaque));
+    return { insumos, empaque, mercaderia, total };
   }, [tipoProducto, pendingPackItems, costos]);
 
   const enrichedInsumos = useMemo(() => {
@@ -1907,7 +1912,7 @@ export default function CotizadorPage() {
                     <div key={item.id || i} className="flex justify-between text-xs">
                       <span className="text-stone-400 truncate mr-2 flex items-center gap-1.5">
                         {item.nombre} {item.cantidad > 1 ? `×${item.cantidad}` : ''}
-                        {efectivo === 0 && <span className="text-[9px] font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-1">sin costo</span>}
+                        {efectivo === 0 && <SinCostoTag />}
                       </span>
                       <span className="text-stone-500 shrink-0">{formatCurrency(efectivo * (Number(item.cantidad) || 1))}</span>
                     </div>
@@ -1933,18 +1938,6 @@ export default function CotizadorPage() {
                     <span className="text-stone-800 font-medium">{formatCurrency(packDesglose.empaque)}</span>
                   </div>
                 )}
-                {packDesglose.mo > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-stone-500">Mano de obra<InfoTip text="Incluye el tiempo de armado del pack más la mano de obra de cada componente." /></span>
-                    <span className="text-stone-800 font-medium">{formatCurrency(packDesglose.mo)}</span>
-                  </div>
-                )}
-                {packDesglose.cif > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-stone-500">CIF</span>
-                    <span className="text-stone-800 font-medium">{formatCurrency(packDesglose.cif)}</span>
-                  </div>
-                )}
                 {packDesglose.mercaderia > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-stone-500">Mercadería<InfoTip text="Costo de productos comprados o de reventa incluidos en el pack." /></span>
@@ -1952,7 +1945,7 @@ export default function CotizadorPage() {
                   </div>
                 )}
                 <div className="flex justify-between text-sm font-semibold pt-2">
-                  <span className="text-stone-600">Costo neto</span>
+                  <span className="text-stone-600">Food cost<InfoTip text="Costo de insumos y materiales. La mano de obra y el CIF se calculan en la ficha técnica y el Estado de Resultados." /></span>
                   <span className="text-stone-800">{formatCurrency(packDesglose.total)}</span>
                 </div>
               </div>
@@ -1994,7 +1987,7 @@ export default function CotizadorPage() {
                     </div>
                   )}
                   <div className="flex justify-between text-sm font-semibold pt-2">
-                    <span className="text-stone-600">Costo neto</span>
+                    <span className="text-stone-600">Food cost<InfoTip text="Costo de insumos y materiales. La mano de obra y el CIF se calculan en la ficha técnica y el Estado de Resultados." /></span>
                     <span className="text-stone-800">{formatCurrency(costos.costoNeto)}</span>
                   </div>
                 </div>
@@ -2141,7 +2134,7 @@ export default function CotizadorPage() {
                     <span className="text-stone-800 font-medium">{formatCurrency(costos.costoEmpaque)}</span>
                   </div>
                   <div className="flex justify-between text-sm font-semibold pt-2">
-                    <span className="text-stone-600">Costo neto</span>
+                    <span className="text-stone-600">Food cost<InfoTip text="Costo de insumos y materiales. La mano de obra y el CIF se calculan en la ficha técnica y el Estado de Resultados." /></span>
                     <span className="text-stone-800">{formatCurrency(costos.costoNeto)}</span>
                   </div>
                 </div>
