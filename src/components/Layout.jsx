@@ -158,7 +158,8 @@ export default function Layout() {
       links: [
         { to: '/pl/compras', label: 'Compras', icon: ShoppingBag, perm: 'finanzas' },
         { to: '/pl/gastos', label: 'Pagos', icon: Receipt, perm: 'finanzas' },
-        { to: '/equipo', label: 'Equipo', icon: Users, perm: 'finanzas' },
+        // OCULTO EN PROD (WIP, solo en uat): módulo Equipo/planilla. Reactivar al lanzar.
+        // { to: '/equipo', label: 'Equipo', icon: Users, perm: 'finanzas' },
         { to: '/perdidas', label: 'Pérdidas', icon: TrendingDown, perm: 'finanzas' },
       ],
     },
@@ -169,7 +170,8 @@ export default function Layout() {
       links: [
         { to: '/pl', label: 'Timeline', icon: Activity, perm: 'finanzas', end: true },
         { to: '/pl/resumen', label: 'Estado de resultados', icon: BarChart3, perm: 'finanzas' },
-        { to: '/pl/tasas', label: 'Tasas del período', icon: Gauge, perm: 'finanzas' },
+        // OCULTO EN PROD (WIP, solo en uat): Tasas del período (costeo por absorción). Reactivar al lanzar.
+        // { to: '/pl/tasas', label: 'Tasas del período', icon: Gauge, perm: 'finanzas' },
         { to: '/pl/cashflow', label: 'Flujo de Caja', icon: Wallet, perm: 'finanzas' },
         { to: '/proveedores', label: 'Proveedores', icon: Truck, perm: 'finanzas' },
       ],
