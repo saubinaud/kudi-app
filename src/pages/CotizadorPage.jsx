@@ -13,6 +13,7 @@ import { API_BASE } from '../config/api';
 import SearchableSelect from '../components/SearchableSelect';
 import CustomSelect from '../components/CustomSelect';
 import SegmentedControl from '../components/SegmentedControl';
+import InfoTip from '../components/InfoTip';
 import { PromptDialog } from '../components/ConfirmDialog';
 import {
   Plus,
@@ -80,17 +81,6 @@ function EditablePrice({ value, onChange, simbolo = 'S/', className = '' }) {
   );
 }
 
-function InfoTip({ text }) {
-  return (
-    <span className="relative group inline-flex ml-1.5 cursor-help z-30">
-      <span className="w-4 h-4 rounded-full bg-stone-200 text-stone-500 text-[10px] font-bold inline-flex items-center justify-center group-hover:bg-[var(--accent)] group-hover:text-white transition-colors">?</span>
-      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 px-3.5 py-2.5 bg-stone-900 text-white text-xs rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none w-60 text-center leading-relaxed z-40">
-        {text}
-        <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-stone-900" />
-      </span>
-    </span>
-  );
-}
 
 // Tag "sin costo" — pill suave del design system (sin borde, amber-50/600), reutilizable
 // en la lista del pack, el catálogo y el resumen para una sola fuente de verdad visual.
