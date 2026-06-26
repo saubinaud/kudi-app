@@ -1442,8 +1442,10 @@ export default function CotizadorPage() {
             </div>
           )}
 
-          {/* ── Preparaciones + Composicion — solo para transformables ── */}
-          {tipoProducto === 'transformable' && <>
+          {/* ── Preparaciones + Composicion — transformables Y packs ──
+              En un pack son "adicionales" (ej. fresas): insumos sueltos que se suman al
+              food cost junto con los productos y materiales. Reusa el mismo editor. */}
+          {(tipoProducto === 'transformable' || tipoProducto === 'pack') && <>
           <div id="cotizador-prep-section">
             <h3 className="text-lg font-semibold text-stone-900 mb-3">{t.preparaciones || 'Preparaciones'}<InfoTip text={`Cada ${(t.preparacion || 'preparación').toLowerCase()} es un componente base de tu producto. Indica cuánto rinde en total. Puedes cargar plantillas guardadas previamente.`} /></h3>
 
