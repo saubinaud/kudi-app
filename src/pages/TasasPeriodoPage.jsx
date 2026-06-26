@@ -106,7 +106,7 @@ export default function TasasPeriodoPage() {
 
   useEffect(() => {
     if (periodoId) loadFrozen(periodoId);
-  }, [periodoId, loadFrozen]);
+  }, [periodoId]); // eslint-disable-line react-hooks/exhaustive-deps — loadFrozen depende de `api` (objeto nuevo por render); incluirlo causa bucle infinito
 
   const handleCalcular = async () => {
     if (!periodoId) { toast.error('Selecciona un período'); return; }
@@ -185,10 +185,14 @@ export default function TasasPeriodoPage() {
       <div className="mb-5 flex items-start gap-2 rounded-xl bg-[var(--accent-light)] border border-emerald-100 px-4 py-3">
         <Info size={16} className="text-[var(--accent)] mt-0.5 flex-shrink-0" />
         <p className="text-[12px] text-stone-600 leading-relaxed">
-          Estas tasas son <b>predeterminadas</b>: se calculan con los gastos registrados del mes y la
-          capacidad teórica de tu negocio. Al <b>congelar</b>, quedan fijas para ese período (no se
-          recalculan solas). <b>Todavía no se aplican</b> al costo de tus productos — esto es solo
-          configuración del modelo.
+          <b>¿Para qué sirve?</b> Reparte tus gastos de <b>planilla</b> (mano de obra) y de
+          <b> servicios/máquina</b> (CIF) entre las horas que produces al mes. Así obtienes un costo
+          <b> por hora</b> de trabajo y de máquina, que luego se suma al costo de cada producto según
+          el tiempo que toma hacerlo.
+          <br /><br />
+          Se calculan con los gastos del mes y tu capacidad teórica. Al <b>congelar</b> quedan fijas
+          para ese período. <b>Todavía no se aplican</b> al costo de tus productos — por ahora es solo
+          la configuración del modelo.
         </p>
       </div>
 
