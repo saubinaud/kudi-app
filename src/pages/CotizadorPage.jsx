@@ -156,6 +156,14 @@ function PackItemsEditor({ productoId, onItemsChange }) {
     };
   };
 
+  // FOOD COST del componente = su costo efectivo SIN su MO/CIF. El cotizador es
+  // food cost de punta a punta: la mano de obra/CIF de cada producto es irrelevante
+  // aquí (vive en su ficha técnica). Lo que se muestra y se costea en el pack es food cost.
+  const getFoodCost = (itemProductoId) => {
+    const d = getDesglose(itemProductoId);
+    return Math.max(0, getCostoEfectivo(itemProductoId) - d.costo_mo - d.costo_cif);
+  };
+
   // Notify parent of items changes (for saving with the product).
   // Se adjunta el costo EFECTIVO fresco + el desglose por categoria para que el
   // costeo use precios actuales y el resumen muestre las 5 categorias.
@@ -228,7 +236,7 @@ function PackItemsEditor({ productoId, onItemsChange }) {
     }
   };
 
-  const totalCosto = items.reduce((s, i) => s + getCostoEfectivo(i.item_producto_id) * (Number(i.cantidad) || 1), 0);
+  const totalCosto = items.reduce((s, i) => s + getFoodCost(i.item_producto_id) * (Number(i.cantidad) || 1), 0);
 
   if (loadingItems) {
     return <div className="space-y-2 py-4">{[1,2].map(i => <div key={i} className="bg-stone-100 rounded-xl h-10 animate-pulse" />)}</div>;
@@ -264,8 +272,8 @@ function PackItemsEditor({ productoId, onItemsChange }) {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-stone-800 truncate">{item.nombre || item.item_nombre || '--'}</p>
                 <div className="flex items-center gap-1.5">
-                  <p className="text-[10px] text-stone-400">{formatCurrency(getCostoEfectivo(item.item_producto_id))} c/u</p>
-                  {getCostoEfectivo(item.item_producto_id) === 0 && <SinCostoTag />}
+                  <p className="text-[10px] text-stone-400">{formatCurrency(getFoodCost(item.item_producto_id))} c/u</p>
+                  {getFoodCost(item.item_producto_id) === 0 && <SinCostoTag />}
                 </div>
               </div>
               <div className="flex items-center gap-1 bg-white border border-stone-200 rounded-lg">
@@ -284,7 +292,7 @@ function PackItemsEditor({ productoId, onItemsChange }) {
                   className="w-7 h-7 flex items-center justify-center text-stone-500 hover:text-stone-800 transition-colors duration-100 rounded-r-lg hover:bg-stone-50 text-xs"
                 >+</button>
               </div>
-              <span className="text-sm font-semibold text-stone-800 w-20 text-right">{formatCurrency(getCostoEfectivo(item.item_producto_id) * (Number(item.cantidad) || 1))}</span>
+              <span className="text-sm font-semibold text-stone-800 w-20 text-right">{formatCurrency(getFoodCost(item.item_producto_id) * (Number(item.cantidad) || 1))}</span>
               <button onClick={() => handleRemove(item.id)} className="text-stone-300 hover:text-rose-500 transition-colors duration-100 opacity-0 group-hover:opacity-100">
                 <Trash2 size={13} />
               </button>
@@ -341,8 +349,8 @@ function PackItemsEditor({ productoId, onItemsChange }) {
                   </div>
                 )}
                 <p className="text-[10px] font-medium text-stone-800 truncate">{p.nombre}</p>
-                <p className="text-[10px] text-stone-400">{formatCurrency(getCostoEfectivo(p.id))}</p>
-                {getCostoEfectivo(p.id) === 0 && <SinCostoTag className="mt-0.5" />}
+                <p className="text-[10px] text-stone-400">{formatCurrency(getFoodCost(p.id))}</p>
+                {getFoodCost(p.id) === 0 && <SinCostoTag className="mt-0.5" />}
               </button>
             ))}
           </div>
@@ -1907,7 +1915,9 @@ export default function CotizadorPage() {
             {tipoProducto === 'pack' && pendingPackItems?.length > 0 && (
               <div className="space-y-1 pb-3 mb-1 border-b border-stone-100">
                 {pendingPackItems.map((item, i) => {
-                  const efectivo = item.costo_efectivo != null ? parseFloat(item.costo_efectivo) || 0 : parseFloat(item.costo_neto) || 0;
+                  // food cost del componente (sin su MO/CIF) — el cotizador es food cost
+                  const full = item.costo_efectivo != null ? parseFloat(item.costo_efectivo) || 0 : parseFloat(item.costo_neto) || 0;
+                  const efectivo = Math.max(0, full - (parseFloat(item.costo_mo) || 0) - (parseFloat(item.costo_cif) || 0));
                   return (
                     <div key={item.id || i} className="flex justify-between text-xs">
                       <span className="text-stone-400 truncate mr-2 flex items-center gap-1.5">
