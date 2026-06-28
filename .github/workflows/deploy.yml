@@ -19,6 +19,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # GATE backend-first: si el backend de prod reporta un `contract` menor al que este
+      # front requiere (.backend-version), NO se publica → nunca front-nuevo/backend-viejo.
+      - name: Backend-first gate
+        run: |
+          REQ=$(cat .backend-version)
+          LIVE=$(curl -fsS https://cotizador-api.s6hx3x.easypanel.host/api/version | grep -oE '"contract":[0-9]+' | grep -oE '[0-9]+' || echo 0)
+          echo "backend contract: live=${LIVE:-0}  requerido=$REQ"
+          if [ "${LIVE:-0}" -lt "$REQ" ]; then
+            echo "::error::Backend en contract ${LIVE:-0} < requerido $REQ. Deployá el backend primero — el front NO se publica."
+            exit 1
+          fi
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
