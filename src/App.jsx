@@ -34,6 +34,8 @@ import ComprobantesPage from './pages/ComprobantesPage';
 import FichaTecnicaPage from './pages/FichaTecnicaPage';
 import PedidosPage from './pages/PedidosPage';
 import EquipoPage from './pages/EquipoPage';
+import ActivosPage from './pages/ActivosPage';
+import EstadoResultadosPage from './pages/EstadoResultadosPage';
 import CanalesPage from './pages/CanalesPage';
 import AnalisisPage from './pages/AnalisisPage';
 import StockPage from './pages/StockPage';
@@ -118,6 +120,8 @@ export default function App() {
               <Route path="/actividad" element={<ActividadPage />} />
               <Route path="/pl" element={<PLTimelinePage />} />
               <Route path="/pl/resumen" element={<PLResumenPage />} />
+              <Route path="/pl/estado-resultados" element={<EstadoResultadosPage />} />
+              <Route path="/activos" element={<ActivosPage />} />
               <Route path="/pl/tasas" element={<TasasPeriodoPage />} />
               <Route path="/pos" element={<POSPage />} />
               <Route path="/mesas" element={<MesasPage />} />
