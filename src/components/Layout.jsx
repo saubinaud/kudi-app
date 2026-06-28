@@ -220,25 +220,46 @@ export default function Layout() {
 
   const [bannerDismissed, setBannerDismissed] = useState(() => sessionStorage.getItem('kudi_banner_dismissed') === '1');
 
+  const DIAS_GRACIA = 3;
   const trialBanner = (() => {
     if (!user || user.rol === 'admin') return null;
-    // Paid plans that are not trial
-    if (user.plan && !['trial'].includes(user.plan) && !user.trial_ends_at) return null;
-    if (!user.trial_ends_at) return null;
 
     const now = new Date();
-    const ends = new Date(user.trial_ends_at);
-    const diffMs = ends - now;
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const esTrial = user.plan === 'trial' || (!user.plan && user.trial_ends_at);
 
-    if (diffDays > 7) {
-      return { type: 'info', text: `Prueba gratis — ${diffDays} días restantes`, color: 'bg-blue-50 text-blue-700 border-blue-200', dismissable: true };
+    if (esTrial) {
+      if (!user.trial_ends_at) return null;
+      const ends = new Date(user.trial_ends_at);
+      const diffDays = Math.ceil((ends - now) / (1000 * 60 * 60 * 24));
+      if (diffDays > 7) {
+        return { type: 'info', text: `Prueba gratis — ${diffDays} días restantes`, color: 'bg-blue-50 text-blue-700 border-blue-200', dismissable: true };
+      } else if (diffDays > 0) {
+        return { type: 'warning', text: `Tu prueba gratis termina en ${diffDays} día${diffDays > 1 ? 's' : ''}`, color: 'bg-amber-50 text-amber-700 border-amber-200', dismissable: true };
+      } else if (diffDays === 0) {
+        return { type: 'danger', text: 'Tu prueba gratis termina hoy', color: 'bg-rose-50 text-rose-700 border-rose-200', dismissable: false };
+      } else if (diffDays >= -DIAS_GRACIA) {
+        const restantes = DIAS_GRACIA + diffDays;
+        return { type: 'danger', text: `Tu prueba venció — te quedan ${restantes} día${restantes !== 1 ? 's' : ''} de cortesía para activar un plan`, color: 'bg-rose-50 text-rose-700 border-rose-200', dismissable: false };
+      } else {
+        return { type: 'expired', text: 'Tu prueba gratis terminó — activa un plan para seguir creando', color: 'bg-rose-50 text-rose-700 border-rose-200', dismissable: false };
+      }
+    }
+
+    // Suscripción PAGADA con vencimiento (plan_vence_at)
+    if (!user.plan_vence_at) return null;
+    const vence = new Date(user.plan_vence_at);
+    const diffDays = Math.ceil((vence - now) / (1000 * 60 * 60 * 24));
+    if (diffDays > 3) {
+      return null; // vigente, sin necesidad de banner
     } else if (diffDays > 0) {
-      return { type: 'warning', text: `Tu prueba gratis termina en ${diffDays} día${diffDays > 1 ? 's' : ''}`, color: 'bg-amber-50 text-amber-700 border-amber-200', dismissable: true };
+      return { type: 'warning', text: `Tu suscripción vence en ${diffDays} día${diffDays > 1 ? 's' : ''} — renueva para no perder acceso`, color: 'bg-amber-50 text-amber-700 border-amber-200', dismissable: true };
     } else if (diffDays === 0) {
-      return { type: 'danger', text: 'Tu prueba gratis termina hoy', color: 'bg-rose-50 text-rose-700 border-rose-200', dismissable: false };
+      return { type: 'danger', text: 'Tu suscripción vence hoy — renueva tu plan', color: 'bg-rose-50 text-rose-700 border-rose-200', dismissable: false };
+    } else if (diffDays >= -DIAS_GRACIA) {
+      const restantes = DIAS_GRACIA + diffDays;
+      return { type: 'danger', text: `Tu suscripción venció — te quedan ${restantes} día${restantes !== 1 ? 's' : ''} de cortesía para renovar`, color: 'bg-rose-50 text-rose-700 border-rose-200', dismissable: false };
     } else {
-      return { type: 'expired', text: 'Tu prueba gratis ha terminado', color: 'bg-rose-50 text-rose-700 border-rose-200', dismissable: false };
+      return { type: 'expired', text: 'Tu suscripción venció — renueva para seguir creando y vendiendo', color: 'bg-rose-50 text-rose-700 border-rose-200', dismissable: false };
     }
   })();
 
@@ -249,6 +270,14 @@ export default function Layout() {
   const [payUploading, setPayUploading] = useState(false);
   const [paySaving, setPaySaving] = useState(false);
   const [paySuccess, setPaySuccess] = useState(false);
+
+  // Modo solo-lectura: cuando una escritura recibe 403 PLAN_VENCIDO (useApi dispara
+  // el evento), abrimos el modal de renovación con el mensaje del backend.
+  useEffect(() => {
+    const onPlanVencido = () => { setPayStep('plans'); setShowPayModal(true); };
+    window.addEventListener('plan-vencido', onPlanVencido);
+    return () => window.removeEventListener('plan-vencido', onPlanVencido);
+  }, []);
 
   const PAY_PLANS = {
     independiente: { label: 'Independiente', precio: 80 },
