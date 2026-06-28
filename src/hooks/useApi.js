@@ -20,6 +20,17 @@ export function useApi() {
         throw new Error('Sesion expirada');
       }
 
+      // Plan vencido (modo solo-lectura): el backend bloquea la escritura con 403.
+      // Avisamos globalmente para abrir el modal de renovación (listener en Layout).
+      if (res.status === 403) {
+        const err = await res.json().catch(() => ({}));
+        if (err.code === 'PLAN_VENCIDO') {
+          window.dispatchEvent(new CustomEvent('plan-vencido', { detail: err.error }));
+          throw new Error(err.error || 'Tu plan venció');
+        }
+        throw new Error(err.error || err.message || 'No autorizado');
+      }
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || err.message || `Error ${res.status}`);

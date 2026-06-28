@@ -276,7 +276,9 @@ export default function TasasPeriodoPage() {
                 icon={Users}
                 titulo="Tasa mano de obra / hora"
                 tasa={calc.tasa_mo_hora}
-                numeradorLabel="Σ sueldos operativos (CD del mes)"
+                numeradorLabel={calc.mo_fuente === 'planilla'
+                  ? 'Σ sueldos de producción (planilla)'
+                  : 'Σ gastos operativo_mo (legacy)'}
                 numerador={calc.sueldos_operativos}
                 denomLabel="Horas-hombre del mes"
                 denom={calc.horas_hombre_mes}
@@ -298,9 +300,14 @@ export default function TasasPeriodoPage() {
             <div className="mt-4 grid grid-cols-2 gap-3 text-[12px]">
               <div className="rounded-lg bg-stone-50 px-3 py-2">
                 <p className="text-stone-400 font-semibold uppercase text-[10px] tracking-wide">
-                  Gastos operativo_mo
+                  {calc.mo_fuente === 'planilla' ? 'Sueldos producción (planilla)' : 'Gastos operativo_mo'}
                 </p>
-                <p className="text-stone-800 font-medium">{fmtMoney(calc.breakdown?.gastos_operativo_mo ?? calc.sueldos_operativos)}</p>
+                <p className="text-stone-800 font-medium">{fmtMoney(calc.sueldos_operativos)}</p>
+                {calc.mo_fuente === 'planilla' && (
+                  <p className="text-stone-400 text-[10px] mt-0.5">
+                    {calc.planilla?.n_produccion ?? 0} en planilla · fuente: Equipo
+                  </p>
+                )}
               </div>
               <div className="rounded-lg bg-stone-50 px-3 py-2">
                 <p className="text-stone-400 font-semibold uppercase text-[10px] tracking-wide">

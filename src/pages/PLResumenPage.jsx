@@ -324,6 +324,12 @@ export default function PLResumenPage() {
             </div>
             <div className="px-3 sm:px-6 py-3 space-y-2">
               <PLRow label="Gastos fijos" amount={data.gastos.fijos} indent />
+              {data.gastos.planilla_operativa > 0 && (
+                <PLRow label="Planilla operativa (atención)" amount={data.gastos.planilla_operativa} indent note="desde módulo Equipo" />
+              )}
+              {data.gastos.planilla_administrativa > 0 && (
+                <PLRow label="Planilla administrativa" amount={data.gastos.planilla_administrativa} indent note="desde módulo Equipo" />
+              )}
               <PLRow label="Gastos variables" amount={data.gastos.variables} indent />
             </div>
             <div className="px-3 sm:px-6 py-3 border-t border-stone-200 bg-stone-50/50">
