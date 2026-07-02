@@ -45,10 +45,10 @@ export default function EstadoResultadosPage() {
         <div className="text-center py-16 text-stone-400 text-sm">Sin datos para este período.</div>
       ) : (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className={cx.card + ' overflow-hidden'}>
-          {/* 1 · INGRESOS */}
-          <Section title="Ingresos" />
-          {data.ingresos.por_canal.map((c) => (
-            <Row key={c.canal_id ?? 'directo'} label={c.nombre} amount={c.neto} indent />
+          {/* 1 · INGRESOS (desglose por carta — dimensión independiente del canal) */}
+          <Section title="Ingresos por carta" />
+          {data.ingresos.por_carta.map((c) => (
+            <Row key={c.carta_id ?? 'sin-carta'} label={c.nombre} amount={c.neto} indent />
           ))}
           {data.ingresos.descuentos > 0 && <Row label="(−) Descuentos" amount={-data.ingresos.descuentos} indent muted />}
           <Subtotal label="Ventas netas" amount={data.ingresos.ventas_netas} />
@@ -84,11 +84,11 @@ export default function EstadoResultadosPage() {
           <Subtotal label="Utilidad antes de impuestos" amount={data.uai} />
 
           {/* 6 · IR → NETA */}
-          <Row label={`(−) Impuesto a la Renta${data.ir_rate ? ` (${(data.ir_rate * 100).toFixed(1)}%)` : ''}`} amount={-data.impuesto_renta} indent muted />
+          <Row label="(−) Impuesto a la Renta" amount={-data.impuesto_renta} indent muted />
           <div className="px-4 sm:px-6 py-4 border-t-2 border-stone-200 bg-stone-50/60 flex items-center justify-between">
             <span className="text-base font-bold text-stone-800 flex items-center gap-2">
               Utilidad neta
-              {data.ir_rate === 0 && <InfoTip text="Impuesto a la Renta en 0%. Configúralo en tu perfil de empresa para que la utilidad neta lo descuente." />}
+              {data.impuesto_renta === 0 && <InfoTip wide text="El Impuesto a la Renta no se calcula solo: regístralo desde Pagos con una categoría clasificada como 'Impuesto a la Renta', con el monto que declares." />}
             </span>
             <span className={`text-lg font-bold tabular-nums ${data.utilidad_neta >= 0 ? 'text-stone-900' : 'text-rose-600'}`}>
               {formatCurrency(data.utilidad_neta)}

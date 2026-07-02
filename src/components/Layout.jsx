@@ -42,6 +42,7 @@ import {
   Check,
   Gauge,
   Landmark,
+  BookOpen,
 } from 'lucide-react';
 import NotificacionesSidebar from './NotificacionesSidebar';
 import UpdateBanner from './UpdateBanner';
@@ -136,6 +137,7 @@ export default function Layout() {
         { to: '/preparaciones-predeterminadas', label: t.prep_pred || 'Recetas base', icon: ChefHat, perm: 'preparaciones' },
         { to: '/empaques-predeterminados', label: 'Empaques predet.', icon: BoxSelect, perm: 'empaques' },
         { to: '/stock', label: 'Inventario', icon: Package, perm: 'dashboard' },
+        { to: '/cartas', label: 'Cartas', icon: BookOpen, perm: 'dashboard' },
         { to: '/canales', label: 'Canales y Envío', icon: Truck, perm: 'canales' },
         { to: '/margenes', label: 'Márgenes', icon: TrendingUp, perm: 'dashboard' },
       ],

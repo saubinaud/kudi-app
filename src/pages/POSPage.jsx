@@ -336,7 +336,7 @@ export default function POSPage() {
 
   // Checkout submit — recibe la decision de pago desde <PagoSheet>.
   const handleCheckout = async ({ conIgv: ventaConIgv, metodoPago: metodoPagoFinal, pagoDetalle, comisionTarjeta }) => {
-    if (cartItems.length === 0) return;
+    if (cartItems.length === 0 || cartTotal <= 0) return;
     setSaving(true);
     try {
       // Create or find client if doc number provided
@@ -432,11 +432,14 @@ export default function POSPage() {
     const val = parseFloat(rawVal) || 0;
     const next = [...cartItems];
     const item = next[index];
+    const maxMonto = itemPrecio(item) * item.cantidad; // el descuento no puede superar el precio de la linea
     if (item.descuento_tipo === 'pct') {
-      const monto = itemPrecio(item) * item.cantidad * val / 100;
-      next[index] = { ...item, descuento_pct: val, descuento: Math.round(monto * 100) / 100 };
+      const pct = Math.min(100, Math.max(0, val));
+      const monto = maxMonto * pct / 100;
+      next[index] = { ...item, descuento_pct: pct, descuento: Math.round(monto * 100) / 100 };
     } else {
-      next[index] = { ...item, descuento: val, descuento_pct: 0 };
+      const monto = Math.min(maxMonto, Math.max(0, val));
+      next[index] = { ...item, descuento: monto, descuento_pct: 0 };
     }
     setCartItems(next);
   };
@@ -544,7 +547,7 @@ export default function POSPage() {
                     <div className="flex items-center gap-1">
                       <span className="text-[10px] text-stone-400">Desc. S/</span>
                       <input
-                        type="number" min="0" step="0.01"
+                        type="number" min="0" max={(itemPrecio(item) * item.cantidad).toFixed(2)} step="0.01"
                         value={item.descuento || ''}
                         onChange={e => updateDescuento(i, e.target.value)}
                         className="w-14 text-xs border border-stone-200 rounded-lg px-2 py-1 text-right focus:outline-none focus:border-stone-400 transition-colors duration-100"
@@ -696,7 +699,8 @@ export default function POSPage() {
               <button
                 id="pos-cobrar"
                 onClick={() => setShowCheckout(true)}
-                className={cx.btnPrimary + ' w-full py-3.5 text-sm font-semibold flex items-center justify-center gap-2'}
+                disabled={cartTotal <= 0}
+                className={cx.btnPrimary + ' w-full py-3.5 text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed'}
               >
                 Cobrar {formatCurrency(cartTotal)}
               </button>
@@ -890,8 +894,8 @@ export default function POSPage() {
           </div>
           <button
             onClick={() => setShowCheckout(true)}
-            disabled={saving}
-            className={cx.btnPrimary + ' px-6 py-3 text-sm'}
+            disabled={saving || cartTotal <= 0}
+            className={cx.btnPrimary + ' px-6 py-3 text-sm disabled:opacity-40 disabled:cursor-not-allowed'}
           >
             {saving ? '...' : `Cobrar ${formatCurrency(cartTotal)}`}
           </button>
