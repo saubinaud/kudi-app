@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency, formatDate, formatDateTime, formatSmartDate } from '../utils/format';
 import { desglosarIGV } from '../utils/igv';
+import { clampDescuentoMonto, montoDesdePct, totalCobrable } from '../utils/ventaGuards';
 import SearchableSelect from '../components/SearchableSelect';
 import CustomSelect from '../components/CustomSelect';
 import PeriodoSelector from '../components/PeriodoSelector';
@@ -563,6 +564,11 @@ export default function PLVentasPage() {
 
   // Save venta
   const saveVenta = async () => {
+    // Guard total (espejo del back utils/ventaGuards): ninguna venta se guarda con total <= 0.
+    if (!totalCobrable(total)) {
+      toast.error('El total de la venta debe ser mayor a 0');
+      return;
+    }
     const validItems = ventaItems.filter(i => i.producto_id);
     if (validItems.length === 0 || !form.fecha) {
       toast.error('Al menos un producto y fecha son requeridos');
@@ -1326,13 +1332,14 @@ export default function PLVentasPage() {
                           <input type="number" min="0" step="0.01"
                             value={item.descuento_tipo === 'pct' ? (item.descuento_pct || '') : (item.descuento || '')}
                             onChange={e => {
+                              // Tope de descuento (fuente única utils/ventaGuards): monto <= precio*cantidad, pct <= 100.
                               const val = parseFloat(e.target.value) || 0;
                               if (item.descuento_tipo === 'pct') {
-                                const monto = (parseFloat(item.precio_unitario) || 0) * (parseInt(item.cantidad) || 1) * val / 100;
-                                updateItem(item._id, 'descuento_pct', val);
-                                updateItem(item._id, 'descuento', Math.round(monto * 100) / 100);
+                                const pct = Math.min(100, Math.max(0, val));
+                                updateItem(item._id, 'descuento_pct', pct);
+                                updateItem(item._id, 'descuento', montoDesdePct(item.precio_unitario, parseInt(item.cantidad) || 1, pct));
                               } else {
-                                updateItem(item._id, 'descuento', val);
+                                updateItem(item._id, 'descuento', clampDescuentoMonto(item.precio_unitario, parseInt(item.cantidad) || 1, val));
                                 updateItem(item._id, 'descuento_pct', 0);
                               }
                             }}
@@ -1369,8 +1376,12 @@ export default function PLVentasPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-stone-400 text-sm">Descuento global</span>
-                    <input type="number" step="0.01" value={descuentoGlobal}
-                      onChange={e => setDescuentoGlobal(parseFloat(e.target.value) || 0)}
+                    <input type="number" min="0" max={subtotal.toFixed(2)} step="0.01" value={descuentoGlobal}
+                      onChange={e => {
+                        // Tope: el descuento global no puede ser negativo (inflaría el total) ni superar el subtotal.
+                        const val = parseFloat(e.target.value) || 0;
+                        setDescuentoGlobal(Math.min(subtotal, Math.max(0, val)));
+                      }}
                       className="w-24 bg-white rounded-lg px-2 py-1.5 text-sm text-right border border-stone-200" />
                   </div>
                   {parseFloat(descuentoGlobal) > 0 && (
@@ -1841,7 +1852,8 @@ export default function PLVentasPage() {
 
               {/* Actions */}
               <div className="flex gap-3 mt-6">
-                <button onClick={saveVenta} className={cx.btnPrimary + ' flex-1'}>
+                <button onClick={saveVenta} disabled={!totalCobrable(total)}
+                  className={cx.btnPrimary + ' flex-1 disabled:opacity-40 disabled:cursor-not-allowed'}>
                   {editingVenta ? 'Guardar cambios' : 'Registrar'}
                 </button>
                 <button onClick={() => setModalOpen(false)} className={cx.btnSecondary}>
