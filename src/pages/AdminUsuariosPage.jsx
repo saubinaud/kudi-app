@@ -38,6 +38,8 @@ export default function AdminUsuariosPage() {
   const [onboardingLink, setOnboardingLink] = useState('');
   const [editPermisos, setEditPermisos] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  // Exoneración de IGV (Amazonía): decisión fiscal → siempre con confirmación.
+  const [exoneradaTarget, setExoneradaTarget] = useState(null);
 
   useEffect(() => {
     loadUsers();
@@ -166,6 +168,20 @@ export default function AdminUsuariosPage() {
       toast.error(err.message || 'Error eliminando usuario');
     } finally {
       setDeleteTarget(null);
+    }
+  };
+
+  const handleToggleExonerada = async () => {
+    const u = exoneradaTarget;
+    if (!u) return;
+    try {
+      await api.patch(`/admin/usuarios/${u.id}/exonerada`, { exonerada: !u.igv_exonerada });
+      toast.success(u.igv_exonerada ? 'Exoneración de IGV desactivada' : 'Empresa marcada como exonerada de IGV (tasa 0)');
+      loadUsers();
+    } catch {
+      toast.error('Error cambiando exoneración');
+    } finally {
+      setExoneradaTarget(null);
     }
   };
 
@@ -391,6 +407,13 @@ export default function AdminUsuariosPage() {
               >
                 {u.plan === 'pro' ? 'Trial' : 'Pro'}
               </button>
+              <button
+                onClick={() => setExoneradaTarget(u)}
+                className={cx.btnGhost + ' text-xs ' + (u.igv_exonerada ? 'text-emerald-600 font-semibold' : '')}
+                title={u.igv_exonerada ? 'Exonerada de IGV (Amazonía) — click para desactivar' : 'Marcar como exonerada de IGV (Amazonía)'}
+              >
+                Exon.
+              </button>
               <button onClick={() => setDeleteTarget(u)} className={cx.btnDanger + ' flex items-center justify-center gap-1'}>
                 <Trash2 size={13} />
               </button>
@@ -471,6 +494,13 @@ export default function AdminUsuariosPage() {
                     >
                       {u.plan === 'pro' ? 'Trial' : 'Pro'}
                     </button>
+                    <button
+                      onClick={() => setExoneradaTarget(u)}
+                      className={cx.btnGhost + ' text-xs ' + (u.igv_exonerada ? 'text-emerald-600 font-semibold' : '')}
+                      title={u.igv_exonerada ? 'Exonerada de IGV (Amazonía) — click para desactivar' : 'Marcar como exonerada de IGV (Amazonía)'}
+                    >
+                      Exon.
+                    </button>
                     <button onClick={() => setDeleteTarget(u)} className={cx.btnIcon + ' hover:text-rose-600'} title="Eliminar">
                       <Trash2 size={15} />
                     </button>
@@ -524,6 +554,15 @@ export default function AdminUsuariosPage() {
         message={`Estas seguro de eliminar "${deleteTarget?.nombre || deleteTarget?.email}"? Se eliminaran todos sus datos.`}
         onConfirm={handleDeleteUser}
         onCancel={() => setDeleteTarget(null)}
+      />
+      <ConfirmDialog
+        open={!!exoneradaTarget}
+        title={exoneradaTarget?.igv_exonerada ? 'Desactivar exoneración de IGV' : 'Marcar como exonerada de IGV'}
+        message={exoneradaTarget?.igv_exonerada
+          ? `"${exoneradaTarget?.empresa_nombre || exoneradaTarget?.nombre}" volverá a operar como empresa gravada (deberás revisar su tasa de IGV en su Perfil).`
+          : `"${exoneradaTarget?.empresa_nombre || exoneradaTarget?.nombre}" emitirá boletas oficiales SIN IGV (operaciones exoneradas — Amazonía Ley 27037 / Apéndice I) y su tasa quedará fija en 0. Verifica antes que su domicilio fiscal califique.`}
+        onConfirm={handleToggleExonerada}
+        onCancel={() => setExoneradaTarget(null)}
       />
     </div>
   );
