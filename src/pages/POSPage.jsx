@@ -1072,7 +1072,8 @@ export default function POSPage() {
               <p className="text-sm text-stone-500 font-mono mb-4">{lastSaleCode}</p>
             )}
             <div className="space-y-2">
-              {lastSaleConIgv ? (
+              {/* Exonerada de IGV (Amazonía): la boleta oficial SÍ procede aunque la venta sea sin IGV (sale exonerada). */}
+              {(lastSaleConIgv || user?.igv_exonerada) ? (
               <button
                 disabled={emittingBoleta}
                 onClick={async () => {
