@@ -1872,14 +1872,20 @@ export default function PLVentasPage() {
                     onChange={e => setRapidaForm(f => ({ ...f, monto_total: e.target.value }))}
                     className={cx.input + ' text-lg font-bold'} placeholder="0.00" />
                 </div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={rapidaForm.con_igv}
-                    onChange={e => setRapidaForm(f => ({ ...f, con_igv: e.target.checked }))}
-                    className="accent-[var(--accent)] w-4 h-4" />
-                  <span className="text-sm text-stone-700">Con IGV (permite emitir boleta)</span>
-                </label>
-                {!rapidaForm.con_igv && (
-                  <p className="text-[11px] text-amber-600 -mt-2">Sin IGV solo permite ticket referencial, no boleta oficial.</p>
+                {user?.igv_exonerada ? (
+                  <p className="text-[11px] text-emerald-600">Tu empresa está exonerada de IGV (Amazonía): tus boletas oficiales salen sin IGV.</p>
+                ) : (
+                  <>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={rapidaForm.con_igv}
+                        onChange={e => setRapidaForm(f => ({ ...f, con_igv: e.target.checked }))}
+                        className="accent-[var(--accent)] w-4 h-4" />
+                      <span className="text-sm text-stone-700">Con IGV (permite emitir boleta)</span>
+                    </label>
+                    {!rapidaForm.con_igv && (
+                      <p className="text-[11px] text-amber-600 -mt-2">Sin IGV solo permite ticket referencial, no boleta oficial.</p>
+                    )}
+                  </>
                 )}
                 <div>
                   <label className={cx.label}>Fecha</label>
