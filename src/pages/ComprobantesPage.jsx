@@ -103,6 +103,33 @@ export default function ComprobantesPage() {
     }
   };
   const hayViaDirecta = !!(vias && (vias.webusbConectada || vias.agente));
+  // SO para el botón "Descargar Kudi Print"
+  const soCliente = (() => {
+    const p = (navigator.userAgentData?.platform || navigator.platform || navigator.userAgent || '').toLowerCase();
+    if (p.includes('win')) return { os: 'win', label: 'Windows' };
+    if (p.includes('mac')) return { os: 'mac', label: 'macOS' };
+    if (p.includes('linux') && !p.includes('android')) return { os: 'linux', label: 'Linux' };
+    return null; // Android/iOS: no aplica agente (usan WebUSB o ticket HTML)
+  })();
+  const descargarAgente = async () => {
+    if (!soCliente) return;
+    try {
+      const url = `${API_BASE}/print-agent/${soCliente.os}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        return toast.error(j.error || 'El agente aún no está disponible');
+      }
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = soCliente.os === 'win' ? 'kudi-print-win.exe' : `kudi-print-${soCliente.os}`;
+      document.body.appendChild(a); a.click(); a.remove();
+      toast.success('Descargando Kudi Print — ábrelo para activar la impresión');
+    } catch {
+      toast.error('No se pudo descargar el agente');
+    }
+  };
 
   // Load facturacion config
   async function loadConfig() {
@@ -666,9 +693,12 @@ export default function ComprobantesPage() {
                     : 'Este navegador no maneja USB directo: inicia el Agente Kudi Print en la computadora del local y Kudi imprimirá igual.'}
                 </p>
               </div>
-              <div className="flex gap-2 shrink-0">
+              <div className="flex gap-2 shrink-0 flex-wrap">
                 {vias?.webusb && !vias?.webusbConectada && (
                   <button onClick={conectarUsb} className={cx.btnSecondary + ' text-sm min-h-[44px] px-3'}>Conectar USB</button>
+                )}
+                {!hayViaDirecta && soCliente && (
+                  <button onClick={descargarAgente} className={cx.btnSecondary + ' text-sm min-h-[44px] px-3'}>Descargar Kudi Print ({soCliente.label})</button>
                 )}
                 <button onClick={detectar} className={cx.btnGhost + ' text-sm min-h-[44px] px-2'}>Re-detectar</button>
                 <button onClick={probarImpresion} className={cx.btnPrimary + ' text-sm min-h-[44px] px-3'}>Imprimir prueba</button>
