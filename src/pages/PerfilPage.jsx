@@ -314,6 +314,17 @@ export default function PerfilPage() {
         </div>
       )}
 
+      {/* Confirmación al marcarse exonerado de IGV — vive en PerfilPage (mismo scope
+          que confirmExonerada/profileForm), no en los subcomponentes de más abajo. */}
+      <ConfirmDialog
+        open={confirmExonerada}
+        title="Marcar exoneración de IGV"
+        message="Confirma que el domicilio fiscal de tu negocio está en zona de Amazonía (Ley 27037). A partir de ahora tus boletas oficiales saldrán SIN IGV. Si tu negocio no califica, SUNAT puede observar tus comprobantes."
+        confirmText="Sí, estoy exonerado"
+        onConfirm={() => { setProfileForm(prev => ({ ...prev, igv_exonerada: true })); setConfirmExonerada(false); }}
+        onCancel={() => setConfirmExonerada(false)}
+      />
+
       {/* ══════ Tab: Mi plan ══════ */}
       {tab === 'plan' && (
         <div className="space-y-4">
@@ -964,14 +975,6 @@ function MaquinasConfig({ api, toast, simbolo }) {
         confirmStyle="danger"
         onConfirm={handleDelete}
         onCancel={() => setDelTarget(null)}
-      />
-      <ConfirmDialog
-        open={confirmExonerada}
-        title="Marcar exoneración de IGV"
-        message="Confirma que el domicilio fiscal de tu negocio está en zona de Amazonía (Ley 27037). A partir de ahora tus boletas oficiales saldrán SIN IGV. Si tu negocio no califica, SUNAT puede observar tus comprobantes."
-        confirmText="Sí, estoy exonerado"
-        onConfirm={() => { setProfileForm(prev => ({ ...prev, igv_exonerada: true })); setConfirmExonerada(false); }}
-        onCancel={() => setConfirmExonerada(false)}
       />
     </div>
   );
