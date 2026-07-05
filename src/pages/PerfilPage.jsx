@@ -70,6 +70,27 @@ export default function PerfilPage() {
     }).catch(() => toast.error('Error cargando datos'));
   }, []);
 
+  // Impresión: invertir el logo en la térmica (toggle, para logos claro-sobre-oscuro)
+  const [logoInvertir, setLogoInvertir] = useState(false);
+  const [printCfg, setPrintCfg] = useState({});
+  useEffect(() => {
+    api.get('/print/config').then(r => {
+      const c = r.data || r || {};
+      setPrintCfg(c);
+      setLogoInvertir(!!c.logo_invertir);
+    }).catch(() => {});
+  }, []);
+  const toggleLogoInvertir = async (valor) => {
+    setLogoInvertir(valor);
+    try {
+      await api.put('/print/config', { ...printCfg, logo_invertir: valor });
+      toast.success(valor ? 'El logo se imprimirá invertido' : 'El logo se imprimirá normal');
+    } catch {
+      toast.error('No se pudo guardar');
+      setLogoInvertir(!valor);
+    }
+  };
+
   useEffect(() => {
     if (tab === 'plan' && pagos.length === 0) {
       setLoadingPagos(true);
@@ -202,6 +223,27 @@ export default function PerfilPage() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-stone-900">Datos del negocio</h3>
             {!editing && <button onClick={startEditing} className={cx.btnGhost + ' flex items-center gap-1'}><Pencil size={16} /> Editar</button>}
+          </div>
+
+          {/* Logo en la impresión térmica — invertir para logos claro-sobre-oscuro */}
+          <div className="mb-4 rounded-xl border border-stone-200 px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              {user?.logo_url && (
+                <img src={user.logo_url} alt="" className="w-10 h-10 rounded-lg object-contain bg-stone-50 border border-stone-100 shrink-0" />
+              )}
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-stone-700">Invertir logo al imprimir</p>
+                <p className="text-[12px] text-stone-500">Actívalo si tu logo es claro sobre fondo oscuro (para que salga en negro sobre el papel del ticket).</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleLogoInvertir(!logoInvertir)}
+              className={`relative w-11 h-6 rounded-full transition-colors duration-150 shrink-0 ${logoInvertir ? 'bg-[#16A34A]' : 'bg-stone-300'}`}
+              aria-pressed={logoInvertir}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-150 ${logoInvertir ? 'translate-x-5' : ''}`} />
+            </button>
           </div>
 
           {editing ? (

@@ -103,17 +103,6 @@ export default function ComprobantesPage() {
     }
   };
   const hayViaDirecta = !!(vias && (vias.webusbConectada || vias.agente));
-  // Toggle: invertir el logo al imprimir (para logos claro-sobre-oscuro)
-  const guardarLogoInvertir = async (valor) => {
-    setPrinterConfig((p) => ({ ...p, logo_invertir: valor }));
-    try {
-      await api.put('/print/config', { ...printerConfig, logo_invertir: valor });
-      toast.success(valor ? 'Logo se imprimirá invertido' : 'Logo se imprimirá normal');
-    } catch {
-      toast.error('No se pudo guardar');
-      setPrinterConfig((p) => ({ ...p, logo_invertir: !valor }));
-    }
-  };
   // SO para el botón "Descargar Kudi Print"
   const soCliente = (() => {
     const p = (navigator.userAgentData?.platform || navigator.platform || navigator.userAgent || '').toLowerCase();
@@ -714,22 +703,6 @@ export default function ComprobantesPage() {
                 <button onClick={detectar} className={cx.btnGhost + ' text-sm min-h-[44px] px-2'}>Re-detectar</button>
                 <button onClick={probarImpresion} className={cx.btnPrimary + ' text-sm min-h-[44px] px-3'}>Imprimir prueba</button>
               </div>
-            </div>
-
-            {/* Invertir logo — toggle manual para logos claro-sobre-oscuro (ej. K blanca sobre verde) */}
-            <div className="mt-3 pt-3 border-t border-stone-100 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-stone-700">Invertir logo al imprimir</p>
-                <p className="text-[12px] text-stone-500">Actívalo si tu logo es claro sobre fondo oscuro (para que salga en negro sobre el papel).</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => guardarLogoInvertir(!printerConfig.logo_invertir)}
-                className={`relative w-11 h-6 rounded-full transition-colors duration-150 shrink-0 ${printerConfig.logo_invertir ? 'bg-[#16A34A]' : 'bg-stone-300'}`}
-                aria-pressed={!!printerConfig.logo_invertir}
-              >
-                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-150 ${printerConfig.logo_invertir ? 'translate-x-5' : ''}`} />
-              </button>
             </div>
           </div>
 
