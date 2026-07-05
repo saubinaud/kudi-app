@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
+import * as webusb from '../utils/webusbPrinter';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
@@ -1112,7 +1113,17 @@ export default function POSPage() {
               </button>
               ) : (
               <button
-                onClick={() => {
+                onClick={async () => {
+                  // 1º impresora USB (WebUSB, sin driver); 2º ticket HTML del navegador
+                  if (webusb.soportaWebUSB() && (webusb.impresoraConectada() || await webusb.autoDetectar())) {
+                    try {
+                      const r = await api.get(`/print/venta/${lastSaleId}/raw`);
+                      await webusb.imprimirBase64(r.data.bytes);
+                      toast.success('Ticket impreso');
+                      setLastSaleId(null);
+                      return;
+                    } catch { /* cae al ticket HTML */ }
+                  }
                   window.open(`${API_BASE.replace('/api','')}/api/ticket/venta/${lastSaleId}?token=${localStorage.getItem('nodum_token')}`, '_blank');
                   setLastSaleId(null);
                 }}

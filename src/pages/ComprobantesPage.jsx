@@ -8,6 +8,7 @@ import CustomSelect from '../components/CustomSelect';
 import PeriodoSelector from '../components/PeriodoSelector';
 import ConfirmDialog, { PromptDialog } from '../components/ConfirmDialog';
 import { useAuth } from '../context/AuthContext';
+import * as webusb from '../utils/webusbPrinter';
 import {
   FileText, Receipt, Eye, Ban, DollarSign, Trash2, RotateCcw,
   Settings, Upload, CheckCircle, Circle, AlertTriangle, Search, Printer, Truck,
@@ -77,6 +78,30 @@ export default function ComprobantesPage() {
 
   // Printer config state
   const [printerConfig, setPrinterConfig] = useState({ printer_ip: '', printer_port: 9100, printer_enabled: false });
+  // Impresora USB (WebUSB): autodetección silenciosa de dispositivos ya autorizados
+  const [usbNombre, setUsbNombre] = useState(null);
+  useEffect(() => {
+    if (!webusb.soportaWebUSB()) return;
+    webusb.autoDetectar().then((ok) => { if (ok) setUsbNombre(webusb.nombreImpresora()); });
+  }, []);
+  const conectarUsb = async () => {
+    try {
+      await webusb.conectar();
+      setUsbNombre(webusb.nombreImpresora());
+      toast.success('Impresora USB conectada');
+    } catch (err) {
+      toast.error(err.message || 'No se pudo conectar');
+    }
+  };
+  const probarUsb = async () => {
+    try {
+      const r = await api.get('/print/test/raw');
+      await webusb.imprimirBase64(r.data.bytes);
+      toast.success('Prueba impresa — revisa las tildes en el papel');
+    } catch (err) {
+      toast.error(err.message || 'Error imprimiendo prueba');
+    }
+  };
 
   // Load facturacion config
   async function loadConfig() {
@@ -173,8 +198,20 @@ export default function ComprobantesPage() {
     }
   };
 
-  // Print ticket (thermal or fallback HTML)
+  // Print ticket: 1º USB (WebUSB), 2º red (TCP), 3º PDF
   const handlePrint = async (comprobanteId) => {
+    // Impresora USB conectada (o autorizada previamente) → imprimir directo
+    if (webusb.soportaWebUSB() && (webusb.impresoraConectada() || await webusb.autoDetectar())) {
+      try {
+        const r = await api.get(`/print/ticket/${comprobanteId}/raw`);
+        await webusb.imprimirBase64(r.data.bytes);
+        toast.success('Ticket impreso (USB)');
+        return;
+      } catch (err) {
+        toast.error(err.message || 'Error con la impresora USB');
+        // sigue al fallback de red/PDF
+      }
+    }
     if (printerConfig.printer_enabled && printerConfig.printer_ip) {
       try {
         await api.post(`/print/ticket/${comprobanteId}`);
@@ -612,6 +649,31 @@ export default function ComprobantesPage() {
       {!loadingConfig && (
         <div className={cx.card + ' p-4 mb-4'}>
           <h3 className="font-bold text-stone-900 mb-3 flex items-center gap-2"><Printer size={16} /> Impresora termica</h3>
+
+          {/* USB directa (WebUSB) — sin driver; Chrome/Edge y tablets Android */}
+          {webusb.soportaWebUSB() && (
+            <div className="mb-4 rounded-lg border border-stone-200 px-3 py-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-stone-800">Impresora USB</p>
+                  <p className="text-[12px] text-stone-500">
+                    {usbNombre
+                      ? <>Detectada: <b>{usbNombre}</b> — lista para imprimir</>
+                      : 'Conéctala por USB y autorízala una sola vez; después Kudi la detecta sola.'}
+                  </p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button onClick={conectarUsb} className={cx.btnSecondary + ' text-sm min-h-[44px] px-3'}>
+                    {usbNombre ? 'Cambiar' : 'Conectar impresora'}
+                  </button>
+                  {usbNombre && (
+                    <button onClick={probarUsb} className={cx.btnPrimary + ' text-sm min-h-[44px] px-3'}>Imprimir prueba</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-3">
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" checked={printerConfig.printer_enabled}
