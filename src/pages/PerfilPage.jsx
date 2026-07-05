@@ -84,6 +84,7 @@ export default function PerfilPage() {
       igv_rate: user?.igv_rate != null ? (Number(user.igv_rate) < 1 ? parseFloat((Number(user.igv_rate) * 100).toFixed(2)) : Number(user.igv_rate)) : 18,
       pais: user?.pais || 'PE',
       tipo_negocio: user?.tipo_negocio || 'formal',
+      igv_exonerada: user?.igv_exonerada || false,
       precio_decimales: user?.precio_decimales || 'variable',
       giro_negocio_id: user?.giro_negocio_id || '',
     });
@@ -226,37 +227,32 @@ export default function PerfilPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={cx.label}>IGV en tus precios</label>
-                  {user?.igv_exonerada ? (
-                    <div className="mt-1">
-                      <span className={cx.badge('bg-emerald-50 text-emerald-600')}>Exonerada de IGV — Amazonía</span>
-                      <p className="text-[10px] text-stone-400 mt-1.5 leading-relaxed">
-                        Tu empresa está exonerada de IGV (Ley 27037): tus boletas oficiales salen sin IGV automáticamente. Esta condición la gestiona el equipo de Kudi.
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <CustomSelect
-                        value={profileForm.tipo_negocio === 'informal' ? `no_igv_${profileForm.igv_rate || 18}` : `formal_${profileForm.igv_rate}`}
-                        onChange={(val) => {
-                          if (val === 'no_igv_18') setProfileForm(prev => ({ ...prev, tipo_negocio: 'informal', igv_rate: 18 }));
-                          else if (val === 'no_igv_10.5') setProfileForm(prev => ({ ...prev, tipo_negocio: 'informal', igv_rate: 10.5 }));
-                          else if (val === 'formal_10.5') setProfileForm(prev => ({ ...prev, tipo_negocio: 'formal', igv_rate: 10.5 }));
-                          else setProfileForm(prev => ({ ...prev, tipo_negocio: 'formal', igv_rate: 18 }));
-                        }}
-                        options={[
-                          { value: 'formal_18', label: 'Mis precios incluyen IGV (18%)' },
-                          { value: 'formal_10.5', label: 'Mis precios incluyen IGV (10.5%)' },
-                          { value: 'no_igv_18', label: 'Mis precios NO incluyen IGV · Al boletear: 18%' },
-                          { value: 'no_igv_10.5', label: 'Mis precios NO incluyen IGV · Al boletear: 10.5%' },
-                        ]}
-                      />
-                      <p className="text-[10px] text-stone-400 mt-1.5 leading-relaxed">
-                        {profileForm.tipo_negocio === 'informal'
-                          ? 'Tus productos se crean al precio que pones. Al boletear, Kudi agrega el IGV automáticamente.'
-                          : 'Tus precios ya incluyen IGV. El margen se calcula descontando el IGV.'}
-                      </p>
-                    </>
-                  )}
+                  <CustomSelect
+                    value={profileForm.igv_exonerada
+                      ? 'exonerada'
+                      : (profileForm.tipo_negocio === 'informal' ? `no_igv_${profileForm.igv_rate || 18}` : `formal_${profileForm.igv_rate}`)}
+                    onChange={(val) => {
+                      if (val === 'exonerada') setProfileForm(prev => ({ ...prev, igv_exonerada: true }));
+                      else if (val === 'no_igv_18') setProfileForm(prev => ({ ...prev, igv_exonerada: false, tipo_negocio: 'informal', igv_rate: 18 }));
+                      else if (val === 'no_igv_10.5') setProfileForm(prev => ({ ...prev, igv_exonerada: false, tipo_negocio: 'informal', igv_rate: 10.5 }));
+                      else if (val === 'formal_10.5') setProfileForm(prev => ({ ...prev, igv_exonerada: false, tipo_negocio: 'formal', igv_rate: 10.5 }));
+                      else setProfileForm(prev => ({ ...prev, igv_exonerada: false, tipo_negocio: 'formal', igv_rate: 18 }));
+                    }}
+                    options={[
+                      { value: 'formal_18', label: 'Mis precios incluyen IGV (18%)' },
+                      { value: 'formal_10.5', label: 'Mis precios incluyen IGV (10.5%)' },
+                      { value: 'no_igv_18', label: 'Mis precios NO incluyen IGV · Al boletear: 18%' },
+                      { value: 'no_igv_10.5', label: 'Mis precios NO incluyen IGV · Al boletear: 10.5%' },
+                      { value: 'exonerada', label: 'Estoy exonerado de IGV (Amazonía) · Sin IGV en precios ni boletas' },
+                    ]}
+                  />
+                  <p className={`text-[10px] mt-1.5 leading-relaxed ${profileForm.igv_exonerada ? 'text-amber-600' : 'text-stone-400'}`}>
+                    {profileForm.igv_exonerada
+                      ? 'Solo si tu domicilio fiscal está en zona de Amazonía (Ley 27037). Tus boletas saldrán SIN IGV. Si no corresponde, SUNAT puede observar tus comprobantes.'
+                      : (profileForm.tipo_negocio === 'informal'
+                        ? 'Tus productos se crean al precio que pones. Al boletear, Kudi agrega el IGV automáticamente.'
+                        : 'Tus precios ya incluyen IGV. El margen se calcula descontando el IGV.')}
+                  </p>
                 </div>
                 <div>
                   <label className={cx.label}>Pais</label>
