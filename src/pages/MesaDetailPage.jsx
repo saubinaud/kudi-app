@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApi } from '../hooks/useApi';
+import * as printer from '../utils/printerService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
@@ -270,6 +271,19 @@ export default function MesaDetailPage() {
       toast.error(err?.response?.data?.error || 'Error comandando');
     } finally {
       setComandando(false);
+    }
+  };
+
+  // Imprimir precuenta (cascada: USB/agente → ventana imprimible). NO es comprobante.
+  const imprimirPrecuenta = async () => {
+    if (!sesion) return;
+    try {
+      const r = await api.get(`/print/precuenta/mesa/${sesion.id}/raw`);
+      await printer.imprimirBase64(r.data.bytes);
+      toast.success('Precuenta impresa');
+    } catch {
+      // Sin impresora directa → ventana imprimible 80mm desde los datos ya cargados
+      printer.imprimirPrecuentaHTML(`Mesa ${mesaInfo?.numero ?? ''}`, precuentaData, user?.logo_url);
     }
   };
 
@@ -580,7 +594,12 @@ export default function MesaDetailPage() {
                   <span>Total</span><span>{formatCurrency(precuentaData.totales?.total)}</span>
                 </div>
               </div>
-              <button onClick={() => setShowPrecuenta(false)} className={cx.btnSecondary + ' w-full mt-5'}>Cerrar</button>
+              <div className="flex gap-2 mt-5">
+                <button onClick={() => setShowPrecuenta(false)} className={cx.btnSecondary + ' flex-1 min-h-[44px]'}>Cerrar</button>
+                <button onClick={imprimirPrecuenta} className={cx.btnPrimary + ' flex-1 min-h-[44px] flex items-center justify-center gap-2'}>
+                  <FileText size={16} /> Imprimir
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
@@ -609,7 +628,15 @@ export default function MesaDetailPage() {
                 {emittingBoleta ? <span className="flex items-center justify-center gap-2"><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Emitiendo...</span> : 'Emitir boleta'}
               </button>
               ) : (
-              <button onClick={() => {
+              <button onClick={async () => {
+                // Cascada: WebUSB → agente local (cualquier browser) → ticket HTML
+                try {
+                  const r = await api.get(`/print/venta/${lastSaleId}/raw`);
+                  await printer.imprimirBase64(r.data.bytes);
+                  toast.success('Ticket impreso');
+                  navigate(`/mesas${mesaInfo?.piso_id ? `?piso=${mesaInfo.piso_id}` : ''}`);
+                  return;
+                } catch { /* sin vía directa → ticket HTML universal */ }
                 window.open(`${API_BASE.replace('/api','')}/api/ticket/venta/${lastSaleId}?token=${localStorage.getItem('nodum_token')}`, '_blank');
                 navigate(`/mesas${mesaInfo?.piso_id ? `?piso=${mesaInfo.piso_id}` : ''}`);
               }} className={cx.btnPrimary + ' w-full py-2.5 text-sm'} title="Venta sin IGV: no se emite comprobante oficial SUNAT">
