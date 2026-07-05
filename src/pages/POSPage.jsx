@@ -45,7 +45,8 @@ export default function POSPage() {
 
   // Cart
   const [cartItems, setCartItems] = useState([]);
-  const [conIgv, setConIgv] = useState(user?.tipo_negocio !== 'informal'); // informal = sin IGV por defecto
+  // exonerada (Amazonía) = siempre sin IGV; informal = sin IGV por defecto
+  const [conIgv, setConIgv] = useState(!user?.igv_exonerada && user?.tipo_negocio !== 'informal');
   const itemPrecio = (item) => conIgv
     ? (item.precio_con_igv || item.precio || 0)
     : (item.precio_sin_igv || item.precio_con_igv || item.precio || 0);
@@ -589,6 +590,7 @@ export default function POSPage() {
               <PagoSheet
                 conIgv={conIgv}
                 setConIgv={setConIgv}
+                mostrarToggleIgv={!user?.igv_exonerada}
                 tasaIgv={tasaIgvPOS}
                 precioMode={precioMode}
                 base={cartDesglose.base}

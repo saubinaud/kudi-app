@@ -37,6 +37,8 @@ export default function PerfilPage() {
   const [editing, setEditing] = useState(false);
   const [profileForm, setProfileForm] = useState({});
   const [savingProfile, setSavingProfile] = useState(false);
+  // Confirmación al marcarse exonerado de IGV (decisión fiscal — Amazonía Ley 27037).
+  const [confirmExonerada, setConfirmExonerada] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
   // Password
@@ -232,7 +234,8 @@ export default function PerfilPage() {
                       ? 'exonerada'
                       : (profileForm.tipo_negocio === 'informal' ? `no_igv_${profileForm.igv_rate || 18}` : `formal_${profileForm.igv_rate}`)}
                     onChange={(val) => {
-                      if (val === 'exonerada') setProfileForm(prev => ({ ...prev, igv_exonerada: true }));
+                      // Marcarse exonerado abre confirmación (fiscal); las demás opciones son directas.
+                      if (val === 'exonerada') { if (!profileForm.igv_exonerada) setConfirmExonerada(true); }
                       else if (val === 'no_igv_18') setProfileForm(prev => ({ ...prev, igv_exonerada: false, tipo_negocio: 'informal', igv_rate: 18 }));
                       else if (val === 'no_igv_10.5') setProfileForm(prev => ({ ...prev, igv_exonerada: false, tipo_negocio: 'informal', igv_rate: 10.5 }));
                       else if (val === 'formal_10.5') setProfileForm(prev => ({ ...prev, igv_exonerada: false, tipo_negocio: 'formal', igv_rate: 10.5 }));
@@ -961,6 +964,14 @@ function MaquinasConfig({ api, toast, simbolo }) {
         confirmStyle="danger"
         onConfirm={handleDelete}
         onCancel={() => setDelTarget(null)}
+      />
+      <ConfirmDialog
+        open={confirmExonerada}
+        title="Marcar exoneración de IGV"
+        message="Confirma que el domicilio fiscal de tu negocio está en zona de Amazonía (Ley 27037). A partir de ahora tus boletas oficiales saldrán SIN IGV. Si tu negocio no califica, SUNAT puede observar tus comprobantes."
+        confirmText="Sí, estoy exonerado"
+        onConfirm={() => { setProfileForm(prev => ({ ...prev, igv_exonerada: true })); setConfirmExonerada(false); }}
+        onCancel={() => setConfirmExonerada(false)}
       />
     </div>
   );
