@@ -8,6 +8,7 @@ import CustomSelect from '../components/CustomSelect';
 import PeriodoSelector from '../components/PeriodoSelector';
 import ConfirmDialog, { PromptDialog } from '../components/ConfirmDialog';
 import { useAuth } from '../context/AuthContext';
+import * as printer from '../utils/printerService';
 import {
   FileText, Receipt, Eye, Ban, DollarSign, Trash2, RotateCcw,
   Settings, Upload, CheckCircle, Circle, AlertTriangle, Search, Printer, Truck,
@@ -77,6 +78,58 @@ export default function ComprobantesPage() {
 
   // Printer config state
   const [printerConfig, setPrinterConfig] = useState({ printer_ip: '', printer_port: 9100, printer_enabled: false });
+  // Impresión directa: detección de vías (WebUSB + agente local) — cualquier navegador
+  const [vias, setVias] = useState(null); // { webusb, webusbConectada, agente }
+  const detectar = () => printer.detectarVias().then(setVias).catch(() => {});
+  useEffect(() => { detectar(); }, []);
+  const conectarUsb = async () => {
+    try {
+      await printer.webusb.conectar();
+      toast.success('Impresora USB conectada');
+      detectar();
+    } catch (err) {
+      toast.error(err.message || 'No se pudo conectar. En Arc/Safari/Firefox usa el Agente Kudi Print.');
+    }
+  };
+  const probarImpresion = async () => {
+    try {
+      const r = await api.get('/print/test/raw');
+      const via = await printer.imprimirBase64(r.data.bytes);
+      toast.success(`Prueba impresa vía ${via === 'usb' ? 'USB' : 'agente local'} — revisa las tildes`);
+    } catch (err) {
+      toast.error(err.message === 'SIN_VIA_DIRECTA'
+        ? 'Sin vía directa: conecta USB (Chrome) o inicia el Agente Kudi Print'
+        : (err.message || 'Error imprimiendo prueba'));
+    }
+  };
+  const hayViaDirecta = !!(vias && (vias.webusbConectada || vias.agente));
+  // SO para el botón "Descargar Kudi Print"
+  const soCliente = (() => {
+    const p = (navigator.userAgentData?.platform || navigator.platform || navigator.userAgent || '').toLowerCase();
+    if (p.includes('win')) return { os: 'win', label: 'Windows' };
+    if (p.includes('mac')) return { os: 'mac', label: 'macOS' };
+    if (p.includes('linux') && !p.includes('android')) return { os: 'linux', label: 'Linux' };
+    return null; // Android/iOS: no aplica agente (usan WebUSB o ticket HTML)
+  })();
+  const descargarAgente = async () => {
+    if (!soCliente) return;
+    try {
+      const url = `${API_BASE}/print-agent/${soCliente.os}`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        return toast.error(j.error || 'El agente aún no está disponible');
+      }
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = soCliente.os === 'win' ? 'kudi-print-win.exe' : `kudi-print-${soCliente.os}`;
+      document.body.appendChild(a); a.click(); a.remove();
+      toast.success('Descargando Kudi Print — ábrelo para activar la impresión');
+    } catch {
+      toast.error('No se pudo descargar el agente');
+    }
+  };
 
   // Load facturacion config
   async function loadConfig() {
@@ -173,8 +226,14 @@ export default function ComprobantesPage() {
     }
   };
 
-  // Print ticket (thermal or fallback HTML)
+  // Print ticket: 1º cascada directa (USB/agente — cualquier browser), 2º red (TCP), 3º PDF
   const handlePrint = async (comprobanteId) => {
+    try {
+      const r = await api.get(`/print/ticket/${comprobanteId}/raw`);
+      const via = await printer.imprimirBase64(r.data.bytes);
+      toast.success(`Ticket impreso (${via === 'usb' ? 'USB' : 'agente'})`);
+      return;
+    } catch { /* sin vía directa → red/PDF */ }
     if (printerConfig.printer_enabled && printerConfig.printer_ip) {
       try {
         await api.post(`/print/ticket/${comprobanteId}`);
@@ -612,6 +671,41 @@ export default function ComprobantesPage() {
       {!loadingConfig && (
         <div className={cx.card + ' p-4 mb-4'}>
           <h3 className="font-bold text-stone-900 mb-3 flex items-center gap-2"><Printer size={16} /> Impresora termica</h3>
+
+          {/* Impresión directa — cascada compatible con CUALQUIER navegador:
+              WebUSB (Chrome/Edge/Android) o Agente Kudi Print (Arc/Safari/Firefox/todos) */}
+          <div className="mb-4 rounded-lg border border-stone-200 px-3 py-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-stone-800 flex items-center gap-2">
+                  Impresión directa
+                  {vias && (
+                    <span className={`rounded-full text-[10px] font-semibold px-2 py-0.5 ${hayViaDirecta ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                      {hayViaDirecta ? 'Lista' : 'Sin configurar'}
+                    </span>
+                  )}
+                </p>
+                <p className="text-[12px] text-stone-500">
+                  {!vias ? 'Detectando…'
+                    : vias.webusbConectada ? <>Ticketera USB detectada — lista para imprimir</>
+                    : vias.agente ? <>Agente Kudi Print activo ({vias.agente.via === 'usb' ? 'USB' : 'red'}{vias.agente.impresora ? ` · ${vias.agente.impresora}` : ''})</>
+                    : vias.webusb ? 'Conecta tu ticketera USB, o inicia el Agente Kudi Print en la computadora del local.'
+                    : 'Este navegador no maneja USB directo: inicia el Agente Kudi Print en la computadora del local y Kudi imprimirá igual.'}
+                </p>
+              </div>
+              <div className="flex gap-2 shrink-0 flex-wrap">
+                {vias?.webusb && !vias?.webusbConectada && (
+                  <button onClick={conectarUsb} className={cx.btnSecondary + ' text-sm min-h-[44px] px-3'}>Conectar USB</button>
+                )}
+                {!hayViaDirecta && soCliente && (
+                  <button onClick={descargarAgente} className={cx.btnSecondary + ' text-sm min-h-[44px] px-3'}>Descargar Kudi Print ({soCliente.label})</button>
+                )}
+                <button onClick={detectar} className={cx.btnGhost + ' text-sm min-h-[44px] px-2'}>Re-detectar</button>
+                <button onClick={probarImpresion} className={cx.btnPrimary + ' text-sm min-h-[44px] px-3'}>Imprimir prueba</button>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-3">
             <label className="flex items-center gap-3 cursor-pointer">
               <input type="checkbox" checked={printerConfig.printer_enabled}
