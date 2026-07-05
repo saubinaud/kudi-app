@@ -273,6 +273,19 @@ export default function MesaDetailPage() {
     }
   };
 
+  // Imprimir precuenta (cascada: USB/agente → ventana imprimible). NO es comprobante.
+  const imprimirPrecuenta = async () => {
+    if (!sesion) return;
+    try {
+      const r = await api.get(`/print/precuenta/mesa/${sesion.id}/raw`);
+      await printer.imprimirBase64(r.data.bytes);
+      toast.success('Precuenta impresa');
+    } catch {
+      // Sin impresora directa → ventana imprimible 80mm desde los datos ya cargados
+      printer.imprimirPrecuentaHTML(`Mesa ${mesaInfo?.numero ?? ''}`, precuentaData);
+    }
+  };
+
   // Precuenta
   const handlePrecuenta = async () => {
     if (!sesion) return;
@@ -579,7 +592,12 @@ export default function MesaDetailPage() {
                   <span>Total</span><span>{formatCurrency(precuentaData.totales?.total)}</span>
                 </div>
               </div>
-              <button onClick={() => setShowPrecuenta(false)} className={cx.btnSecondary + ' w-full mt-5'}>Cerrar</button>
+              <div className="flex gap-2 mt-5">
+                <button onClick={() => setShowPrecuenta(false)} className={cx.btnSecondary + ' flex-1 min-h-[44px]'}>Cerrar</button>
+                <button onClick={imprimirPrecuenta} className={cx.btnPrimary + ' flex-1 min-h-[44px] flex items-center justify-center gap-2'}>
+                  <FileText size={16} /> Imprimir
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
