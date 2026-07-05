@@ -3,6 +3,7 @@ import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
+import * as printer from '../utils/printerService';
 import { formatCurrency, formatDate, formatDateTime, formatSmartDate } from '../utils/format';
 import { desglosarIGV } from '../utils/igv';
 import SearchableSelect from '../components/SearchableSelect';
@@ -726,6 +727,23 @@ export default function PLVentasPage() {
       const res = await api.get(`/pl/ventas/${ventaId}/detalle`);
       setVentaDetalle(res?.data || res);
     } catch (e) { toast.error('Error al cargar detalle'); }
+  };
+
+  // Imprimir precuenta de una orden (cascada USB/agente → ventana imprimible). NO es comprobante.
+  const imprimirPrecuentaOrden = async (venta) => {
+    try {
+      const r = await api.get(`/print/precuenta/venta/${venta.id}/raw`);
+      await printer.imprimirBase64(r.data.bytes);
+      toast.success('Precuenta impresa');
+    } catch {
+      const items = (venta.items || []).map((i) => ({
+        nombre: i.producto_nombre || i.descripcion_custom || 'Producto',
+        cantidad: i.cantidad, subtotal: i.subtotal,
+      }));
+      printer.imprimirPrecuentaHTML(`Orden ${venta.codigo || '#' + venta.id}`, {
+        items, totales: { total: parseFloat(venta.total || 0), igv: 0 },
+      });
+    }
   };
 
   // Cancel sale handler
@@ -2290,6 +2308,12 @@ export default function PLVentasPage() {
                   );
                 })()}
               </div>
+
+              {/* Imprimir precuenta (cuenta previa — NO es comprobante) */}
+              <button onClick={() => imprimirPrecuentaOrden(ventaDetalle)}
+                className={cx.btnSecondary + ' w-full py-3 text-sm flex items-center justify-center gap-2 mb-2'}>
+                <FileText size={16} /> Imprimir precuenta
+              </button>
 
               {/* Emitir boleta button */}
               {!ventaDetalle.facturado && ventaDetalle.estado_pago !== 'cancelado' && (
