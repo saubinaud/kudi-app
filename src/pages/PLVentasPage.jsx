@@ -742,7 +742,7 @@ export default function PLVentasPage() {
       }));
       printer.imprimirPrecuentaHTML(`Orden ${venta.codigo || '#' + venta.id}`, {
         items, totales: { total: parseFloat(venta.total || 0), igv: 0 },
-      });
+      }, user?.logo_url);
     }
   };
 

@@ -80,7 +80,7 @@ export async function imprimirBase64(b64) {
 // Fallback universal: abre una ventana 80mm imprimible con el navegador (para quien
 // NO tiene impresora térmica directa — usa el diálogo de impresión del sistema).
 // data = { items:[{nombre,cantidad,precio_unitario,subtotal?}], totales:{base,igv,total} }
-export function imprimirPrecuentaHTML(titulo, data) {
+export function imprimirPrecuentaHTML(titulo, data, logoUrl) {
   const fmt = (n) => 'S/' + (Number(n) || 0).toFixed(2);
   const items = (data?.items || []).map((it) => {
     const cant = parseFloat(it.cantidad) || 1;
@@ -93,8 +93,10 @@ export function imprimirPrecuentaHTML(titulo, data) {
     <style>@page{size:80mm auto;margin:3mm}body{width:72mm;margin:0 auto;font:12px/1.4 monospace;color:#000}
     h1{font-size:15px;text-align:center;margin:2px 0}.sub{text-align:center;font-size:11px;margin:0 0 6px}
     hr{border:none;border-top:1px dashed #000;margin:6px 0}table{width:100%;border-collapse:collapse}
-    td{padding:1px 0}.tot td{font-weight:bold;font-size:14px;padding-top:4px}</style></head>
-    <body onload="print();setTimeout(close,300)">
+    td{padding:1px 0}.tot td{font-weight:bold;font-size:14px;padding-top:4px}
+    .logo{display:block;max-width:60mm;max-height:28mm;margin:0 auto 4px;object-fit:contain}</style></head>
+    <body onload="(function(){var i=document.querySelector('.logo');if(i&&!i.complete){i.onload=i.onerror=function(){print();setTimeout(close,300)};}else{print();setTimeout(close,300)}})()">
+    ${logoUrl ? `<img class="logo" src="${logoUrl}" onerror="this.remove()">` : ''}
     <h1>PRECUENTA</h1><p class="sub">${titulo || ''}<br>*** NO ES COMPROBANTE DE PAGO ***</p><hr>
     <table>${items}</table><hr><table>${igvRow}<tr class="tot"><td>TOTAL</td><td style="text-align:right">${fmt(t.total)}</td></tr></table>
     <p class="sub" style="margin-top:8px">Gracias por su preferencia</p></body></html>`;
