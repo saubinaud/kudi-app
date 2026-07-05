@@ -282,7 +282,7 @@ export default function MesaDetailPage() {
       toast.success('Precuenta impresa');
     } catch {
       // Sin impresora directa → ventana imprimible 80mm desde los datos ya cargados
-      printer.imprimirPrecuentaHTML(`Mesa ${mesaInfo?.numero ?? ''}`, precuentaData);
+      printer.imprimirPrecuentaHTML(`Mesa ${mesaInfo?.numero ?? ''}`, precuentaData, user?.logo_url);
     }
   };
 
