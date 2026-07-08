@@ -8,6 +8,7 @@ import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
 import { desglosarIGV } from '../utils/igv';
 import { precioComercial } from '../utils/redondeo';
+import { clampDescuentoMonto, clampDescuentoPct, montoDesdePct } from '../utils/ventaGuards';
 import CustomSelect from '../components/CustomSelect';
 import SegmentedControl from '../components/SegmentedControl';
 import UbigeoSelect from '../components/UbigeoSelect';
@@ -431,17 +432,15 @@ export default function POSPage() {
   };
 
   const updateDescuento = (index, rawVal) => {
-    const val = parseFloat(rawVal) || 0;
+    // Tope de descuento (fuente única utils/ventaGuards, compartido con Ventas):
+    // monto en [0..precio*cantidad], pct en [0..100].
     const next = [...cartItems];
     const item = next[index];
-    const maxMonto = itemPrecio(item) * item.cantidad; // el descuento no puede superar el precio de la linea
     if (item.descuento_tipo === 'pct') {
-      const pct = Math.min(100, Math.max(0, val));
-      const monto = maxMonto * pct / 100;
-      next[index] = { ...item, descuento_pct: pct, descuento: Math.round(monto * 100) / 100 };
+      const pct = clampDescuentoPct(rawVal);
+      next[index] = { ...item, descuento_pct: pct, descuento: montoDesdePct(itemPrecio(item), item.cantidad, pct) };
     } else {
-      const monto = Math.min(maxMonto, Math.max(0, val));
-      next[index] = { ...item, descuento: monto, descuento_pct: 0 };
+      next[index] = { ...item, descuento: clampDescuentoMonto(itemPrecio(item), item.cantidad, rawVal), descuento_pct: 0 };
     }
     setCartItems(next);
   };

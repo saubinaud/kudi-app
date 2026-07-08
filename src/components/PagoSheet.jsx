@@ -64,7 +64,14 @@ export default function PagoSheet({
 
   const total = Math.round((targetTotal + comisionTarjeta) * 100) / 100;
 
-  const mixtoIncompleto = pagoMixto && pagoPartes.some(p => (parseFloat(p.monto) || 0) > 0 && !p.pagada);
+  // Mixto bloquea Confirmar hasta que TODAS las partes estén pagadas Y sumen el total
+  // exacto (mismo criterio que el badge "Cuenta completa" de abajo). Antes solo se exigía
+  // marcar como pagadas las partes ingresadas: se podía cobrar la mitad y confirmar.
+  const sumPartesMixto = pagoMixto ? pagoPartes.reduce((s, p) => s + (parseFloat(p.monto) || 0), 0) : 0;
+  const mixtoIncompleto = pagoMixto && (
+    pagoPartes.some(p => (parseFloat(p.monto) || 0) > 0 && !p.pagada)
+    || Math.abs(Math.round((targetTotal - sumPartesMixto) * 100) / 100) >= 0.01
+  );
   const tasaPct = parseFloat((tasaIgv * 100).toFixed(1));
 
   const handleConfirm = () => {

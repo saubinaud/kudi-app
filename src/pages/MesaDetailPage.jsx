@@ -9,6 +9,7 @@ import { cx } from '../styles/tokens';
 import { formatCurrency } from '../utils/format';
 import { precioComercial } from '../utils/redondeo';
 import { desglosarIGV } from '../utils/igv';
+import { totalCobrable } from '../utils/ventaGuards';
 import ProductGrid from '../components/ProductGrid';
 import PagoSheet from '../components/PagoSheet';
 import { API_BASE } from '../config/api';
@@ -338,6 +339,11 @@ export default function MesaDetailPage() {
   // Cobrar — recibe la decision de pago desde <PagoSheet>.
   const handleCobrar = async ({ conIgv: ventaConIgv, metodoPago: metodoPagoFinal, pagoDetalle, comisionTarjeta }) => {
     if (!sesion || allItems.length === 0) return;
+    // Guard total (espejo del back utils/ventaGuards): no se cobra una mesa en total <= 0.
+    if (!totalCobrable(total)) {
+      toast.error('El total de la mesa debe ser mayor a 0');
+      return;
+    }
     setCobrando(true);
     try {
       // El back es autoridad de precios: recibe la DECISION (con_igv) y la tasa
@@ -532,7 +538,8 @@ export default function MesaDetailPage() {
                   <button onClick={handlePrecuenta} className={cx.btnGhost + ' w-full flex items-center justify-center gap-2 min-h-[44px]'}>
                     <FileText size={16} /> Precuenta
                   </button>
-                  <button onClick={() => setShowCobrar(true)} className={cx.btnPrimary + ' w-full flex items-center justify-center gap-2 min-h-[44px] text-base'}>
+                  <button onClick={() => setShowCobrar(true)} disabled={!totalCobrable(total)}
+                    className={cx.btnPrimary + ' w-full flex items-center justify-center gap-2 min-h-[44px] text-base disabled:opacity-40 disabled:cursor-not-allowed'}>
                     <ShoppingCart size={16} /> Cobrar {formatCurrency(subtotal)}
                   </button>
                 </>
