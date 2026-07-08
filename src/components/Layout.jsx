@@ -41,6 +41,8 @@ import {
   LayoutGrid,
   Check,
   Gauge,
+  Landmark,
+  BookOpen,
 } from 'lucide-react';
 import NotificacionesSidebar from './NotificacionesSidebar';
 import UpdateBanner from './UpdateBanner';
@@ -135,6 +137,7 @@ export default function Layout() {
         { to: '/preparaciones-predeterminadas', label: t.prep_pred || 'Recetas base', icon: ChefHat, perm: 'preparaciones' },
         { to: '/empaques-predeterminados', label: 'Empaques predet.', icon: BoxSelect, perm: 'empaques' },
         { to: '/stock', label: 'Inventario', icon: Package, perm: 'dashboard' },
+        { to: '/cartas', label: 'Cartas', icon: BookOpen, perm: 'dashboard' },
         { to: '/canales', label: 'Canales y Envío', icon: Truck, perm: 'canales' },
         { to: '/margenes', label: 'Márgenes', icon: TrendingUp, perm: 'dashboard' },
       ],
@@ -159,6 +162,7 @@ export default function Layout() {
         { to: '/pl/compras', label: 'Compras', icon: ShoppingBag, perm: 'finanzas' },
         { to: '/pl/gastos', label: 'Pagos', icon: Receipt, perm: 'finanzas' },
         { to: '/equipo', label: 'Equipo', icon: Users, perm: 'finanzas' },
+        { to: '/activos', label: 'Activos', icon: Landmark, perm: 'finanzas' },
         { to: '/perdidas', label: 'Pérdidas', icon: TrendingDown, perm: 'finanzas' },
       ],
     },
@@ -169,6 +173,7 @@ export default function Layout() {
       links: [
         { to: '/pl', label: 'Timeline', icon: Activity, perm: 'finanzas', end: true },
         { to: '/pl/resumen', label: 'Estado de resultados', icon: BarChart3, perm: 'finanzas' },
+        { to: '/pl/estado-resultados', label: 'Resultados (nuevo)', icon: Landmark, perm: 'finanzas' },
         { to: '/pl/tasas', label: 'Tasas del período', icon: Gauge, perm: 'finanzas' },
         { to: '/pl/cashflow', label: 'Flujo de Caja', icon: Wallet, perm: 'finanzas' },
         { to: '/proveedores', label: 'Proveedores', icon: Truck, perm: 'finanzas' },
