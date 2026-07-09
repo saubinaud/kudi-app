@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { cx } from '../styles/tokens';
 import CustomSelect from './CustomSelect';
 import ConfirmDialog from './ConfirmDialog';
-import { UserPlus, Crown, ShieldCheck, Store, Eye, X, Copy, Trash2, ChefHat, Link2 } from 'lucide-react';
+import { UserPlus, Crown, ShieldCheck, Store, Eye, X, Copy, Trash2, ChefHat, Link2, SlidersHorizontal, RotateCcw } from 'lucide-react';
 
 const ROL_INFO = {
   owner: { label: 'Dueño', icon: Crown, color: 'bg-amber-50 text-amber-700', desc: 'Acceso total' },
@@ -34,19 +34,49 @@ export default function UsuariosPanel() {
   const [saving, setSaving] = useState(false);
   const [inviteLink, setInviteLink] = useState('');
 
+  // Editor de vistas (permisos de sidebar) por usuario
+  const [vistas, setVistas] = useState([]);          // catálogo [{key,label,grupo}]
+  const [vistasDefaults, setVistasDefaults] = useState({}); // rol -> [keys]
+  const [openVistas, setOpenVistas] = useState(null); // memberId con el editor abierto
+  const [vistasSel, setVistasSel] = useState([]);     // selección en edición
+  const [savingVistas, setSavingVistas] = useState(false);
+
   useEffect(() => { loadAll(); }, []); // eslint-disable-line
 
   async function loadAll() {
     setLoading(true);
     try {
-      const [memRes, perRes] = await Promise.all([
+      const [memRes, perRes, visRes] = await Promise.all([
         api.get('/equipo'),
         api.get('/personal').catch(() => ({ data: [] })),
+        api.get('/equipo/vistas').catch(() => ({ data: { vistas: [], defaults: {} } })),
       ]);
       setMembers(memRes.data || memRes || []);
       setPersonal(perRes.data || perRes || []);
+      const vd = visRes.data || visRes || {};
+      setVistas(vd.vistas || []);
+      setVistasDefaults(vd.defaults || {});
     } catch { toast.error('Error cargando usuarios'); }
     finally { setLoading(false); }
+  }
+
+  const gruposVistas = [...new Set(vistas.map(v => v.grupo))];
+  function abrirVistas(m) {
+    setOpenVistas(openVistas === m.id ? null : m.id);
+    setVistasSel(Array.isArray(m.permisos) ? [...m.permisos] : []);
+  }
+  function toggleVista(key) {
+    setVistasSel(sel => sel.includes(key) ? sel.filter(k => k !== key) : [...sel, key]);
+  }
+  async function guardarVistas(m) {
+    setSavingVistas(true);
+    try {
+      await api.patch(`/equipo/${m.id}/vistas`, { permisos: vistasSel });
+      toast.success('Vistas actualizadas');
+      setOpenVistas(null);
+      loadAll();
+    } catch (err) { toast.error(err.message || 'Error'); }
+    finally { setSavingVistas(false); }
   }
 
   // Personal de planilla que todavía no tiene cuenta (para el desplegable de invitar).
@@ -189,12 +219,48 @@ export default function UsuariosPanel() {
                         <span className="text-xs text-stone-400">%</span>
                       </div>
                     )}
+                    <button onClick={() => abrirVistas(m)} className={cx.btnSecondary + ' p-2'} title="Editar vistas">
+                      <SlidersHorizontal size={14} />
+                    </button>
                     <button onClick={() => setRemoveTarget({ id: m.id, nombre: m.nombre })} className={cx.btnDanger + ' p-2'} title="Remover">
                       <Trash2 size={14} />
                     </button>
                   </div>
                 )}
               </div>
+
+              {/* Editor de vistas (qué ve este usuario en el menú) */}
+              {openVistas === m.id && user?.rol_empresa === 'owner' && !isMe && (
+                <div className="mt-3 pt-3 border-t border-stone-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-stone-600">Vistas que puede ver <span className="text-stone-400 font-normal">— {info.label} por defecto</span></p>
+                    <button onClick={() => setVistasSel([...(vistasDefaults[m.rol_empresa] || [])])}
+                      className="text-[11px] text-stone-400 hover:text-stone-600 flex items-center gap-1">
+                      <RotateCcw size={11} /> Restablecer al rol
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1">
+                    {gruposVistas.map(g => (
+                      <div key={g} className="mb-1">
+                        <p className="text-[10px] uppercase tracking-wide text-stone-400 font-semibold mb-1">{g}</p>
+                        {vistas.filter(v => v.grupo === g).map(v => (
+                          <label key={v.key} className="flex items-center gap-2 py-1 cursor-pointer">
+                            <input type="checkbox" checked={vistasSel.includes(v.key)} onChange={() => toggleVista(v.key)}
+                              className="rounded border-stone-300 text-[var(--accent)] focus:ring-0" />
+                            <span className="text-[13px] text-stone-700">{v.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 justify-end mt-3">
+                    <button onClick={() => setOpenVistas(null)} className={cx.btnGhost + ' text-xs px-3 min-h-[40px]'}>Cancelar</button>
+                    <button onClick={() => guardarVistas(m)} disabled={savingVistas} className={cx.btnPrimary + ' text-xs px-4 min-h-[40px] disabled:opacity-50'}>
+                      {savingVistas ? 'Guardando…' : 'Guardar vistas'}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {m.estado === 'pendiente' && m.onboarding_token && (
                 <div className="mt-3 flex items-center gap-2">
