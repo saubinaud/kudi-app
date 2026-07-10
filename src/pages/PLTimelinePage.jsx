@@ -557,7 +557,7 @@ export default function PLTimelinePage() {
                     <SearchableSelect
                       options={categorias}
                       value={form.categoria_id}
-                      onChange={v => setForm(prev => ({ ...prev, categoria_id: v }))}
+                      onChange={v => setForm(prev => ({ ...prev, categoria_id: v?.id ?? v }))}
                       placeholder="Buscar categoria..."
                     />
                   </div>
