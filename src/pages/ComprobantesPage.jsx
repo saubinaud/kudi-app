@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
-import { formatCurrency, formatDate } from '../utils/format';
+import { formatCurrency, formatDate, formatDateTime } from '../utils/format';
 import CustomSelect from '../components/CustomSelect';
 import PeriodoSelector from '../components/PeriodoSelector';
 import ConfirmDialog, { PromptDialog } from '../components/ConfirmDialog';
@@ -838,7 +838,7 @@ export default function ComprobantesPage() {
                         <p className="text-[10px] text-rose-400 mt-0.5 truncate max-w-[150px]" title={c.sunat_message}>{c.sunat_message}</p>
                       )}
                     </td>
-                    <td className={cx.td + ' text-stone-500'}>{formatDate(c.fecha_emision || c.created_at)}</td>
+                    <td className={cx.td + ' text-stone-500'}>{formatDateTime(c.fecha_emision || c.created_at)}</td>
                     <td className={cx.td}>
                       <div className="flex items-center gap-1 justify-end">
                         <button onClick={() => viewPdf(c.id)} className={cx.btnIcon} title="Ver PDF Lycet">
@@ -903,7 +903,7 @@ export default function ComprobantesPage() {
                       {c.serie}-{c.correlativo}
                     </p>
                     <p className="text-xs text-stone-500 mt-0.5">
-                      {TIPO_LABELS[c.tipo_doc] || c.tipo_doc} &middot; {formatDate(c.fecha_emision || c.created_at)}
+                      {TIPO_LABELS[c.tipo_doc] || c.tipo_doc} &middot; {formatDateTime(c.fecha_emision || c.created_at)}
                       {c.nro_pedido && (
                         <button onClick={() => openVentaDetalle(c.venta_id)}
                           className="ml-2 font-mono font-semibold text-[#16A34A] hover:underline">

@@ -1135,7 +1135,7 @@ export default function PLVentasPage() {
                             </span>
                           )}
                         </p>
-                        <p className="text-[11px] text-stone-400">{formatDate(v.fecha)}{v.codigo_pedido && <span className="font-mono ml-1">{v.codigo_pedido}</span>}</p>
+                        <p className="text-[11px] text-stone-400">{formatDate(v.fecha)}{v.created_at ? ` · ${new Date(v.created_at).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' })}` : ''}{v.codigo_pedido && <span className="font-mono ml-1">{v.codigo_pedido}</span>}</p>
                       </div>
                     </div>
                     <span className="text-sm font-semibold text-stone-900 flex-shrink-0 ml-3">{formatCurrency(v.total)}</span>
