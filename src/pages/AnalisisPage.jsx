@@ -23,6 +23,7 @@ export default function AnalisisPage() {
   const toast = useToast();
 
   const [data, setData] = useState(null);
+  const [ventasHora, setVentasHora] = useState([]);
   const [periodo, setPeriodo] = useState({ year: new Date().getFullYear(), month: new Date().getMonth() + 1 });
   const [sortKey, setSortKey] = useState('semaforo');
   const [sortAsc, setSortAsc] = useState(true);
@@ -37,6 +38,9 @@ export default function AnalisisPage() {
     api.get(`/analisis/rentabilidad?year=${periodo.year}&month=${periodo.month}`)
       .then(r => setData(r.data))
       .catch(() => toast.error('Error cargando análisis'));
+    api.get(`/analisis/ventas-hora?year=${periodo.year}&month=${periodo.month}`)
+      .then(r => setVentasHora(r.data || []))
+      .catch(() => {});
   }, [periodo]);
 
   useEffect(() => {
@@ -143,6 +147,35 @@ export default function AnalisisPage() {
           </div>
         ))}
       </div>
+
+      {/* Ventas por hora */}
+      {ventasHora.length > 0 && (() => {
+        const maxTotal = Math.max(...ventasHora.map(h => h.total), 1);
+        const pico = ventasHora.reduce((a, b) => (b.total > (a?.total || 0) ? b : a), null);
+        const totalVentas = ventasHora.reduce((s, h) => s + h.ventas, 0);
+        return (
+          <div className={`${cx.card} p-5`}>
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <h2 className="text-sm font-bold text-stone-800">Ventas por hora</h2>
+              {pico && <span className="text-xs text-stone-500">Hora pico: <strong className="text-[var(--accent)]">{String(pico.hora).padStart(2, '0')}:00</strong> · {formatCurrency(pico.total)}</span>}
+            </div>
+            <div className="flex items-end gap-1.5 h-40">
+              {ventasHora.map(h => (
+                <div key={h.hora} className="flex-1 flex flex-col items-center gap-1 justify-end group">
+                  <span className="text-[9px] text-stone-500 opacity-0 group-hover:opacity-100 whitespace-nowrap">{formatCurrency(h.total)}</span>
+                  <div
+                    className={`w-full rounded-t ${pico && h.hora === pico.hora ? 'bg-[var(--accent)]' : 'bg-teal-300'}`}
+                    style={{ height: `${Math.max(4, (h.total / maxTotal) * 100)}%` }}
+                    title={`${String(h.hora).padStart(2, '0')}:00 · ${h.ventas} ventas · ${formatCurrency(h.total)}`}
+                  />
+                  <span className="text-[9px] text-stone-400">{String(h.hora).padStart(2, '0')}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-stone-400 mt-3">{totalVentas} ventas en el período · barras = ingresos por hora del día (Lima)</p>
+          </div>
+        );
+      })()}
 
       {/* Products Table */}
       <div className={`${cx.card} overflow-hidden`}>

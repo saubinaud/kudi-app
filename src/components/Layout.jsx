@@ -122,7 +122,7 @@ export default function Layout() {
 
   const t = {}; // Kudi universal — no per-giro terminology
 
-  const HIDDEN_ROUTES = ['/shopify', '/proyeccion', '/comisiones', '/analisis'];
+  const HIDDEN_ROUTES = ['/shopify', '/proyeccion', '/comisiones'];
 
   const sidebarGroups = [
     {
@@ -172,6 +172,7 @@ export default function Layout() {
       links: [
         { to: '/pl', label: 'Timeline', icon: Activity, perm: 'finanzas', end: true },
         { to: '/pl/resumen', label: 'Estado de resultados', icon: BarChart3, perm: 'finanzas' },
+        { to: '/analisis', label: 'Análisis', icon: BarChart3, perm: 'finanzas' },
         // OCULTO EN PROD (WIP, solo en uat): Tasas del período (costeo por absorción). Reactivar al lanzar.
         // { to: '/pl/tasas', label: 'Tasas del período', icon: Gauge, perm: 'finanzas' },
         { to: '/pl/cashflow', label: 'Flujo de Caja', icon: Wallet, perm: 'finanzas' },
