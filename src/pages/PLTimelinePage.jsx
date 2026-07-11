@@ -155,9 +155,8 @@ export default function PLTimelinePage() {
     setLoadingTx(true);
     try {
       const qs = `year=${p.year}&month=${p.month}`;
-      const tipoParam = tipo ? `&tipo=${tipo}` : '';
       const [txRes, balRes] = await Promise.all([
-        api.get(`/pl/transacciones?${qs}${tipoParam}`),
+        api.get(`/pl/transacciones?${qs}`),
         api.get(`/pl/transacciones/balance?${qs}`),
       ]);
       setTransacciones(txRes.data || []);
@@ -169,19 +168,27 @@ export default function PLTimelinePage() {
   };
 
   useEffect(() => {
-    if (periodo) loadData(periodo, filterTipo);
-  }, [periodo, filterTipo]); // eslint-disable-line
+    if (periodo) loadData(periodo);
+  }, [periodo]); // eslint-disable-line
+
+  // Filtro por tipo (client-side): Todo / Ingresos(venta) / Egresos(compra+gasto) / detalle fino
+  const transaccionesFiltradas = useMemo(() => {
+    if (!filterTipo) return transacciones;
+    if (filterTipo === 'ingresos') return transacciones.filter(t => t.tipo === 'venta');
+    if (filterTipo === 'egresos') return transacciones.filter(t => t.tipo === 'compra' || t.tipo === 'gasto');
+    return transacciones.filter(t => t.tipo === filterTipo);
+  }, [transacciones, filterTipo]);
 
   // Group by date
   const grouped = useMemo(() => {
     const groups = {};
-    transacciones.forEach(t => {
+    transaccionesFiltradas.forEach(t => {
       const date = t.fecha?.slice(0, 10);
       if (!groups[date]) groups[date] = [];
       groups[date].push(t);
     });
     return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a));
-  }, [transacciones]);
+  }, [transaccionesFiltradas]);
 
   // Auto-create current month period
   const handleCreatePeriodo = async () => {
@@ -274,7 +281,9 @@ export default function PLTimelinePage() {
 
   const periodoOptions = periodos.map(p => ({ value: p.id, label: p.nombre }));
   const filterOptions = [
-    { value: '', label: 'Todas' },
+    { value: '', label: 'Todo' },
+    { value: 'ingresos', label: 'Ingresos' },
+    { value: 'egresos', label: 'Egresos' },
     { value: 'venta', label: 'Ventas' },
     { value: 'compra', label: 'Compras' },
     { value: 'gasto', label: 'Gastos' },
@@ -341,14 +350,22 @@ export default function PLTimelinePage() {
             }}
           />
         </div>
-        <div className="w-32">
-          <CustomSelect
-            options={filterOptions}
-            value={filterTipo || ''}
-            onChange={(v) => setFilterTipo(v || null)}
-            placeholder="Filtro"
-          />
-        </div>
+      </div>
+
+      {/* Filtro por tipo (chips) */}
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        {filterOptions.map(opt => {
+          const active = (filterTipo || '') === opt.value;
+          return (
+            <button
+              key={opt.value || 'todo'}
+              onClick={() => setFilterTipo(opt.value || null)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${active ? 'bg-[var(--accent)] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Balance summary cards */}
@@ -380,7 +397,7 @@ export default function PLTimelinePage() {
         <div className="space-y-3">
           {[1,2,3].map(i => <div key={i} className={`${cx.skeleton} h-16`} />)}
         </div>
-      ) : transacciones.length === 0 ? (
+      ) : transaccionesFiltradas.length === 0 ? (
         <div className={`${cx.card} p-8 text-center`}>
           <Activity size={28} className="mx-auto text-stone-300 mb-3" />
           <p className="text-stone-500 text-sm">Sin transacciones en este periodo.</p>
@@ -392,9 +409,19 @@ export default function PLTimelinePage() {
         <div className="space-y-4">
           {grouped.map(([date, items]) => (
             <div key={date}>
-              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider py-2 sticky top-0 bg-[#f7f7f7] z-10">
-                {formatDateLabel(date)}
-              </p>
+              <div className="flex items-baseline justify-between py-2 sticky top-0 bg-[#f7f7f7] z-10">
+                <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider">{formatDateLabel(date)}</p>
+                {(() => {
+                  let ing = 0, egr = 0;
+                  items.forEach(t => { const m = parseFloat(t.monto) || 0; if (m >= 0) ing += m; else egr += -m; });
+                  return (
+                    <span className="text-xs font-semibold tabular-nums">
+                      {ing > 0 && <span className="text-teal-600">+{formatCurrency(ing)}</span>}
+                      {egr > 0 && <span className="text-rose-500 ml-2">−{formatCurrency(egr)}</span>}
+                    </span>
+                  );
+                })()}
+              </div>
               <div className={`${cx.card} divide-y divide-stone-100`}>
                 {items.map(t => (
                   <div key={t.id} className="group/item">
