@@ -18,7 +18,7 @@ import PagoSheet from '../components/PagoSheet';
 import { API_BASE } from '../config/api';
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
 }
 
 export default function POSPage() {

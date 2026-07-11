@@ -108,7 +108,7 @@ export default function PLCashflowPage() {
 
   // Arqueo
   const [periodos, setPeriodos] = useState([]);
-  const [arqueoFecha, setArqueoFecha] = useState(new Date().toISOString().slice(0, 10));
+  const [arqueoFecha, setArqueoFecha] = useState(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' }));
   const [arqueoData, setArqueoData] = useState(null);
   const [arqueoHistorial, setArqueoHistorial] = useState([]);
   const [arqueoForm, setArqueoForm] = useState([]);
@@ -138,7 +138,7 @@ export default function PLCashflowPage() {
 
   // Movimiento form
   const [showMovForm, setShowMovForm] = useState(false);
-  const [movForm, setMovForm] = useState({ seccion: '', flujo_categoria_id: '', cuenta_id: '', monto_absoluto: '', fecha: new Date().toISOString().slice(0, 10), descripcion: '' });
+  const [movForm, setMovForm] = useState({ seccion: '', flujo_categoria_id: '', cuenta_id: '', monto_absoluto: '', fecha: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' }), descripcion: '' });
   const [categorias, setCategorias] = useState([]);
   const [savingMov, setSavingMov] = useState(false);
 
@@ -221,7 +221,7 @@ export default function PLCashflowPage() {
   // ── Movimiento submit ────────────────────────────────────
 
   function openMovForm() {
-    setMovForm({ seccion: '', flujo_categoria_id: '', cuenta_id: '', monto_absoluto: '', fecha: new Date().toISOString().slice(0, 10), descripcion: '' });
+    setMovForm({ seccion: '', flujo_categoria_id: '', cuenta_id: '', monto_absoluto: '', fecha: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' }), descripcion: '' });
     setShowMovForm(true);
   }
 
@@ -579,7 +579,7 @@ export default function PLCashflowPage() {
                 className={cx.input + ' w-44'}
               />
               <button
-                onClick={() => { const hoy = new Date().toISOString().slice(0, 10); setArqueoFecha(hoy); loadArqueo(hoy); }}
+                onClick={() => { const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' }); setArqueoFecha(hoy); loadArqueo(hoy); }}
                 className={cx.btnGhost + ' text-xs'}
               >
                 Hoy
@@ -899,7 +899,7 @@ export default function PLCashflowPage() {
                   </div>
                   <div>
                     <label className={cx.label}>Fecha</label>
-                    <input type="date" value={transferForm.fecha || new Date().toISOString().slice(0, 10)} onChange={e => setTransferForm(prev => ({ ...prev, fecha: e.target.value }))} className={cx.input} />
+                    <input type="date" value={transferForm.fecha || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' })} onChange={e => setTransferForm(prev => ({ ...prev, fecha: e.target.value }))} className={cx.input} />
                   </div>
                 </div>
                 <div>
