@@ -709,6 +709,41 @@ export default function PLCashflowPage() {
 
               {/* Desglose modal is rendered at the bottom of the page */}
 
+              {/* Cierre(s) de caja del POS del día — absorbido desde ArqueoPage */}
+              {arqueoData?.cierres_caja?.length > 0 && (
+                <div className="px-4 pt-4">
+                  <h3 className="text-sm font-semibold text-stone-900 mb-2">Cierre de caja (POS) del día</h3>
+                  <div className="space-y-2">
+                    {arqueoData.cierres_caja.map(cc => {
+                      const hora = (t) => t ? new Date(t).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' }) : '—';
+                      const efSist = (Number(cc.monto_apertura) || 0) + (Number(cc.ventas_efectivo) || 0);
+                      const trSist = Number(cc.ventas_transferencia) || 0;
+                      const dEf = Number(cc.diferencia_efectivo);
+                      const dTr = Number(cc.diferencia_transferencia);
+                      return (
+                        <div key={cc.id} className="rounded-xl border border-stone-200 p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-semibold text-stone-700">Turno {hora(cc.abierto_at)} → {cc.estado === 'cerrado' ? hora(cc.cerrado_at) : 'Abierta'}</span>
+                            <span className="text-[11px] text-stone-400">{cc.cantidad_ventas || 0} ventas · apertura {formatCurrency(cc.monto_apertura)}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex justify-between bg-stone-50 rounded-lg px-3 py-1.5">
+                              <span className="text-stone-500">Efectivo</span>
+                              <span className="text-stone-700">sist. {formatCurrency(efSist)} · real {cc.cierre_efectivo_real != null ? formatCurrency(cc.cierre_efectivo_real) : '—'}{cc.cierre_efectivo_real != null && dEf !== 0 ? ` (${dEf > 0 ? '+' : ''}${formatCurrency(dEf)})` : ''}</span>
+                            </div>
+                            <div className="flex justify-between bg-stone-50 rounded-lg px-3 py-1.5">
+                              <span className="text-stone-500">Digital/transf.</span>
+                              <span className="text-stone-700">sist. {formatCurrency(trSist)} · real {cc.cierre_transferencia_real != null ? formatCurrency(cc.cierre_transferencia_real) : '—'}{cc.cierre_transferencia_real != null && dTr !== 0 ? ` (${dTr > 0 ? '+' : ''}${formatCurrency(dTr)})` : ''}</span>
+                            </div>
+                          </div>
+                          {cc.nota_cierre && <p className="text-xs text-stone-500 bg-stone-100 rounded-lg px-3 py-1.5 mt-2 whitespace-pre-wrap">📝 {cc.nota_cierre}</p>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {/* Observaciones + buttons */}
               <div className="p-4 border-t border-stone-200 space-y-4">
                 <div>
