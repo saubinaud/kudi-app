@@ -117,6 +117,7 @@ export default function PLCashflowPage() {
 
   // Cuentas
   const [cuentas, setCuentas] = useState([]);
+  const [mapeoMC, setMapeoMC] = useState([]); // mapeo metodo_pago -> cuenta (opcional)
   const [showCuentaForm, setShowCuentaForm] = useState(false);
   const [cuentaForm, setCuentaForm] = useState({ nombre: '', tipo: 'efectivo', saldo_actual: '' });
   const [editingCuentaId, setEditingCuentaId] = useState(null);
@@ -165,8 +166,12 @@ export default function PLCashflowPage() {
 
   async function loadCuentas() {
     try {
-      const res = await api.get('/flujo/cuentas');
+      const [res, mapRes] = await Promise.all([
+        api.get('/flujo/cuentas'),
+        api.get('/flujo/metodo-cuenta').catch(() => ({ data: [] })),
+      ]);
       setCuentas(res.data || res || []);
+      setMapeoMC(mapRes.data || mapRes || []);
     } catch { /* silent */ }
   }
 
@@ -389,6 +394,20 @@ export default function PLCashflowPage() {
     .map(c => ({ value: c.id, label: `${c.nombre} (${c.tipo})` }));
 
   const cuentaOpts = cuentas.map(c => ({ value: c.id, label: c.nombre }));
+  const METODOS_MC = [
+    { key: 'efectivo', label: 'Efectivo' },
+    { key: 'yape', label: 'Yape' },
+    { key: 'transferencia', label: 'Transferencia' },
+    { key: 'tarjeta', label: 'Tarjeta' },
+  ];
+  const mcFor = (metodo) => { const f = mapeoMC.find(x => x.metodo_pago === metodo); return f ? f.cuenta_id : null; };
+  const asignarCuenta = async (metodo, valorRaw) => {
+    const cuenta_id = (valorRaw === '' || valorRaw == null) ? null : parseInt(valorRaw);
+    const mapeo = METODOS_MC.map(m => ({ metodo_pago: m.key, cuenta_id: m.key === metodo ? cuenta_id : mcFor(m.key) }));
+    setMapeoMC(mapeo.filter(x => x.cuenta_id != null));
+    try { await api.put('/flujo/metodo-cuenta', { mapeo }); toast.success('Guardado'); }
+    catch { toast.error('Error guardando'); }
+  };
 
   const tipoBadge = (tipo) => {
     if (tipo === 'efectivo') return cx.badge('bg-emerald-50 text-emerald-700');
@@ -864,6 +883,27 @@ export default function PLCashflowPage() {
               </table>
             </div>
           )}
+
+          {/* Mapeo método de pago -> cuenta (opcional) */}
+          <div className={cx.card + ' p-4 mt-4'}>
+            <h3 className="text-sm font-semibold text-stone-900">A qué cuenta entra cada pago</h3>
+            <p className="text-xs text-stone-500 mt-0.5 mb-3">Opcional — sirve para que el arqueo cuadre cada cuenta. Si dejás "Sin asignar", igual podés cobrar.</p>
+            <div className="space-y-2 max-w-md">
+              {METODOS_MC.map(m => (
+                <div key={m.key} className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-stone-700">{m.label}</span>
+                  <div className="w-56">
+                    <CustomSelect
+                      options={[{ value: '', label: '— Sin asignar —' }, ...cuentaOpts]}
+                      value={mcFor(m.key) ?? ''}
+                      onChange={v => asignarCuenta(m.key, v)}
+                      placeholder="Sin asignar"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* Transferencias */}
           <div className={cx.card + ' p-4 mt-4'}>
