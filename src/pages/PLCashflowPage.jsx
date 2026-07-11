@@ -715,20 +715,25 @@ export default function PLCashflowPage() {
               </div>
               <div className="divide-y divide-stone-100">
                 {arqueoHistorial.map(a => (
-                  <div key={a.id} className="flex items-center justify-between px-4 py-3 hover:bg-stone-50/50">
-                    <div>
-                      <p className="text-sm text-stone-800">{formatDate(a.fecha)}</p>
-                      <p className="text-xs text-stone-400">{a.tipo === 'diario' ? 'Diario' : 'Mensual'}{a.cerrado ? ' — Cerrado' : ''}</p>
+                  <div key={a.id} className="px-4 py-3 hover:bg-stone-50/50">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-stone-800">{formatDate(a.fecha)}</p>
+                        <p className="text-xs text-stone-400">{a.tipo === 'diario' ? 'Diario' : 'Mensual'}{a.cerrado ? ' — Cerrado' : ''}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-stone-600">Sistema: {formatCurrency(a.saldo_sistema)}</p>
+                        <p className="text-sm font-medium text-stone-800">Real: {formatCurrency(a.saldo_real)}</p>
+                        {parseFloat(a.diferencia) !== 0 && (
+                          <p className={`text-xs font-semibold ${parseFloat(a.diferencia) > 0 ? 'text-sky-600' : 'text-rose-600'}`}>
+                            Dif: {parseFloat(a.diferencia) > 0 ? '+' : ''}{formatCurrency(a.diferencia)}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-stone-600">Sistema: {formatCurrency(a.saldo_sistema)}</p>
-                      <p className="text-sm font-medium text-stone-800">Real: {formatCurrency(a.saldo_real)}</p>
-                      {parseFloat(a.diferencia) !== 0 && (
-                        <p className={`text-xs font-semibold ${parseFloat(a.diferencia) > 0 ? 'text-sky-600' : 'text-rose-600'}`}>
-                          Dif: {parseFloat(a.diferencia) > 0 ? '+' : ''}{formatCurrency(a.diferencia)}
-                        </p>
-                      )}
-                    </div>
+                    {a.observaciones && (
+                      <p className="text-xs text-stone-500 bg-stone-100 rounded-lg px-3 py-1.5 mt-2 whitespace-pre-wrap">📝 {a.observaciones}</p>
+                    )}
                   </div>
                 ))}
               </div>
