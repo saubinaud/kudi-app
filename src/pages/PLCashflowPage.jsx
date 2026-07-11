@@ -217,6 +217,7 @@ export default function PLCashflowPage() {
           tipo: c.tipo,
           saldo_sistema: det?.saldo_sistema ?? c.saldo_actual ?? 0,
           saldo_real: det?.saldo_real ?? '',
+          ingresos_dia: c.ingresos_dia || 0,
         };
       }));
       setArqueoObs(d.arqueo?.observaciones || '');
@@ -606,6 +607,14 @@ export default function PLCashflowPage() {
             </div>
           </div>
 
+          {arqueoData?.ingresos_sin_asignar > 0 && (
+            <div className="mb-3 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+              <AlertTriangle size={16} className="text-amber-600 flex-none mt-0.5" />
+              <p className="text-xs text-amber-800">
+                Hay <strong>{formatCurrency(arqueoData.ingresos_sin_asignar)}</strong> en ventas del día cuyo método de pago no tiene cuenta asignada. Asignalos en <strong>Cuentas → "A qué cuenta entra cada pago"</strong> para que se reflejen aquí.
+              </p>
+            </div>
+          )}
           {arqueoForm.length === 0 ? (
             <div className={cx.card + ' p-12 text-center'}>
               <p className="text-sm text-stone-500">No hay cuentas registradas. Crea cuentas en la pestana "Cuentas".</p>
@@ -618,6 +627,7 @@ export default function PLCashflowPage() {
                     <tr className="border-b border-stone-200">
                       <th className={cx.th}>Cuenta</th>
                       <th className={cx.th}>Tipo</th>
+                      <th className={cx.th + ' text-right'}>Ventas del día</th>
                       <th className={cx.th + ' text-right'}>Saldo Sistema</th>
                       <th className={cx.th + ' text-right'}>Saldo Real</th>
                       <th className={cx.th + ' text-right'}>Diferencia</th>
@@ -631,6 +641,7 @@ export default function PLCashflowPage() {
                         <tr key={row.cuenta_id} className={cx.tr}>
                           <td className={cx.td + ' font-medium text-stone-800'}>{row.nombre}</td>
                           <td className={cx.td}><span className={tipoBadge(row.tipo)}>{row.tipo}</span></td>
+                          <td className={cx.td + ' text-right font-mono text-emerald-600'}>{row.ingresos_dia > 0 ? '+' + formatCurrency(row.ingresos_dia) : '—'}</td>
                           <td className={cx.td + ' text-right font-mono text-stone-600'}>{formatCurrency(row.saldo_sistema)}</td>
                           <td className={cx.td + ' text-right'}>
                             <div className="flex items-center gap-1 justify-end">
@@ -672,6 +683,9 @@ export default function PLCashflowPage() {
                     {/* Totals */}
                     <tr className="border-t-2 border-stone-300 bg-stone-50">
                       <td className={cx.td + ' font-bold text-stone-900'} colSpan={2}>TOTAL</td>
+                      <td className={cx.td + ' text-right font-bold text-emerald-600'}>
+                        {formatCurrency(arqueoForm.reduce((s, r) => s + Number(r.ingresos_dia || 0), 0))}
+                      </td>
                       <td className={cx.td + ' text-right font-bold text-stone-900'}>
                         {formatCurrency(arqueoForm.reduce((s, r) => s + Number(r.saldo_sistema), 0))}
                       </td>
