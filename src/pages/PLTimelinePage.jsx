@@ -41,8 +41,14 @@ function formatDateLabel(dateStr) {
   return d.toLocaleDateString('es-PE', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'America/Lima' });
 }
 
+function fmtHora(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' });
+}
+
 // Timeline item component
 function TimelineItem({ t, onDelete }) {
+  const hora = fmtHora(t.created_at);
   return (
     <div className="flex items-start gap-3 px-4 py-3">
       <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
@@ -65,6 +71,7 @@ function TimelineItem({ t, onDelete }) {
                   ? `Compra \u2014 ${t.descripcion || 'Sin proveedor'}`
                   : `${t.categoria_nombre || t.descripcion || 'Gasto'}`}
             </p>
+            {hora && <p className="text-[11px] text-stone-400 mt-0.5">{hora}</p>}
             {t.nota && <p className="text-xs text-stone-400 mt-0.5 truncate">{t.nota}</p>}
             {t.tipo === 'gasto' && t.descripcion && t.categoria_nombre && (
               <p className="text-xs text-stone-400 mt-0.5 truncate">{t.descripcion}</p>

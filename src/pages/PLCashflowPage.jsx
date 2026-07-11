@@ -787,7 +787,7 @@ export default function PLCashflowPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-stone-800">{formatDate(a.fecha)}</p>
-                        <p className="text-xs text-stone-400">{a.tipo === 'diario' ? 'Diario' : 'Mensual'}{a.cerrado ? ' — Cerrado' : ''}</p>
+                        <p className="text-xs text-stone-400">{a.tipo === 'diario' ? 'Diario' : 'Mensual'}{a.cerrado ? ' — Cerrado' : ''}{a.created_at ? ` · ${new Date(a.created_at).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' })}` : ''}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm text-stone-600">Sistema: {formatCurrency(a.saldo_sistema)}</p>
