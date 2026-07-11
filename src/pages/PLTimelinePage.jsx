@@ -98,6 +98,9 @@ export default function PLTimelinePage() {
   const [periodo, setPeriodo] = useState(null);
   const [transacciones, setTransacciones] = useState([]);
   const [balance, setBalance] = useState(null);
+  const [vista, setVista] = useState('mes'); // 'hoy' | 'semana' | 'mes' | 'rango'
+  const [rangoDesde, setRangoDesde] = useState(todayStr());
+  const [rangoHasta, setRangoHasta] = useState(todayStr());
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
 
@@ -150,17 +153,32 @@ export default function PLTimelinePage() {
   }, []);
 
   // Load transacciones + balance when periodo changes
-  const loadData = async (p, tipo) => {
-    if (!p) return;
+  function rangoActual() {
+    const hoy = todayStr();
+    if (vista === 'hoy') return { desde: hoy, hasta: hoy };
+    if (vista === 'semana') {
+      const [y, m, d] = hoy.split('-').map(Number);
+      const dt = new Date(Date.UTC(y, m - 1, d));
+      const dow = (dt.getUTCDay() + 6) % 7; // 0 = lunes
+      dt.setUTCDate(dt.getUTCDate() - dow);
+      return { desde: dt.toISOString().slice(0, 10), hasta: hoy };
+    }
+    if (vista === 'rango') return { desde: rangoDesde, hasta: rangoHasta };
+    if (!periodo) return null;
+    const last = new Date(periodo.year, periodo.month, 0).getDate();
+    return {
+      desde: `${periodo.year}-${String(periodo.month).padStart(2, '0')}-01`,
+      hasta: `${periodo.year}-${String(periodo.month).padStart(2, '0')}-${String(last).padStart(2, '0')}`,
+    };
+  }
+
+  const loadData = async () => {
+    const r = rangoActual();
+    if (!r || !r.desde || !r.hasta) return;
     setLoadingTx(true);
     try {
-      const qs = `year=${p.year}&month=${p.month}`;
-      const [txRes, balRes] = await Promise.all([
-        api.get(`/pl/transacciones?${qs}`),
-        api.get(`/pl/transacciones/balance?${qs}`),
-      ]);
+      const txRes = await api.get(`/pl/transacciones?desde=${r.desde}&hasta=${r.hasta}`);
       setTransacciones(txRes.data || []);
-      setBalance(balRes.data || null);
     } catch {
       toast.error('Error cargando transacciones');
     }
@@ -168,8 +186,8 @@ export default function PLTimelinePage() {
   };
 
   useEffect(() => {
-    if (periodo) loadData(periodo);
-  }, [periodo]); // eslint-disable-line
+    loadData();
+  }, [vista, periodo, rangoDesde, rangoHasta]); // eslint-disable-line
 
   // Filtro por tipo (client-side): Todo / Ingresos(venta) / Egresos(compra+gasto) / detalle fino
   const transaccionesFiltradas = useMemo(() => {
@@ -189,6 +207,18 @@ export default function PLTimelinePage() {
     });
     return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a));
   }, [transaccionesFiltradas]);
+
+  // Resumen del período (client-side, todos los tipos)
+  const resumen = useMemo(() => {
+    let ingresos = 0, compras = 0, gastos = 0;
+    transacciones.forEach(t => {
+      const m = Math.abs(parseFloat(t.monto) || 0);
+      if (t.tipo === 'venta') ingresos += m;
+      else if (t.tipo === 'compra') compras += m;
+      else if (t.tipo === 'gasto') gastos += m;
+    });
+    return { ingresos, compras, gastos, balance: ingresos - compras - gastos };
+  }, [transacciones]);
 
   // Auto-create current month period
   const handleCreatePeriodo = async () => {
@@ -241,7 +271,7 @@ export default function PLTimelinePage() {
       toast.success('Transaccion registrada');
       setModalOpen(false);
       resetForm();
-      loadData(periodo, filterTipo);
+      loadData();
     } catch (e) {
       toast.error(e.message);
     }
@@ -265,7 +295,7 @@ export default function PLTimelinePage() {
       await api.del(`/pl/transacciones/${deleteTarget.id}`);
       toast.success('Transaccion eliminada');
       setDeleteTarget(null);
-      loadData(periodo, filterTipo);
+      loadData();
     } catch (e) {
       toast.error(e.message);
     }
@@ -329,9 +359,20 @@ export default function PLTimelinePage() {
         </button>
       </div>
 
-      {/* Period selector + filter */}
-      <div className="flex gap-3 mb-4 items-start">
-        <div className="flex-1">
+      {/* Período: vista (Hoy / Semana / Mes / Rango) */}
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {[{ v: 'hoy', l: 'Hoy' }, { v: 'semana', l: 'Semana' }, { v: 'mes', l: 'Mes' }, { v: 'rango', l: 'Rango' }].map(o => (
+          <button
+            key={o.v}
+            onClick={() => setVista(o.v)}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${vista === o.v ? 'bg-[var(--accent)] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+          >
+            {o.l}
+          </button>
+        ))}
+      </div>
+      {vista === 'mes' && (
+        <div className="mb-4">
           <PeriodoSelector
             periodos={periodos}
             value={periodo}
@@ -350,7 +391,14 @@ export default function PLTimelinePage() {
             }}
           />
         </div>
-      </div>
+      )}
+      {vista === 'rango' && (
+        <div className="mb-4 flex items-center gap-2">
+          <input type="date" value={rangoDesde} onChange={e => setRangoDesde(e.target.value)} className={cx.input + ' text-sm'} />
+          <span className="text-stone-400 text-sm">a</span>
+          <input type="date" value={rangoHasta} onChange={e => setRangoHasta(e.target.value)} className={cx.input + ' text-sm'} />
+        </div>
+      )}
 
       {/* Filtro por tipo (chips) */}
       <div className="flex flex-wrap gap-1.5 mb-4">
@@ -369,24 +417,24 @@ export default function PLTimelinePage() {
       </div>
 
       {/* Balance summary cards */}
-      {balance && (
+      {(
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           <div className={`${cx.card} p-4`}>
             <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1">Ingresos</p>
-            <p className="text-base font-bold text-teal-600 tabular-nums">{formatCurrency(balance.ingresos)}</p>
+            <p className="text-base font-bold text-teal-600 tabular-nums">{formatCurrency(resumen.ingresos)}</p>
           </div>
           <div className={`${cx.card} p-4`}>
             <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1">Compras</p>
-            <p className="text-base font-bold text-amber-600 tabular-nums">{formatCurrency(balance.compras)}</p>
+            <p className="text-base font-bold text-amber-600 tabular-nums">{formatCurrency(resumen.compras)}</p>
           </div>
           <div className={`${cx.card} p-4`}>
             <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1">Gastos</p>
-            <p className="text-base font-bold text-rose-600 tabular-nums">{formatCurrency(balance.gastos)}</p>
+            <p className="text-base font-bold text-rose-600 tabular-nums">{formatCurrency(resumen.gastos)}</p>
           </div>
           <div className={`${cx.card} p-4`}>
             <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1">Balance</p>
-            <p className={`text-base font-bold tabular-nums ${parseFloat(balance.balance) >= 0 ? 'text-teal-600' : 'text-rose-600'}`}>
-              {formatCurrency(balance.balance)}
+            <p className={`text-base font-bold tabular-nums ${resumen.balance >= 0 ? 'text-teal-600' : 'text-rose-600'}`}>
+              {formatCurrency(resumen.balance)}
             </p>
           </div>
         </div>
