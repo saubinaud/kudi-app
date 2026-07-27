@@ -111,6 +111,7 @@ export default function PLCashflowPage() {
   const [arqueoFecha, setArqueoFecha] = useState(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' }));
   const [arqueoData, setArqueoData] = useState(null);
   const [arqueoHistorial, setArqueoHistorial] = useState([]);
+  const [turnosDia, setTurnosDia] = useState([]);
   const [arqueoForm, setArqueoForm] = useState([]);
   const [arqueoObs, setArqueoObs] = useState('');
   const [savingArqueo, setSavingArqueo] = useState(false);
@@ -203,6 +204,14 @@ export default function PLCashflowPage() {
       const res = await api.get(`/flujo/arqueo?fecha=${fecha}`);
       const d = res.data || res;
       setArqueoData(d);
+      // Turnos (cierres de caja POS) del día — vía /arqueo/historial que trae el cajero.
+      // Se ordenan por hora de apertura (ASC) para numerarlos Turno 1, 2, 3...
+      try {
+        const tRes = await api.get(`/arqueo/historial?desde=${fecha}&hasta=${fecha}`);
+        const turnos = (tRes.data || tRes || []).slice()
+          .sort((a, b) => new Date(a.abierto_at) - new Date(b.abierto_at));
+        setTurnosDia(turnos);
+      } catch { setTurnosDia([]); }
       // Load recent arqueos history
       try {
         const histRes = await api.get('/flujo/arqueo/historial');
@@ -709,33 +718,69 @@ export default function PLCashflowPage() {
 
               {/* Desglose modal is rendered at the bottom of the page */}
 
-              {/* Cierre(s) de caja del POS del día — absorbido desde ArqueoPage */}
-              {arqueoData?.cierres_caja?.length > 0 && (
+              {/* Cierres de caja del POS por TURNO — cada apertura→cierre del día,
+                  numerado por orden cronológico, con cajero y movimiento de dinero. */}
+              {turnosDia.length > 0 && (
                 <div className="px-4 pt-4">
-                  <h3 className="text-sm font-semibold text-stone-900 mb-2">Cierre de caja (POS) del día</h3>
+                  <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
+                    <h3 className="text-sm font-semibold text-stone-900">Cierres de caja por turno</h3>
+                    <span className="text-[11px] text-stone-400">
+                      {turnosDia.length} turno{turnosDia.length !== 1 ? 's' : ''} · {formatCurrency(turnosDia.reduce((s, t) => s + (Number(t.ventas_total) || 0), 0))} vendido
+                    </span>
+                  </div>
                   <div className="space-y-2">
-                    {arqueoData.cierres_caja.map(cc => {
+                    {turnosDia.map((cc, idx) => {
                       const hora = (t) => t ? new Date(t).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' }) : '—';
-                      const efSist = (Number(cc.monto_apertura) || 0) + (Number(cc.ventas_efectivo) || 0);
-                      const trSist = Number(cc.ventas_transferencia) || 0;
                       const dEf = Number(cc.diferencia_efectivo);
                       const dTr = Number(cc.diferencia_transferencia);
+                      const abierta = cc.estado !== 'cerrado';
                       return (
                         <div key={cc.id} className="rounded-xl border border-stone-200 p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-semibold text-stone-700">Turno {hora(cc.abierto_at)} → {cc.estado === 'cerrado' ? hora(cc.cerrado_at) : 'Abierta'}</span>
-                            <span className="text-[11px] text-stone-400">{cc.cantidad_ventas || 0} ventas · apertura {formatCurrency(cc.monto_apertura)}</span>
+                          <div className="flex items-center justify-between mb-2 flex-wrap gap-1.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="inline-flex items-center justify-center rounded-full bg-stone-900 text-white text-[11px] font-semibold px-2.5 py-1">Turno {idx + 1}</span>
+                              <span className="text-xs font-medium text-stone-700">
+                                {hora(cc.abierto_at)} → {abierta ? <span className="text-emerald-600 font-semibold">Abierta</span> : hora(cc.cerrado_at)}
+                              </span>
+                              {cc.usuario_nombre && <span className="text-[11px] text-stone-400">· {cc.usuario_nombre}</span>}
+                            </div>
+                            <span className="text-sm font-bold text-stone-900">{formatCurrency(cc.ventas_total)}</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 text-xs mb-2">
+                            <div className="bg-stone-50 rounded-lg px-3 py-1.5">
+                              <p className="text-[10px] text-stone-400">Apertura</p>
+                              <p className="text-stone-700 font-medium">{formatCurrency(cc.monto_apertura)}</p>
+                            </div>
+                            <div className="bg-stone-50 rounded-lg px-3 py-1.5">
+                              <p className="text-[10px] text-stone-400">Ventas efectivo</p>
+                              <p className="text-stone-700 font-medium">{formatCurrency(cc.ventas_efectivo)}</p>
+                            </div>
+                            <div className="bg-stone-50 rounded-lg px-3 py-1.5">
+                              <p className="text-[10px] text-stone-400">Ventas digital</p>
+                              <p className="text-stone-700 font-medium">{formatCurrency(cc.ventas_transferencia)}</p>
+                            </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2 text-xs">
                             <div className="flex justify-between bg-stone-50 rounded-lg px-3 py-1.5">
-                              <span className="text-stone-500">Efectivo</span>
-                              <span className="text-stone-700">sist. {formatCurrency(efSist)} · real {cc.cierre_efectivo_real != null ? formatCurrency(cc.cierre_efectivo_real) : '—'}{cc.cierre_efectivo_real != null && dEf !== 0 ? ` (${dEf > 0 ? '+' : ''}${formatCurrency(dEf)})` : ''}</span>
+                              <span className="text-stone-500">Cierre efectivo</span>
+                              <span className="text-stone-700">
+                                {cc.cierre_efectivo_real != null ? formatCurrency(cc.cierre_efectivo_real) : '—'}
+                                {cc.cierre_efectivo_real != null && dEf !== 0 && (
+                                  <span className={dEf > 0 ? 'text-sky-600' : 'text-rose-600'}> ({dEf > 0 ? '+' : ''}{formatCurrency(dEf)})</span>
+                                )}
+                              </span>
                             </div>
                             <div className="flex justify-between bg-stone-50 rounded-lg px-3 py-1.5">
-                              <span className="text-stone-500">Digital/transf.</span>
-                              <span className="text-stone-700">sist. {formatCurrency(trSist)} · real {cc.cierre_transferencia_real != null ? formatCurrency(cc.cierre_transferencia_real) : '—'}{cc.cierre_transferencia_real != null && dTr !== 0 ? ` (${dTr > 0 ? '+' : ''}${formatCurrency(dTr)})` : ''}</span>
+                              <span className="text-stone-500">Cierre digital</span>
+                              <span className="text-stone-700">
+                                {cc.cierre_transferencia_real != null ? formatCurrency(cc.cierre_transferencia_real) : '—'}
+                                {cc.cierre_transferencia_real != null && dTr !== 0 && (
+                                  <span className={dTr > 0 ? 'text-sky-600' : 'text-rose-600'}> ({dTr > 0 ? '+' : ''}{formatCurrency(dTr)})</span>
+                                )}
+                              </span>
                             </div>
                           </div>
+                          <p className="text-[11px] text-stone-400 mt-2">{cc.cantidad_ventas || 0} ventas en este turno</p>
                           {cc.nota_cierre && <p className="text-xs text-stone-500 bg-stone-100 rounded-lg px-3 py-1.5 mt-2 whitespace-pre-wrap">📝 {cc.nota_cierre}</p>}
                         </div>
                       );

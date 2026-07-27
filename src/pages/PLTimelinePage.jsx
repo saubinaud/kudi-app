@@ -138,6 +138,7 @@ export default function PLTimelinePage() {
   const [submitting, setSubmitting] = useState(false);
   const [cuentas, setCuentas] = useState([]);
   const [ventaClientes, setVentaClientes] = useState([]);
+  const [arqueosPorDia, setArqueosPorDia] = useState({});
 
   // Load initial data
   useEffect(() => {
@@ -189,6 +190,18 @@ export default function PLTimelinePage() {
     } catch {
       toast.error('Error cargando transacciones');
     }
+    // Cierres de caja (arqueo POS) del rango — agrupados por día para el timeline
+    try {
+      const aqRes = await api.get(`/arqueo/historial?desde=${r.desde}&hasta=${r.hasta}`);
+      const byDay = {};
+      (aqRes.data || aqRes || []).forEach(a => {
+        const d = a.fecha?.slice(0, 10);
+        if (!d) return;
+        (byDay[d] = byDay[d] || []).push(a);
+      });
+      Object.values(byDay).forEach(list => list.sort((a, b) => new Date(a.abierto_at) - new Date(b.abierto_at)));
+      setArqueosPorDia(byDay);
+    } catch { setArqueosPorDia({}); }
     setLoadingTx(false);
   };
 
@@ -484,6 +497,36 @@ export default function PLTimelinePage() {
                   </div>
                 ))}
               </div>
+              {arqueosPorDia[date]?.length > 0 && (
+                <div className="mt-2 rounded-xl border border-stone-200 bg-white px-3 py-2">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[11px] font-semibold text-stone-500 uppercase tracking-wide">Cierres de caja</p>
+                    <span className="text-[11px] text-stone-400">{arqueosPorDia[date].length} turno{arqueosPorDia[date].length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="space-y-1">
+                    {arqueosPorDia[date].map((a, idx) => {
+                      const hora = (t) => t ? new Date(t).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' }) : '—';
+                      const dEf = Number(a.diferencia_efectivo) || 0;
+                      const abierta = a.estado !== 'cerrado';
+                      return (
+                        <div key={a.id} className="flex items-center justify-between gap-2 text-xs py-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="inline-flex items-center rounded-full bg-stone-100 text-stone-600 text-[10px] font-semibold px-2 py-0.5 flex-none">T{idx + 1}</span>
+                            <span className="text-stone-500 flex-none">{hora(a.abierto_at)}→{abierta ? 'abierta' : hora(a.cerrado_at)}</span>
+                            {a.usuario_nombre && <span className="text-stone-400 truncate">· {a.usuario_nombre}</span>}
+                          </div>
+                          <div className="flex items-center gap-2 flex-none tabular-nums">
+                            <span className="font-semibold text-stone-700">{formatCurrency(a.ventas_total)}</span>
+                            {!abierta && a.cierre_efectivo_real != null && dEf !== 0 && (
+                              <span className={dEf > 0 ? 'text-sky-600' : 'text-rose-500'}>{dEf > 0 ? '+' : ''}{formatCurrency(dEf)}</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
