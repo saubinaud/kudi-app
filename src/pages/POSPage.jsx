@@ -1340,6 +1340,7 @@ export default function POSPage() {
         const transfSistema = parseFloat(caja.ventas_transferencia || 0);
         const diffEfectivo = (parseFloat(cajaCierreEfectivo) || 0) - efectivoSistema;
         const diffTransf = (parseFloat(cajaCierreTransf) || 0) - transfSistema;
+        const ciego = !!caja.cierre_ciego;
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setShowCerrarCaja(false); setConfirmarSinContar(false); }} />
@@ -1362,10 +1363,12 @@ export default function POSPage() {
               {/* Cuadre Efectivo */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-stone-500 uppercase">Efectivo</p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-stone-500">Según sistema</span>
-                  <span className="font-semibold text-stone-800">{formatCurrency(efectivoSistema)}</span>
-                </div>
+                {!ciego && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-stone-500">Según sistema</span>
+                    <span className="font-semibold text-stone-800">{formatCurrency(efectivoSistema)}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm text-stone-500">En tu caja</span>
                   <div className="flex items-center gap-1.5">
@@ -1376,7 +1379,7 @@ export default function POSPage() {
                       className={cx.input + ' w-28 text-right font-semibold'} placeholder="0.00" />
                   </div>
                 </div>
-                {cajaCierreEfectivo && (
+                {!ciego && cajaCierreEfectivo && (
                   <div className={`text-right text-sm font-semibold ${diffEfectivo >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                     Diferencia: {diffEfectivo >= 0 ? '+' : ''}{formatCurrency(diffEfectivo)}
                     {diffEfectivo > 0 && <span className="text-xs font-normal ml-1">(sobrante)</span>}
@@ -1388,16 +1391,18 @@ export default function POSPage() {
               {/* Cuadre Transferencias */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-stone-500 uppercase">Transferencias / Yape</p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-stone-500">Según sistema</span>
-                  <span className="font-semibold text-stone-800">{formatCurrency(transfSistema)}</span>
-                </div>
+                {!ciego && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-stone-500">Según sistema</span>
+                    <span className="font-semibold text-stone-800">{formatCurrency(transfSistema)}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-sm text-stone-500">En tu dispositivo</span>
                   <input type="number" step="0.01" value={cajaCierreTransf} onChange={e => setCajaCierreTransf(e.target.value)}
                     className={cx.input + ' w-32 text-right font-semibold'} placeholder="0.00" />
                 </div>
-                {cajaCierreTransf && (
+                {!ciego && cajaCierreTransf && (
                   <div className={`text-right text-sm font-semibold ${diffTransf >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                     Diferencia: {diffTransf >= 0 ? '+' : ''}{formatCurrency(diffTransf)}
                     {diffTransf > 0 && <span className="text-xs font-normal ml-1">(sobrante)</span>}
