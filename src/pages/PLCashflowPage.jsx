@@ -117,6 +117,8 @@ export default function PLCashflowPage() {
   const [histDesde, setHistDesde] = useState('');
   const [histHasta, setHistHasta] = useState('');
   const [histTurnos, setHistTurnos] = useState([]);
+  const [histConciliaciones, setHistConciliaciones] = useState([]);
+  const [expandedDia, setExpandedDia] = useState(null);
   const [arqueoForm, setArqueoForm] = useState([]);
   const [arqueoObs, setArqueoObs] = useState('');
   const [savingArqueo, setSavingArqueo] = useState(false);
@@ -273,11 +275,15 @@ export default function PLCashflowPage() {
 
   async function loadHistTurnos() {
     const r = rangoHist();
-    if (!r.desde || !r.hasta) { setHistTurnos([]); return; }
+    if (!r.desde || !r.hasta) { setHistTurnos([]); setHistConciliaciones([]); return; }
     try {
-      const res = await api.get(`/arqueo/historial?desde=${r.desde}&hasta=${r.hasta}`);
-      setHistTurnos(res.data || res || []);
-    } catch { setHistTurnos([]); }
+      const [tRes, cRes] = await Promise.all([
+        api.get(`/arqueo/historial?desde=${r.desde}&hasta=${r.hasta}`),
+        api.get(`/flujo/arqueo/historial?desde=${r.desde}&hasta=${r.hasta}`),
+      ]);
+      setHistTurnos(tRes.data || tRes || []);
+      setHistConciliaciones(cRes.data || cRes || []);
+    } catch { setHistTurnos([]); setHistConciliaciones([]); }
   }
 
   useEffect(() => {
@@ -898,12 +904,12 @@ export default function PLCashflowPage() {
             </div>
           )}
 
-          {/* Historial de turnos (cierres de caja POS) filtrable por rango */}
+          {/* Historial unificado por día: turnos de caja (POS) + conciliación de cuentas */}
           <div className={cx.card + ' mt-4 overflow-hidden'}>
             <div className="p-4 border-b border-stone-100 flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h3 className="text-sm font-semibold text-stone-900">Historial de turnos</h3>
-                <p className="text-xs text-stone-400 mt-0.5">Cierres de caja del POS, por turno de venta</p>
+                <h3 className="text-sm font-semibold text-stone-900">Historial por día</h3>
+                <p className="text-xs text-stone-400 mt-0.5">Abrí un día para ver sus turnos de caja y su conciliación de cuentas</p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <SegmentedControl
@@ -921,103 +927,98 @@ export default function PLCashflowPage() {
                 )}
               </div>
             </div>
-            {histTurnos.length === 0 ? (
-              <div className="p-8 text-center text-sm text-stone-500">Sin turnos en este rango.</div>
-            ) : (
-              <div className="divide-y divide-stone-100">
-                {(() => {
-                  const byDay = {};
-                  histTurnos.forEach(a => { const d = a.fecha?.slice(0, 10); if (d) (byDay[d] = byDay[d] || []).push(a); });
-                  Object.values(byDay).forEach(l => l.sort((a, b) => new Date(a.abierto_at) - new Date(b.abierto_at)));
-                  const dias = Object.entries(byDay).sort(([a], [b]) => b.localeCompare(a));
-                  const hora = (t) => t ? new Date(t).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' }) : '—';
-                  return dias.map(([date, turnos]) => {
-                    const totalDia = turnos.reduce((s, t) => s + (Number(t.ventas_total) || 0), 0);
+            {(() => {
+              const hora = (t) => t ? new Date(t).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' }) : '—';
+              const byDay = {};
+              (histTurnos || []).forEach(t => { const d = t.fecha?.slice(0, 10); if (!d) return; (byDay[d] = byDay[d] || { fecha: d, turnos: [], conc: null }).turnos.push(t); });
+              (histConciliaciones || []).forEach(c => { const d = c.fecha?.slice(0, 10); if (!d) return; byDay[d] = byDay[d] || { fecha: d, turnos: [], conc: null }; if (!byDay[d].conc) byDay[d].conc = c; });
+              Object.values(byDay).forEach(x => x.turnos.sort((a, b) => new Date(a.abierto_at) - new Date(b.abierto_at)));
+              const dias = Object.values(byDay).sort((a, b) => b.fecha.localeCompare(a.fecha));
+              if (dias.length === 0) return <div className="p-8 text-center text-sm text-stone-500">Sin actividad en este rango.</div>;
+              return (
+                <div className="divide-y divide-stone-100">
+                  {dias.map(dia => {
+                    const abierto = expandedDia === dia.fecha;
+                    const totalVendido = dia.turnos.reduce((s, t) => s + (Number(t.ventas_total) || 0), 0);
+                    const conc = dia.conc;
+                    const sinConc = conc && Number(conc.saldo_real) === 0 && Math.abs(Number(conc.diferencia) + Number(conc.saldo_sistema)) < 0.01;
+                    const difConc = conc ? parseFloat(conc.diferencia) : 0;
                     return (
-                      <div key={date} className="px-4 py-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide">{formatDate(date)}</p>
-                          <span className="text-xs text-stone-400">{turnos.length} turno{turnos.length !== 1 ? 's' : ''} · {formatCurrency(totalDia)}</span>
-                        </div>
-                        <div className="space-y-1.5">
-                          {turnos.map((a, idx) => {
-                            const dEf = Number(a.diferencia_efectivo) || 0;
-                            const abierta = a.estado !== 'cerrado';
-                            return (
-                              <div key={a.id} className="flex items-center justify-between gap-2 text-xs">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <span className="inline-flex items-center rounded-full bg-stone-100 text-stone-600 text-[10px] font-semibold px-2 py-0.5 flex-none">T{idx + 1}</span>
-                                  <span className="text-stone-500 flex-none">{hora(a.abierto_at)}{abierta ? '' : `→${hora(a.cerrado_at)}`}</span>
-                                  {a.usuario_nombre && <span className="text-stone-400 truncate">· {a.usuario_nombre}</span>}
-                                </div>
-                                <div className="flex items-center gap-2 flex-none tabular-nums">
-                                  {abierta ? (
-                                    <span className="inline-flex items-center gap-1 text-emerald-600 text-[11px] font-medium"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />en curso</span>
-                                  ) : (
-                                    <>
-                                      <span className="font-semibold text-stone-700">{formatCurrency(a.ventas_total)}</span>
-                                      {!noContadoEf(a) && dEf !== 0 && <span className={dEf > 0 ? 'text-sky-600' : 'text-rose-500'}>{dEf > 0 ? '+' : ''}{formatCurrency(dEf)}</span>}
-                                    </>
-                                  )}
-                                </div>
+                      <div key={dia.fecha}>
+                        <button onClick={() => setExpandedDia(abierto ? null : dia.fecha)} className="w-full px-4 py-3 flex items-center justify-between gap-2 hover:bg-stone-50/50 text-left">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <ChevronRight size={15} className={`text-stone-400 flex-none transition-transform duration-150 ${abierto ? 'rotate-90' : ''}`} />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-stone-800">{formatDate(dia.fecha)}</p>
+                              <p className="text-xs text-stone-400">{dia.turnos.length} turno{dia.turnos.length !== 1 ? 's' : ''}{conc ? ' · conciliación de cuentas' : ''}</p>
+                            </div>
+                          </div>
+                          <div className="text-right flex-none">
+                            <p className="text-sm font-semibold text-stone-800">{formatCurrency(totalVendido)}</p>
+                            {conc && (sinConc
+                              ? <p className="text-[11px] text-stone-400 italic">cuentas sin conciliar</p>
+                              : difConc !== 0
+                                ? <p className={`text-[11px] font-semibold ${difConc > 0 ? 'text-sky-600' : 'text-rose-600'}`}>cuentas: {difConc > 0 ? '+' : ''}{formatCurrency(difConc)}</p>
+                                : <p className="text-[11px] text-emerald-600">cuentas cuadran</p>)}
+                          </div>
+                        </button>
+                        {abierto && (
+                          <div className="px-4 pb-3 bg-stone-50/40 space-y-3">
+                            <div>
+                              <p className="text-[11px] font-semibold text-stone-500 uppercase tracking-wide pt-3 pb-1.5">Turnos de caja (POS)</p>
+                              <div className="space-y-1.5">
+                                {dia.turnos.length === 0 && <p className="text-xs text-stone-400">Sin turnos este día.</p>}
+                                {dia.turnos.map((a, idx) => {
+                                  const dEf = Number(a.diferencia_efectivo) || 0;
+                                  const abierta = a.estado !== 'cerrado';
+                                  return (
+                                    <div key={a.id} className="flex items-center justify-between gap-2 text-xs">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <span className="inline-flex items-center rounded-full bg-stone-200/70 text-stone-600 text-[10px] font-semibold px-2 py-0.5 flex-none">T{idx + 1}</span>
+                                        <span className="text-stone-500 flex-none">{hora(a.abierto_at)}{abierta ? '' : `→${hora(a.cerrado_at)}`}</span>
+                                        {a.usuario_nombre && <span className="text-stone-400 truncate">· {a.usuario_nombre}</span>}
+                                        {Number(a.movimientos_count) > 0 && <span className="text-stone-400 flex-none">· {a.movimientos_count} mov.</span>}
+                                      </div>
+                                      <div className="flex items-center gap-2 flex-none tabular-nums">
+                                        {abierta ? (
+                                          <span className="inline-flex items-center gap-1 text-emerald-600 text-[11px] font-medium"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />en curso</span>
+                                        ) : (
+                                          <>
+                                            <span className="font-semibold text-stone-700">{formatCurrency(a.ventas_total)}</span>
+                                            {!noContadoEf(a) && dEf !== 0 && <span className={dEf > 0 ? 'text-sky-600' : 'text-rose-500'}>{dEf > 0 ? '+' : ''}{formatCurrency(dEf)}</span>}
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
-                            );
-                          })}
-                        </div>
+                            </div>
+                            {conc && (
+                              <div>
+                                <p className="text-[11px] font-semibold text-stone-500 uppercase tracking-wide pb-1.5">Conciliación de cuentas</p>
+                                <div className="flex items-center justify-between gap-2 text-xs bg-white rounded-lg border border-stone-200 px-3 py-2">
+                                  <span className="text-stone-500">Saldo del día{conc.cerrado ? ' · cerrado' : ''}</span>
+                                  <span className="text-stone-700 text-right">
+                                    Sistema {formatCurrency(conc.saldo_sistema)}
+                                    {sinConc
+                                      ? <span className="text-stone-400 italic"> · sin conciliar</span>
+                                      : <> · Real {formatCurrency(conc.saldo_real)}{difConc !== 0 && <span className={difConc > 0 ? 'text-sky-600' : 'text-rose-600'}> · {difConc > 0 ? '+' : ''}{formatCurrency(difConc)}</span>}</>}
+                                  </span>
+                                </div>
+                                {conc.observaciones && <p className="text-xs text-stone-500 bg-stone-100 rounded-lg px-3 py-1.5 mt-1.5 whitespace-pre-wrap">📝 {conc.observaciones}</p>}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
-                  });
-                })()}
-              </div>
-            )}
+                  })}
+                </div>
+              );
+            })()}
           </div>
 
-          {/* Historial de arqueos */}
-          {arqueoHistorial.length > 0 && (
-            <div className={cx.card + ' mt-4 overflow-hidden'}>
-              <div className="p-4 border-b border-stone-100">
-                <h3 className="text-sm font-semibold text-stone-900">Conciliación de cuentas</h3>
-                <p className="text-xs text-stone-400 mt-0.5">Saldo de tus cuentas al cierre del día (efectivo, bancos) — distinto de las ventas por turno</p>
-              </div>
-              <div className="divide-y divide-stone-100">
-                {arqueoHistorial.map(a => (
-                  <div key={a.id} className="px-4 py-3 hover:bg-stone-50/50">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-stone-800">{formatDate(a.fecha)}</p>
-                        <p className="text-xs text-stone-400">{a.tipo === 'diario' ? 'Diario' : 'Mensual'}{a.cerrado ? ' — Cerrado' : ''}{a.created_at ? ` · ${new Date(a.created_at).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' })}` : ''}</p>
-                      </div>
-                      <div className="text-right">
-                        {(() => {
-                          const sinConciliar = Number(a.saldo_real) === 0 && Math.abs(Number(a.diferencia) + Number(a.saldo_sistema)) < 0.01;
-                          return (
-                            <>
-                              <p className="text-sm text-stone-600">Sistema: {formatCurrency(a.saldo_sistema)}</p>
-                              {sinConciliar ? (
-                                <p className="text-xs text-stone-400 italic">Sin conciliar</p>
-                              ) : (
-                                <>
-                                  <p className="text-sm font-medium text-stone-800">Real: {formatCurrency(a.saldo_real)}</p>
-                                  {parseFloat(a.diferencia) !== 0 && (
-                                    <p className={`text-xs font-semibold ${parseFloat(a.diferencia) > 0 ? 'text-sky-600' : 'text-rose-600'}`}>
-                                      Dif: {parseFloat(a.diferencia) > 0 ? '+' : ''}{formatCurrency(a.diferencia)}
-                                    </p>
-                                  )}
-                                </>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                    {a.observaciones && (
-                      <p className="text-xs text-stone-500 bg-stone-100 rounded-lg px-3 py-1.5 mt-2 whitespace-pre-wrap">📝 {a.observaciones}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </>
       )}
 
