@@ -901,7 +901,10 @@ export default function PLCashflowPage() {
           {/* Historial de turnos (cierres de caja POS) filtrable por rango */}
           <div className={cx.card + ' mt-4 overflow-hidden'}>
             <div className="p-4 border-b border-stone-100 flex items-center justify-between flex-wrap gap-3">
-              <h3 className="text-sm font-semibold text-stone-900">Historial de turnos</h3>
+              <div>
+                <h3 className="text-sm font-semibold text-stone-900">Historial de turnos</h3>
+                <p className="text-xs text-stone-400 mt-0.5">Cierres de caja del POS, por turno de venta</p>
+              </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <SegmentedControl
                   layoutId="arqueoHistRango"
@@ -973,7 +976,8 @@ export default function PLCashflowPage() {
           {arqueoHistorial.length > 0 && (
             <div className={cx.card + ' mt-4 overflow-hidden'}>
               <div className="p-4 border-b border-stone-100">
-                <h3 className="text-sm font-semibold text-stone-900">Arqueos recientes</h3>
+                <h3 className="text-sm font-semibold text-stone-900">Conciliación de cuentas</h3>
+                <p className="text-xs text-stone-400 mt-0.5">Saldo de tus cuentas al cierre del día (efectivo, bancos) — distinto de las ventas por turno</p>
               </div>
               <div className="divide-y divide-stone-100">
                 {arqueoHistorial.map(a => (
@@ -984,13 +988,26 @@ export default function PLCashflowPage() {
                         <p className="text-xs text-stone-400">{a.tipo === 'diario' ? 'Diario' : 'Mensual'}{a.cerrado ? ' — Cerrado' : ''}{a.created_at ? ` · ${new Date(a.created_at).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' })}` : ''}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm text-stone-600">Sistema: {formatCurrency(a.saldo_sistema)}</p>
-                        <p className="text-sm font-medium text-stone-800">Real: {formatCurrency(a.saldo_real)}</p>
-                        {parseFloat(a.diferencia) !== 0 && (
-                          <p className={`text-xs font-semibold ${parseFloat(a.diferencia) > 0 ? 'text-sky-600' : 'text-rose-600'}`}>
-                            Dif: {parseFloat(a.diferencia) > 0 ? '+' : ''}{formatCurrency(a.diferencia)}
-                          </p>
-                        )}
+                        {(() => {
+                          const sinConciliar = Number(a.saldo_real) === 0 && Math.abs(Number(a.diferencia) + Number(a.saldo_sistema)) < 0.01;
+                          return (
+                            <>
+                              <p className="text-sm text-stone-600">Sistema: {formatCurrency(a.saldo_sistema)}</p>
+                              {sinConciliar ? (
+                                <p className="text-xs text-stone-400 italic">Sin conciliar</p>
+                              ) : (
+                                <>
+                                  <p className="text-sm font-medium text-stone-800">Real: {formatCurrency(a.saldo_real)}</p>
+                                  {parseFloat(a.diferencia) !== 0 && (
+                                    <p className={`text-xs font-semibold ${parseFloat(a.diferencia) > 0 ? 'text-sky-600' : 'text-rose-600'}`}>
+                                      Dif: {parseFloat(a.diferencia) > 0 ? '+' : ''}{formatCurrency(a.diferencia)}
+                                    </p>
+                                  )}
+                                </>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                     {a.observaciones && (
