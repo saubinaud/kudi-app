@@ -904,6 +904,42 @@ export default function PLCashflowPage() {
             </div>
           )}
 
+          {/* Resumen del período (F4 insights) */}
+          {(histTurnos || []).some(t => t.estado === 'cerrado') && (() => {
+            const cerrados = histTurnos.filter(t => t.estado === 'cerrado');
+            const vendido = cerrados.reduce((s, t) => s + (Number(t.ventas_total) || 0), 0);
+            const efvo = cerrados.reduce((s, t) => s + (Number(t.ventas_efectivo) || 0), 0);
+            const digital = cerrados.reduce((s, t) => s + (Number(t.ventas_transferencia) || 0), 0);
+            const baseMix = efvo + digital;
+            const pctEfvo = baseMix > 0 ? Math.round((efvo / baseMix) * 100) : 0;
+            const contados = cerrados.filter(t => !noContadoEf(t));
+            const descuadre = contados.reduce((s, t) => s + (Number(t.diferencia_efectivo) || 0), 0);
+            const conDescuadre = contados.filter(t => Number(t.diferencia_efectivo) !== 0).length;
+            return (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                <div className={cx.card + ' p-4'}>
+                  <p className="text-xs text-stone-400">Vendido · {cerrados.length} turno{cerrados.length !== 1 ? 's' : ''}</p>
+                  <p className="text-lg font-bold text-stone-900 mt-0.5">{formatCurrency(vendido)}</p>
+                </div>
+                <div className={cx.card + ' p-4'}>
+                  <p className="text-xs text-stone-400">Efectivo vs digital</p>
+                  <p className="text-lg font-bold text-stone-900 mt-0.5">{pctEfvo}%<span className="text-xs font-normal text-stone-400"> efvo</span></p>
+                  <p className="text-[11px] text-stone-400 truncate">{formatCurrency(efvo)} · {formatCurrency(digital)}</p>
+                </div>
+                <div className={cx.card + ' p-4'}>
+                  <p className="text-xs text-stone-400">Descuadre acumulado</p>
+                  <p className={`text-lg font-bold mt-0.5 ${descuadre === 0 ? 'text-emerald-600' : descuadre > 0 ? 'text-sky-600' : 'text-rose-600'}`}>{descuadre > 0 ? '+' : ''}{formatCurrency(descuadre)}</p>
+                  <p className="text-[11px] text-stone-400">{contados.length} turno{contados.length !== 1 ? 's' : ''} contados</p>
+                </div>
+                <div className={cx.card + ' p-4'}>
+                  <p className="text-xs text-stone-400">Turnos con descuadre</p>
+                  <p className="text-lg font-bold text-stone-900 mt-0.5">{conDescuadre}</p>
+                  <p className="text-[11px] text-stone-400">de {contados.length} contados</p>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Historial unificado por día: turnos de caja (POS) + conciliación de cuentas */}
           <div className={cx.card + ' mt-4 overflow-hidden'}>
             <div className="p-4 border-b border-stone-100 flex items-center justify-between flex-wrap gap-3">
