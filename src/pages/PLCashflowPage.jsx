@@ -805,7 +805,7 @@ export default function PLCashflowPage() {
                                 {hora(cc.abierto_at)}{abierta ? '' : ` → ${hora(cc.cerrado_at)}`}
                               </span>
                               {abierta && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-semibold px-2 py-0.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />En curso</span>}
-                              {cc.usuario_nombre && <span className="text-[11px] text-stone-400">· {cc.usuario_nombre}</span>}
+                              {cc.usuario_nombre && <span className="text-[11px] text-stone-400">· abrió {cc.usuario_nombre}{cc.cerrado_nombre && cc.cerrado_nombre !== cc.usuario_nombre ? `, cerró ${cc.cerrado_nombre}` : ''}</span>}
                             </div>
                             <span className="text-sm font-bold text-stone-900">{formatCurrency(cc.ventas_total)}{abierta && <span className="text-[10px] font-normal text-stone-400 ml-1">en vivo</span>}</span>
                           </div>
@@ -976,7 +976,7 @@ export default function PLCashflowPage() {
                                       <div className="flex items-center gap-2 min-w-0">
                                         <span className="inline-flex items-center rounded-full bg-stone-200/70 text-stone-600 text-[10px] font-semibold px-2 py-0.5 flex-none">T{idx + 1}</span>
                                         <span className="text-stone-500 flex-none">{hora(a.abierto_at)}{abierta ? '' : `→${hora(a.cerrado_at)}`}</span>
-                                        {a.usuario_nombre && <span className="text-stone-400 truncate">· {a.usuario_nombre}</span>}
+                                        {a.usuario_nombre && <span className="text-stone-400 truncate">· {a.usuario_nombre}{a.cerrado_nombre && a.cerrado_nombre !== a.usuario_nombre ? ` → ${a.cerrado_nombre}` : ''}</span>}
                                         {Number(a.movimientos_count) > 0 && <span className="text-stone-400 flex-none">· {a.movimientos_count} mov.</span>}
                                       </div>
                                       <div className="flex items-center gap-2 flex-none tabular-nums">
