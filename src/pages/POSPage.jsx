@@ -78,11 +78,20 @@ export default function POSPage() {
   const [movMonto, setMovMonto] = useState('');
   const [movMotivo, setMovMotivo] = useState('');
   const [savingMov, setSavingMov] = useState(false);
+  const [aperturaSugerida, setAperturaSugerida] = useState(null);
+  const [resumenCierre, setResumenCierre] = useState(null);
   const [savingCaja, setSavingCaja] = useState(false);
   const [cajaDismissed, setCajaDismissed] = useState(false);
 
   const loadCaja = () => api.get('/arqueo/actual').then(r => setCaja(r.data || null)).catch(() => {});
-  useEffect(() => { loadCaja(); }, []);
+  useEffect(() => {
+    loadCaja();
+    api.get('/arqueo/apertura-sugerida').then(r => setAperturaSugerida((r.data || r)?.sugerido ?? null)).catch(() => {});
+  }, []);
+  // Precargar el fondo sugerido al abrir el modal de apertura (editable)
+  useEffect(() => {
+    if (showAbrirCaja && !cajaMontoApertura && aperturaSugerida != null) setCajaMontoApertura(String(aperturaSugerida));
+  }, [showAbrirCaja]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Delivery
   const [tipoEntrega, setTipoEntrega] = useState('recojo'); // recojo | delivery
@@ -1169,6 +1178,11 @@ export default function POSPage() {
               <label className={cx.label}>Monto de apertura (S/)</label>
               <input type="number" min="0" step="0.01" value={cajaMontoApertura} onChange={e => setCajaMontoApertura(e.target.value)}
                 className={cx.input + ' text-center text-lg font-semibold'} placeholder="0.00" autoFocus />
+              {aperturaSugerida != null && (
+                <button type="button" onClick={() => setCajaMontoApertura(String(aperturaSugerida))} className="text-[11px] text-stone-500 hover:text-stone-700 mt-1.5 block mx-auto">
+                  Sugerido según tu último turno: <span className="font-semibold">{formatCurrency(aperturaSugerida)}</span>
+                </button>
+              )}
             </div>
             <div className="flex gap-2">
               <button onClick={() => setShowAbrirCaja(false)} className={cx.btnGhost + ' flex-1'}>Cancelar</button>
@@ -1191,6 +1205,38 @@ export default function POSPage() {
                 {savingCaja ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Banknote size={14} /> Abrir</>}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Resumen post-cierre (M4) */}
+      {resumenCierre && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setResumenCierre(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-2">
+                <CheckCircle size={24} className="text-emerald-600" />
+              </div>
+              <h3 className="text-lg font-bold text-stone-900">Turno cerrado</h3>
+            </div>
+            <div className="bg-stone-50 rounded-xl p-4 space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-stone-500">Ventas del turno</span><span className="font-bold text-stone-800">{resumenCierre.cantidad_ventas || 0} — {formatCurrency(resumenCierre.ventas_total)}</span></div>
+              {(() => {
+                const fila = (label, contado, dif) => {
+                  if (contado == null) return <div className="flex justify-between"><span className="text-stone-500">{label}</span><span className="text-stone-400 italic">sin contar</span></div>;
+                  const d = Number(dif) || 0;
+                  return (
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">{label}</span>
+                      <span className="text-stone-700">{formatCurrency(contado)} {d === 0 ? <span className="text-emerald-600">· cuadra</span> : <span className={d > 0 ? 'text-sky-600' : 'text-rose-600'}>· {d > 0 ? '+' : ''}{formatCurrency(d)}</span>}</span>
+                    </div>
+                  );
+                };
+                return <>{fila('Efectivo', resumenCierre.cierre_efectivo_real, resumenCierre.diferencia_efectivo)}{fila('Digital', resumenCierre.cierre_transferencia_real, resumenCierre.diferencia_transferencia)}</>;
+              })()}
+            </div>
+            <button onClick={() => setResumenCierre(null)} className={cx.btnPrimary + ' w-full'}>Listo</button>
           </div>
         </div>
       )}
@@ -1333,7 +1379,7 @@ export default function POSPage() {
                         if (faltaContar && !confirmarSinContar) { setConfirmarSinContar(true); return; }
                         setSavingCaja(true);
                         try {
-                          await api.post('/arqueo/cerrar', {
+                          const rc = await api.post('/arqueo/cerrar', {
                             cierre_efectivo_real: cajaCierreEfectivo === '' ? null : parseFloat(cajaCierreEfectivo),
                             cierre_transferencia_real: cajaCierreTransf === '' ? null : parseFloat(cajaCierreTransf),
                             nota_cierre: cajaNota.trim() || null,
@@ -1344,6 +1390,7 @@ export default function POSPage() {
                           setCajaCierreTransf('');
                           setCajaNota('');
                           setConfirmarSinContar(false);
+                          setResumenCierre(rc.data || rc);
                           toast.success('Caja cerrada correctamente');
                         } catch (err) { toast.error(err.message || 'Error cerrando caja'); }
                         finally { setSavingCaja(false); }

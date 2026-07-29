@@ -853,6 +853,12 @@ export default function PLCashflowPage() {
                             </div>
                           </div>
                           <p className="text-[11px] text-stone-400 mt-2">{cc.cantidad_ventas || 0} ventas en este turno</p>
+                          {Number(cc.movimientos_count) > 0 && (
+                            <p className="text-[11px] text-stone-500 mt-1">
+                              {cc.movimientos_count} movimiento{Number(cc.movimientos_count) !== 1 ? 's' : ''} de caja:{' '}
+                              <span className={Number(cc.movimientos_neto) < 0 ? 'text-rose-600' : 'text-emerald-600'}>{Number(cc.movimientos_neto) > 0 ? '+' : ''}{formatCurrency(cc.movimientos_neto)}</span>
+                            </p>
+                          )}
                           {cc.nota_cierre && <p className="text-xs text-stone-500 bg-stone-100 rounded-lg px-3 py-1.5 mt-2 whitespace-pre-wrap">📝 {cc.nota_cierre}</p>}
                         </div>
                       );
