@@ -4,6 +4,7 @@ import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency, formatDate } from '../utils/format';
 import { noContadoEf, noContadoTr } from '../utils/arqueo';
+import { API_BASE } from '../config/api';
 import CustomSelect from '../components/CustomSelect';
 import ConfirmDialog from '../components/ConfirmDialog';
 import {
@@ -119,6 +120,9 @@ export default function PLCashflowPage() {
   const [histTurnos, setHistTurnos] = useState([]);
   const [histConciliaciones, setHistConciliaciones] = useState([]);
   const [expandedDia, setExpandedDia] = useState(null);
+  const [revisarTurno, setRevisarTurno] = useState(null);
+  const [justificacionRev, setJustificacionRev] = useState('');
+  const [savingRev, setSavingRev] = useState(false);
   const [arqueoForm, setArqueoForm] = useState([]);
   const [arqueoObs, setArqueoObs] = useState('');
   const [savingArqueo, setSavingArqueo] = useState(false);
@@ -289,6 +293,20 @@ export default function PLCashflowPage() {
   useEffect(() => {
     if (tab === 'arqueo') loadHistTurnos();
   }, [histRango, histDesde, histHasta]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function submitRevision() {
+    if (!revisarTurno) return;
+    setSavingRev(true);
+    try {
+      await api.post(`/arqueo/${revisarTurno.id}/revisar`, { justificacion: justificacionRev.trim() || null });
+      setRevisarTurno(null);
+      setJustificacionRev('');
+      loadArqueo(arqueoFecha);
+      loadHistTurnos();
+      toast.success('Descuadre revisado');
+    } catch { toast.error('Error al revisar'); }
+    finally { setSavingRev(false); }
+  }
 
   // ── Movimiento submit ────────────────────────────────────
 
@@ -859,6 +877,7 @@ export default function PLCashflowPage() {
                             </div>
                           </div>
                           <p className="text-[11px] text-stone-400 mt-2">{cc.cantidad_ventas || 0} ventas en este turno</p>
+                          {!abierta && <button onClick={() => window.open(`${API_BASE.replace('/api', '')}/api/ticket/arqueo/${cc.id}?token=${localStorage.getItem('nodum_token')}`, '_blank')} className="text-[11px] text-stone-500 hover:text-stone-700 underline mt-1">Imprimir comprobante</button>}
                           {Number(cc.movimientos_count) > 0 && (
                             <p className="text-[11px] text-stone-500 mt-1">
                               {cc.movimientos_count} movimiento{Number(cc.movimientos_count) !== 1 ? 's' : ''} de caja:{' '}
@@ -866,6 +885,19 @@ export default function PLCashflowPage() {
                             </p>
                           )}
                           {cc.nota_cierre && <p className="text-xs text-stone-500 bg-stone-100 rounded-lg px-3 py-1.5 mt-2 whitespace-pre-wrap">📝 {cc.nota_cierre}</p>}
+                          {(() => {
+                            const tieneDescuadre = (!sinContarEf && descuadreEf !== 0) || (!sinContarTr && descuadreTr !== 0);
+                            if (!tieneDescuadre) return null;
+                            if (cc.revisado_por) return (
+                              <p className="text-[11px] text-emerald-700 bg-emerald-50 rounded-lg px-3 py-1.5 mt-2">✓ Descuadre revisado{cc.revisado_nombre ? ` por ${cc.revisado_nombre}` : ''}{cc.justificacion ? ` — ${cc.justificacion}` : ''}</p>
+                            );
+                            return (
+                              <div className="flex items-center justify-between gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mt-2">
+                                <span className="text-[11px] text-amber-800">Descuadre sin revisar</span>
+                                <button onClick={() => { setRevisarTurno(cc); setJustificacionRev(''); }} className="text-[11px] font-semibold text-amber-800 hover:text-amber-900 underline">Revisar</button>
+                              </div>
+                            );
+                          })()}
                         </div>
                       );
                     })}
@@ -1342,6 +1374,21 @@ export default function PLCashflowPage() {
         </div>
       )}
       {/* ═══════════════════ DESGLOSE MODAL ═══════════════════ */}
+      {revisarTurno && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setRevisarTurno(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-stone-900">Revisar descuadre</h3>
+              <button onClick={() => setRevisarTurno(null)} className={cx.btnGhost + ' p-1'}><X size={16} /></button>
+            </div>
+            <p className="text-xs text-stone-500">Registrá el motivo del descuadre (error de vuelto, retiro no registrado…). Queda como revisado a tu nombre.</p>
+            <textarea value={justificacionRev} onChange={e => setJustificacionRev(e.target.value)} className={cx.input + ' min-h-[80px]'} placeholder="Motivo del descuadre..." autoFocus />
+            <button onClick={submitRevision} disabled={savingRev} className={cx.btnPrimary + ' w-full'}>{savingRev ? 'Guardando...' : 'Marcar como revisado'}</button>
+          </div>
+        </div>
+      )}
+
       {showDesglose && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDesglose(null)} />

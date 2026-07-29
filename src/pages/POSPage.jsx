@@ -1285,7 +1285,10 @@ export default function POSPage() {
                 return <>{fila('Efectivo', resumenCierre.cierre_efectivo_real, resumenCierre.diferencia_efectivo)}{fila('Digital', resumenCierre.cierre_transferencia_real, resumenCierre.diferencia_transferencia)}</>;
               })()}
             </div>
-            <button onClick={() => setResumenCierre(null)} className={cx.btnPrimary + ' w-full'}>Listo</button>
+            <div className="flex gap-2">
+              <button onClick={() => window.open(`${API_BASE.replace('/api', '')}/api/ticket/arqueo/${resumenCierre.id}?token=${localStorage.getItem('nodum_token')}`, '_blank')} className={cx.btnSecondary + ' flex-1'}>Imprimir</button>
+              <button onClick={() => setResumenCierre(null)} className={cx.btnPrimary + ' flex-1'}>Listo</button>
+            </div>
           </div>
         </div>
       )}
