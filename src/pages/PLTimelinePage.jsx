@@ -512,13 +512,19 @@ export default function PLTimelinePage() {
                         <div key={a.id} className="flex items-center justify-between gap-2 text-xs py-1">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="inline-flex items-center rounded-full bg-stone-100 text-stone-600 text-[10px] font-semibold px-2 py-0.5 flex-none">T{idx + 1}</span>
-                            <span className="text-stone-500 flex-none">{hora(a.abierto_at)}→{abierta ? 'abierta' : hora(a.cerrado_at)}</span>
+                            <span className="text-stone-500 flex-none">{hora(a.abierto_at)}{abierta ? '' : `→${hora(a.cerrado_at)}`}</span>
                             {a.usuario_nombre && <span className="text-stone-400 truncate">· {a.usuario_nombre}</span>}
                           </div>
                           <div className="flex items-center gap-2 flex-none tabular-nums">
-                            <span className="font-semibold text-stone-700">{formatCurrency(a.ventas_total)}</span>
-                            {!abierta && a.cierre_efectivo_real != null && dEf !== 0 && (
-                              <span className={dEf > 0 ? 'text-sky-600' : 'text-rose-500'}>{dEf > 0 ? '+' : ''}{formatCurrency(dEf)}</span>
+                            {abierta ? (
+                              <span className="inline-flex items-center gap-1 text-emerald-600 text-[11px] font-medium"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />en curso</span>
+                            ) : (
+                              <>
+                                <span className="font-semibold text-stone-700">{formatCurrency(a.ventas_total)}</span>
+                                {a.cierre_efectivo_real != null && dEf !== 0 && (
+                                  <span className={dEf > 0 ? 'text-sky-600' : 'text-rose-500'}>{dEf > 0 ? '+' : ''}{formatCurrency(dEf)}</span>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>

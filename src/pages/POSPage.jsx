@@ -72,6 +72,7 @@ export default function POSPage() {
   const [cajaCierreEfectivo, setCajaCierreEfectivo] = useState('');
   const [cajaCierreTransf, setCajaCierreTransf] = useState('');
   const [cajaNota, setCajaNota] = useState('');
+  const [confirmarSinContar, setConfirmarSinContar] = useState(false);
   const [savingCaja, setSavingCaja] = useState(false);
   const [cajaDismissed, setCajaDismissed] = useState(false);
 
@@ -1192,11 +1193,11 @@ export default function POSPage() {
         const diffTransf = (parseFloat(cajaCierreTransf) || 0) - transfSistema;
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowCerrarCaja(false)} />
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setShowCerrarCaja(false); setConfirmarSinContar(false); }} />
             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-stone-900">Cerrar caja</h3>
-                <button onClick={() => setShowCerrarCaja(false)} className="text-stone-400 hover:text-stone-600"><X size={18} /></button>
+                <button onClick={() => { setShowCerrarCaja(false); setConfirmarSinContar(false); }} className="text-stone-400 hover:text-stone-600"><X size={18} /></button>
               </div>
 
               {/* Resumen del turno */}
@@ -1255,29 +1256,48 @@ export default function POSPage() {
               </div>
 
               {/* Confirmar */}
-              <button
-                disabled={savingCaja}
-                onClick={async () => {
-                  setSavingCaja(true);
-                  try {
-                    await api.post('/arqueo/cerrar', {
-                      cierre_efectivo_real: parseFloat(cajaCierreEfectivo) || 0,
-                      cierre_transferencia_real: parseFloat(cajaCierreTransf) || 0,
-                      nota_cierre: cajaNota.trim() || null,
-                    });
-                    setCaja(null);
-                    setShowCerrarCaja(false);
-                    setCajaCierreEfectivo('');
-                    setCajaCierreTransf('');
-                    setCajaNota('');
-                    toast.success('Caja cerrada correctamente');
-                  } catch (err) { toast.error(err.message || 'Error cerrando caja'); }
-                  finally { setSavingCaja(false); }
-                }}
-                className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors duration-100"
-              >
-                {savingCaja ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Lock size={14} /> Confirmar cierre</>}
-              </button>
+              {(() => {
+                const faltaContarEf = cajaCierreEfectivo === '' && efectivoSistema > 0;
+                const faltaContarTr = cajaCierreTransf === '' && transfSistema > 0;
+                const faltaContar = faltaContarEf || faltaContarTr;
+                return (
+                  <div className="space-y-2">
+                    {faltaContar && (
+                      <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5">
+                        <AlertTriangle size={15} className="text-amber-600 flex-none mt-0.5" />
+                        <p className="text-xs text-amber-800">
+                          No ingresaste {faltaContarEf ? 'el efectivo' : ''}{faltaContarEf && faltaContarTr ? ' ni las transferencias' : faltaContarTr ? 'las transferencias' : ''} en tu caja. Se cerrará <strong>sin calcular diferencia</strong> (no como faltante). Para cuadrar el turno, contá el dinero e ingresalo arriba.
+                        </p>
+                      </div>
+                    )}
+                    <button
+                      disabled={savingCaja}
+                      onClick={async () => {
+                        if (faltaContar && !confirmarSinContar) { setConfirmarSinContar(true); return; }
+                        setSavingCaja(true);
+                        try {
+                          await api.post('/arqueo/cerrar', {
+                            cierre_efectivo_real: cajaCierreEfectivo === '' ? null : parseFloat(cajaCierreEfectivo),
+                            cierre_transferencia_real: cajaCierreTransf === '' ? null : parseFloat(cajaCierreTransf),
+                            nota_cierre: cajaNota.trim() || null,
+                          });
+                          setCaja(null);
+                          setShowCerrarCaja(false);
+                          setCajaCierreEfectivo('');
+                          setCajaCierreTransf('');
+                          setCajaNota('');
+                          setConfirmarSinContar(false);
+                          toast.success('Caja cerrada correctamente');
+                        } catch (err) { toast.error(err.message || 'Error cerrando caja'); }
+                        finally { setSavingCaja(false); }
+                      }}
+                      className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors duration-100"
+                    >
+                      {savingCaja ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Lock size={14} /> {faltaContar && confirmarSinContar ? 'Cerrar sin contar' : 'Confirmar cierre'}</>}
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         );

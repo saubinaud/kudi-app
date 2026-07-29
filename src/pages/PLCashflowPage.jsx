@@ -112,6 +112,10 @@ export default function PLCashflowPage() {
   const [arqueoData, setArqueoData] = useState(null);
   const [arqueoHistorial, setArqueoHistorial] = useState([]);
   const [turnosDia, setTurnosDia] = useState([]);
+  const [histRango, setHistRango] = useState('mes');
+  const [histDesde, setHistDesde] = useState('');
+  const [histHasta, setHistHasta] = useState('');
+  const [histTurnos, setHistTurnos] = useState([]);
   const [arqueoForm, setArqueoForm] = useState([]);
   const [arqueoObs, setArqueoObs] = useState('');
   const [savingArqueo, setSavingArqueo] = useState(false);
@@ -210,6 +214,22 @@ export default function PLCashflowPage() {
         const tRes = await api.get(`/arqueo/historial?desde=${fecha}&hasta=${fecha}`);
         const turnos = (tRes.data || tRes || []).slice()
           .sort((a, b) => new Date(a.abierto_at) - new Date(b.abierto_at));
+        // Turno EN CURSO: en /historial sus ventas vienen en 0 (se llenan al cerrar);
+        // traemos las ventas en vivo desde /arqueo/actual y las fusionamos.
+        const hoyLima = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
+        const abierto = turnos.find(t => t.estado === 'abierto');
+        if (abierto && fecha === hoyLima) {
+          try {
+            const actRes = await api.get('/arqueo/actual');
+            const act = actRes.data || actRes;
+            if (act && act.id === abierto.id) {
+              abierto.ventas_efectivo = act.ventas_efectivo;
+              abierto.ventas_transferencia = act.ventas_transferencia;
+              abierto.ventas_total = act.ventas_total;
+              abierto.cantidad_ventas = act.cantidad_ventas;
+            }
+          } catch {}
+        }
         setTurnosDia(turnos);
       } catch { setTurnosDia([]); }
       // Load recent arqueos history
@@ -232,6 +252,36 @@ export default function PLCashflowPage() {
       setArqueoObs(d.arqueo?.observaciones || '');
     } catch { toast.error('Error cargando arqueo'); }
   }
+
+  // Historial de turnos (cierres de caja POS) filtrable por rango, como el Timeline.
+  function rangoHist() {
+    const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
+    if (histRango === 'hoy') return { desde: hoy, hasta: hoy };
+    if (histRango === 'semana') {
+      const [y, m, d] = hoy.split('-').map(Number);
+      const dt = new Date(Date.UTC(y, m - 1, d));
+      const dow = (dt.getUTCDay() + 6) % 7; // 0 = lunes
+      dt.setUTCDate(dt.getUTCDate() - dow);
+      return { desde: dt.toISOString().slice(0, 10), hasta: hoy };
+    }
+    if (histRango === 'rango') return { desde: histDesde, hasta: histHasta };
+    const [y, m] = hoy.split('-');
+    const last = new Date(Number(y), Number(m), 0).getDate();
+    return { desde: `${y}-${m}-01`, hasta: `${y}-${m}-${String(last).padStart(2, '0')}` };
+  }
+
+  async function loadHistTurnos() {
+    const r = rangoHist();
+    if (!r.desde || !r.hasta) { setHistTurnos([]); return; }
+    try {
+      const res = await api.get(`/arqueo/historial?desde=${r.desde}&hasta=${r.hasta}`);
+      setHistTurnos(res.data || res || []);
+    } catch { setHistTurnos([]); }
+  }
+
+  useEffect(() => {
+    if (tab === 'arqueo') loadHistTurnos();
+  }, [histRango, histDesde, histHasta]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Movimiento submit ────────────────────────────────────
 
@@ -438,7 +488,7 @@ export default function PLCashflowPage() {
             { key: 'cuentas', label: 'Cuentas', icon: Wallet },
           ]}
           value={tab}
-          onChange={(key) => { setTab(key); if (key === 'arqueo') loadArqueo(arqueoFecha); }}
+          onChange={(key) => { setTab(key); if (key === 'arqueo') { loadArqueo(arqueoFecha); loadHistTurnos(); } }}
           layoutId="cashflow-tab"
           variant="light"
         />
@@ -598,7 +648,7 @@ export default function PLCashflowPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-xl font-bold text-stone-900">Arqueo de Caja</h1>
-              <p className="text-sm text-stone-500 mt-0.5">Conciliacion diaria de saldos</p>
+              <p className="text-sm text-stone-500 mt-0.5">Saldos del día y cierres de caja por turno</p>
             </div>
             <div className="flex items-center gap-3">
               <input
@@ -740,11 +790,12 @@ export default function PLCashflowPage() {
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="inline-flex items-center justify-center rounded-full bg-stone-900 text-white text-[11px] font-semibold px-2.5 py-1">Turno {idx + 1}</span>
                               <span className="text-xs font-medium text-stone-700">
-                                {hora(cc.abierto_at)} → {abierta ? <span className="text-emerald-600 font-semibold">Abierta</span> : hora(cc.cerrado_at)}
+                                {hora(cc.abierto_at)}{abierta ? '' : ` → ${hora(cc.cerrado_at)}`}
                               </span>
+                              {abierta && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-semibold px-2 py-0.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />En curso</span>}
                               {cc.usuario_nombre && <span className="text-[11px] text-stone-400">· {cc.usuario_nombre}</span>}
                             </div>
-                            <span className="text-sm font-bold text-stone-900">{formatCurrency(cc.ventas_total)}</span>
+                            <span className="text-sm font-bold text-stone-900">{formatCurrency(cc.ventas_total)}{abierta && <span className="text-[10px] font-normal text-stone-400 ml-1">en vivo</span>}</span>
                           </div>
                           <div className="grid grid-cols-3 gap-2 text-xs mb-2">
                             <div className="bg-stone-50 rounded-lg px-3 py-1.5">
@@ -819,6 +870,77 @@ export default function PLCashflowPage() {
               </div>
             </div>
           )}
+
+          {/* Historial de turnos (cierres de caja POS) filtrable por rango */}
+          <div className={cx.card + ' mt-4 overflow-hidden'}>
+            <div className="p-4 border-b border-stone-100 flex items-center justify-between flex-wrap gap-3">
+              <h3 className="text-sm font-semibold text-stone-900">Historial de turnos</h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <SegmentedControl
+                  layoutId="arqueoHistRango"
+                  size="sm"
+                  value={histRango}
+                  onChange={setHistRango}
+                  options={[{ key: 'hoy', label: 'Hoy' }, { key: 'semana', label: 'Semana' }, { key: 'mes', label: 'Mes' }, { key: 'rango', label: 'Rango' }]}
+                />
+                {histRango === 'rango' && (
+                  <>
+                    <input type="date" value={histDesde} onChange={e => setHistDesde(e.target.value)} className={cx.input + ' w-36'} />
+                    <input type="date" value={histHasta} onChange={e => setHistHasta(e.target.value)} className={cx.input + ' w-36'} />
+                  </>
+                )}
+              </div>
+            </div>
+            {histTurnos.length === 0 ? (
+              <div className="p-8 text-center text-sm text-stone-500">Sin turnos en este rango.</div>
+            ) : (
+              <div className="divide-y divide-stone-100">
+                {(() => {
+                  const byDay = {};
+                  histTurnos.forEach(a => { const d = a.fecha?.slice(0, 10); if (d) (byDay[d] = byDay[d] || []).push(a); });
+                  Object.values(byDay).forEach(l => l.sort((a, b) => new Date(a.abierto_at) - new Date(b.abierto_at)));
+                  const dias = Object.entries(byDay).sort(([a], [b]) => b.localeCompare(a));
+                  const hora = (t) => t ? new Date(t).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' }) : '—';
+                  return dias.map(([date, turnos]) => {
+                    const totalDia = turnos.reduce((s, t) => s + (Number(t.ventas_total) || 0), 0);
+                    return (
+                      <div key={date} className="px-4 py-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-semibold text-stone-500 uppercase tracking-wide">{formatDate(date)}</p>
+                          <span className="text-xs text-stone-400">{turnos.length} turno{turnos.length !== 1 ? 's' : ''} · {formatCurrency(totalDia)}</span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {turnos.map((a, idx) => {
+                            const dEf = Number(a.diferencia_efectivo) || 0;
+                            const abierta = a.estado !== 'cerrado';
+                            return (
+                              <div key={a.id} className="flex items-center justify-between gap-2 text-xs">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="inline-flex items-center rounded-full bg-stone-100 text-stone-600 text-[10px] font-semibold px-2 py-0.5 flex-none">T{idx + 1}</span>
+                                  <span className="text-stone-500 flex-none">{hora(a.abierto_at)}{abierta ? '' : `→${hora(a.cerrado_at)}`}</span>
+                                  {a.usuario_nombre && <span className="text-stone-400 truncate">· {a.usuario_nombre}</span>}
+                                </div>
+                                <div className="flex items-center gap-2 flex-none tabular-nums">
+                                  {abierta ? (
+                                    <span className="inline-flex items-center gap-1 text-emerald-600 text-[11px] font-medium"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />en curso</span>
+                                  ) : (
+                                    <>
+                                      <span className="font-semibold text-stone-700">{formatCurrency(a.ventas_total)}</span>
+                                      {a.cierre_efectivo_real != null && dEf !== 0 && <span className={dEf > 0 ? 'text-sky-600' : 'text-rose-500'}>{dEf > 0 ? '+' : ''}{formatCurrency(dEf)}</span>}
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            )}
+          </div>
 
           {/* Historial de arqueos */}
           {arqueoHistorial.length > 0 && (
