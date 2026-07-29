@@ -3,6 +3,7 @@ import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency, formatDate } from '../utils/format';
+import { noContadoEf, noContadoTr } from '../utils/arqueo';
 import CustomSelect from '../components/CustomSelect';
 import ConfirmDialog from '../components/ConfirmDialog';
 import {
@@ -781,9 +782,14 @@ export default function PLCashflowPage() {
                   <div className="space-y-2">
                     {turnosDia.map((cc, idx) => {
                       const hora = (t) => t ? new Date(t).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' }) : '—';
-                      const dEf = Number(cc.diferencia_efectivo);
-                      const dTr = Number(cc.diferencia_transferencia);
                       const abierta = cc.estado !== 'cerrado';
+                      const apert = Number(cc.monto_apertura) || 0;
+                      const cierreEf = Number(cc.cierre_efectivo_real) || 0;
+                      const efectivoNeto = cierreEf - apert;          // ingreso efectivo por conteo físico
+                      const descuadreEf = Number(cc.diferencia_efectivo) || 0;  // cierre − esperado (real)
+                      const descuadreTr = Number(cc.diferencia_transferencia) || 0;
+                      const sinContarEf = abierta || noContadoEf(cc);
+                      const sinContarTr = abierta || noContadoTr(cc);
                       return (
                         <div key={cc.id} className="rounded-xl border border-stone-200 p-3">
                           <div className="flex items-center justify-between mb-2 flex-wrap gap-1.5">
@@ -812,23 +818,38 @@ export default function PLCashflowPage() {
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="flex justify-between bg-stone-50 rounded-lg px-3 py-1.5">
-                              <span className="text-stone-500">Cierre efectivo</span>
-                              <span className="text-stone-700">
-                                {cc.cierre_efectivo_real != null ? formatCurrency(cc.cierre_efectivo_real) : '—'}
-                                {cc.cierre_efectivo_real != null && dEf !== 0 && (
-                                  <span className={dEf > 0 ? 'text-sky-600' : 'text-rose-600'}> ({dEf > 0 ? '+' : ''}{formatCurrency(dEf)})</span>
-                                )}
-                              </span>
+                            <div className="bg-stone-50 rounded-lg px-3 py-1.5">
+                              <div className="flex justify-between">
+                                <span className="text-stone-500">Cierre efectivo</span>
+                                {sinContarEf
+                                  ? <span className="text-stone-400 italic">{abierta ? '—' : 'sin contar'}</span>
+                                  : <span className="text-stone-700 font-medium">{formatCurrency(cierreEf)}</span>}
+                              </div>
+                              {!sinContarEf && (
+                                <div className="flex justify-between mt-0.5 text-[11px]">
+                                  <span className="text-stone-400">Neto (cierre−apert.)</span>
+                                  <span className="text-stone-600">
+                                    {formatCurrency(efectivoNeto)}
+                                    {descuadreEf === 0
+                                      ? <span className="text-emerald-600"> · cuadra</span>
+                                      : <span className={descuadreEf > 0 ? 'text-sky-600' : 'text-rose-600'}> · {descuadreEf > 0 ? '+' : ''}{formatCurrency(descuadreEf)}</span>}
+                                  </span>
+                                </div>
+                              )}
                             </div>
-                            <div className="flex justify-between bg-stone-50 rounded-lg px-3 py-1.5">
-                              <span className="text-stone-500">Cierre digital</span>
-                              <span className="text-stone-700">
-                                {cc.cierre_transferencia_real != null ? formatCurrency(cc.cierre_transferencia_real) : '—'}
-                                {cc.cierre_transferencia_real != null && dTr !== 0 && (
-                                  <span className={dTr > 0 ? 'text-sky-600' : 'text-rose-600'}> ({dTr > 0 ? '+' : ''}{formatCurrency(dTr)})</span>
-                                )}
-                              </span>
+                            <div className="bg-stone-50 rounded-lg px-3 py-1.5">
+                              <div className="flex justify-between">
+                                <span className="text-stone-500">Cierre digital</span>
+                                {sinContarTr
+                                  ? <span className="text-stone-400 italic">{abierta ? '—' : 'sin contar'}</span>
+                                  : <span className="text-stone-700 font-medium">{formatCurrency(Number(cc.cierre_transferencia_real) || 0)}</span>}
+                              </div>
+                              {!sinContarTr && descuadreTr !== 0 && (
+                                <div className="flex justify-between mt-0.5 text-[11px]">
+                                  <span className="text-stone-400">Descuadre</span>
+                                  <span className={descuadreTr > 0 ? 'text-sky-600' : 'text-rose-600'}>{descuadreTr > 0 ? '+' : ''}{formatCurrency(descuadreTr)}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                           <p className="text-[11px] text-stone-400 mt-2">{cc.cantidad_ventas || 0} ventas en este turno</p>
@@ -926,7 +947,7 @@ export default function PLCashflowPage() {
                                   ) : (
                                     <>
                                       <span className="font-semibold text-stone-700">{formatCurrency(a.ventas_total)}</span>
-                                      {a.cierre_efectivo_real != null && dEf !== 0 && <span className={dEf > 0 ? 'text-sky-600' : 'text-rose-500'}>{dEf > 0 ? '+' : ''}{formatCurrency(dEf)}</span>}
+                                      {!noContadoEf(a) && dEf !== 0 && <span className={dEf > 0 ? 'text-sky-600' : 'text-rose-500'}>{dEf > 0 ? '+' : ''}{formatCurrency(dEf)}</span>}
                                     </>
                                   )}
                                 </div>

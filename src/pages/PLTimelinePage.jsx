@@ -3,6 +3,7 @@ import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency, formatDate } from '../utils/format';
+import { noContadoEf } from '../utils/arqueo';
 import CustomSelect from '../components/CustomSelect';
 import PeriodoSelector from '../components/PeriodoSelector';
 import SearchableSelect from '../components/SearchableSelect';
@@ -521,7 +522,7 @@ export default function PLTimelinePage() {
                             ) : (
                               <>
                                 <span className="font-semibold text-stone-700">{formatCurrency(a.ventas_total)}</span>
-                                {a.cierre_efectivo_real != null && dEf !== 0 && (
+                                {!noContadoEf(a) && dEf !== 0 && (
                                   <span className={dEf > 0 ? 'text-sky-600' : 'text-rose-500'}>{dEf > 0 ? '+' : ''}{formatCurrency(dEf)}</span>
                                 )}
                               </>
