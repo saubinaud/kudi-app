@@ -73,6 +73,11 @@ export default function POSPage() {
   const [cajaCierreTransf, setCajaCierreTransf] = useState('');
   const [cajaNota, setCajaNota] = useState('');
   const [confirmarSinContar, setConfirmarSinContar] = useState(false);
+  const [showMovimiento, setShowMovimiento] = useState(false);
+  const [movTipo, setMovTipo] = useState('retiro');
+  const [movMonto, setMovMonto] = useState('');
+  const [movMotivo, setMovMotivo] = useState('');
+  const [savingMov, setSavingMov] = useState(false);
   const [savingCaja, setSavingCaja] = useState(false);
   const [cajaDismissed, setCajaDismissed] = useState(false);
 
@@ -723,6 +728,11 @@ export default function POSPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold text-stone-900">Caja virtual</h1>
           {caja && (
+            <button onClick={() => { setMovTipo('retiro'); setMovMonto(''); setMovMotivo(''); setShowMovimiento(true); }} className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors duration-100">
+              <Banknote size={12} /> Movimiento
+            </button>
+          )}
+          {caja && (
             <button onClick={() => { loadCaja(); setShowCerrarCaja(true); }} className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors duration-100">
               <Lock size={12} /> Cerrar caja
             </button>
@@ -1185,9 +1195,53 @@ export default function POSPage() {
         </div>
       )}
 
+      {/* Modal: Movimiento de caja (retiro/ingreso) */}
+      {showMovimiento && caja && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowMovimiento(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-stone-900">Movimiento de caja</h3>
+              <button onClick={() => setShowMovimiento(false)} className="text-stone-400 hover:text-stone-600"><X size={18} /></button>
+            </div>
+            <p className="text-xs text-stone-500">Registrá dinero que sacás o agregás a la caja durante el turno (depósito, gasto, cambio). Así el cierre cuadra bien y no aparece como faltante.</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => setMovTipo('retiro')} className={`py-2.5 rounded-xl text-sm font-semibold border transition-colors duration-100 ${movTipo === 'retiro' ? 'bg-rose-50 border-rose-300 text-rose-700' : 'bg-white border-stone-200 text-stone-500'}`}>Retiro (sale)</button>
+              <button onClick={() => setMovTipo('ingreso')} className={`py-2.5 rounded-xl text-sm font-semibold border transition-colors duration-100 ${movTipo === 'ingreso' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-white border-stone-200 text-stone-500'}`}>Ingreso (entra)</button>
+            </div>
+            <div>
+              <label className={cx.label}>Monto</label>
+              <input type="number" step="0.01" value={movMonto} onChange={e => setMovMonto(e.target.value)} className={cx.input} placeholder="0.00" autoFocus />
+            </div>
+            <div>
+              <label className={cx.label}>Motivo (opcional)</label>
+              <input type="text" value={movMotivo} onChange={e => setMovMotivo(e.target.value)} className={cx.input} placeholder="Ej. depósito al banco, compra de insumos..." />
+            </div>
+            <button
+              disabled={savingMov || !(parseFloat(movMonto) > 0)}
+              onClick={async () => {
+                setSavingMov(true);
+                try {
+                  await api.post('/arqueo/movimiento', { tipo: movTipo, monto: parseFloat(movMonto), motivo: movMotivo.trim() || null });
+                  setShowMovimiento(false);
+                  loadCaja();
+                  toast.success(movTipo === 'retiro' ? 'Retiro registrado' : 'Ingreso registrado');
+                } catch (err) { toast.error(err.message || 'Error registrando movimiento'); }
+                finally { setSavingMov(false); }
+              }}
+              className={`w-full py-3 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors duration-100 disabled:opacity-50 ${movTipo === 'retiro' ? 'bg-rose-500 hover:bg-rose-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}
+            >
+              {savingMov ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Registrar movimiento'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Modal: Cerrar caja */}
       {showCerrarCaja && caja && (() => {
-        const efectivoSistema = parseFloat(caja.monto_apertura || 0) + parseFloat(caja.ventas_efectivo || 0);
+        const efectivoSistema = caja.esperado_efectivo != null
+          ? parseFloat(caja.esperado_efectivo)
+          : parseFloat(caja.monto_apertura || 0) + parseFloat(caja.ventas_efectivo || 0);
         const transfSistema = parseFloat(caja.ventas_transferencia || 0);
         const diffEfectivo = (parseFloat(cajaCierreEfectivo) || 0) - efectivoSistema;
         const diffTransf = (parseFloat(cajaCierreTransf) || 0) - transfSistema;
@@ -1205,6 +1259,9 @@ export default function POSPage() {
                 <div className="flex justify-between"><span className="text-stone-500">Apertura</span><span className="font-medium">{new Date(caja.abierto_at).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' })}</span></div>
                 <div className="flex justify-between"><span className="text-stone-500">Ventas del turno</span><span className="font-bold text-stone-800">{caja.cantidad_ventas || 0} — {formatCurrency(parseFloat(caja.ventas_total || 0))}</span></div>
                 <div className="flex justify-between"><span className="text-stone-500">Monto apertura</span><span>{formatCurrency(parseFloat(caja.monto_apertura || 0))}</span></div>
+                {caja.movimientos_neto != null && Number(caja.movimientos_neto) !== 0 && (
+                  <div className="flex justify-between"><span className="text-stone-500">Movimientos (retiros/ingresos)</span><span className={Number(caja.movimientos_neto) < 0 ? 'text-rose-600' : 'text-emerald-600'}>{Number(caja.movimientos_neto) > 0 ? '+' : ''}{formatCurrency(caja.movimientos_neto)}</span></div>
+                )}
               </div>
 
               {/* Cuadre Efectivo */}
