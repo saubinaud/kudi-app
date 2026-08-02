@@ -293,7 +293,7 @@ export default function PLGastosPage() {
   // Category management
   const openNewCat = () => {
     setEditingCat(null);
-    setCatForm({ nombre: '', tipo: 'fijo', naturaleza: 'otro', recurrente: false, monto_default: '', subcategorias: [] });
+    setCatForm({ nombre: '', tipo: 'fijo', naturaleza: 'otro', pl_seccion: '', recurrente: false, monto_default: '', subcategorias: [] });
     setCatModalOpen(true);
   };
 
@@ -303,6 +303,7 @@ export default function PLGastosPage() {
       nombre: cat.nombre,
       tipo: cat.tipo,
       naturaleza: cat.naturaleza || 'otro',
+      pl_seccion: cat.pl_seccion || '',
       recurrente: cat.recurrente,
       monto_default: cat.monto_default ? parseFloat(cat.monto_default) : '',
       subcategorias: cat.subcategorias || [],
@@ -321,6 +322,7 @@ export default function PLGastosPage() {
           nombre: catForm.nombre,
           tipo: catForm.tipo,
           naturaleza: catForm.naturaleza || 'otro',
+          pl_seccion: catForm.pl_seccion || '',
           recurrente: catForm.recurrente,
           monto_default: catForm.monto_default || null,
           subcategorias: catForm.subcategorias || [],
@@ -331,6 +333,7 @@ export default function PLGastosPage() {
           nombre: catForm.nombre,
           tipo: catForm.tipo,
           naturaleza: catForm.naturaleza || 'otro',
+          pl_seccion: catForm.pl_seccion || null,
           recurrente: catForm.recurrente,
           monto_default: catForm.monto_default || null,
           subcategorias: catForm.subcategorias || [],
@@ -872,6 +875,28 @@ export default function PLGastosPage() {
                     <p className="mt-1.5 text-[11px] leading-relaxed text-stone-500">
                       {NATURALEZA_HINTS[catForm.naturaleza || 'otro']}
                     </p>
+                  </div>
+
+                  {/* Destino especial en el Estado de Resultados (rediseño CFO):
+                      financiero e Impuesto a la Renta se registran a mano desde aquí. */}
+                  <div>
+                    <label className={cx.label}>Destino en el Estado de Resultados</label>
+                    <CustomSelect
+                      value={catForm.pl_seccion || ''}
+                      onChange={(v) => setCatForm((f) => ({ ...f, pl_seccion: v }))}
+                      options={[
+                        { value: '', label: 'Automático (según naturaleza)' },
+                        { value: 'gasto_financiero', label: 'Gastos financieros (intereses, ITF)' },
+                        { value: 'impuesto_renta', label: 'Impuesto a la Renta' },
+                      ]}
+                    />
+                    {catForm.pl_seccion && (
+                      <p className="mt-1.5 text-[11px] leading-relaxed text-stone-500">
+                        {catForm.pl_seccion === 'impuesto_renta'
+                          ? 'Los pagos de esta categoría aparecen como Impuesto a la Renta, después de la utilidad antes de impuestos. Tú decides el monto.'
+                          : 'Los pagos de esta categoría aparecen como gastos financieros, entre EBIT y la utilidad antes de impuestos.'}
+                      </p>
+                    )}
                   </div>
 
                   <label className="flex items-center gap-2 cursor-pointer">

@@ -311,9 +311,14 @@ export default function TasasPeriodoPage() {
               </div>
               <div className="rounded-lg bg-stone-50 px-3 py-2">
                 <p className="text-stone-400 font-semibold uppercase text-[10px] tracking-wide">
-                  Gastos cif
+                  CIF del mes
                 </p>
-                <p className="text-stone-800 font-medium">{fmtMoney(calc.breakdown?.gastos_cif ?? calc.cif_total)}</p>
+                <p className="text-stone-800 font-medium">{fmtMoney(calc.cif_total)}</p>
+                {(calc.breakdown?.deprec_produccion ?? 0) > 0 && (
+                  <p className="text-stone-400 text-[10px] mt-0.5">
+                    incluye {fmtMoney(calc.breakdown.deprec_produccion)} de depreciación (Activos)
+                  </p>
+                )}
               </div>
             </div>
 
