@@ -8,6 +8,7 @@ import CustomSelect from '../components/CustomSelect';
 import ConfirmDialog from '../components/ConfirmDialog';
 import InfoTip from '../components/InfoTip';
 import { Plus, X, Trash2, Pencil, Factory, Briefcase, Truck } from 'lucide-react';
+import { sugerirVidaUtil } from '../utils/vidaUtilSunat';
 
 const TIPOS = [
   { value: 'produccion', label: 'Producción', sub: 'Depreciación → CIF (costo de conversión)', icon: Factory },
@@ -29,6 +30,9 @@ export default function ActivosPage() {
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  // Auto-sugerencia de vida útil (SUNAT). vidaTocada = el usuario la editó a mano → no pisar.
+  const [vidaTocada, setVidaTocada] = useState(false);
+  const [sugVida, setSugVida] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -52,7 +56,7 @@ export default function ActivosPage() {
     };
   }, [activos]);
 
-  const openNew = () => { setEditing(null); setForm(EMPTY); setShowModal(true); };
+  const openNew = () => { setEditing(null); setForm(EMPTY); setVidaTocada(false); setSugVida(null); setShowModal(true); };
   const openEdit = (a) => {
     setEditing(a);
     setForm({
@@ -61,7 +65,16 @@ export default function ActivosPage() {
       vida_util_meses: String(a.vida_util_meses),
       fecha_compra: a.fecha_compra ? String(a.fecha_compra).slice(0, 10) : '',
     });
+    setVidaTocada(true); // ya tiene un valor guardado: no auto-sugerir encima
+    setSugVida(null);
     setShowModal(true);
+  };
+
+  // Al escribir el nombre, sugerir la vida útil SUNAT (sin pisar si el usuario ya la editó).
+  const onNombreChange = (nombre) => {
+    const sug = sugerirVidaUtil(nombre);
+    setSugVida(sug);
+    setForm((f) => ({ ...f, nombre, ...(vidaTocada || !sug ? {} : { vida_util_meses: String(sug.meses) }) }));
   };
 
   const save = async () => {
@@ -180,7 +193,7 @@ export default function ActivosPage() {
             <div className="space-y-4">
               <div>
                 <label className={cx.label}>Nombre</label>
-                <input className={cx.input + ' w-full min-h-[44px]'} value={form.nombre} onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))} placeholder="Ej. Horno industrial" />
+                <input className={cx.input + ' w-full min-h-[44px]'} value={form.nombre} onChange={(e) => onNombreChange(e.target.value)} placeholder="Ej. Horno industrial" />
               </div>
               <div>
                 <label className={cx.label}>Tipo</label>
@@ -198,7 +211,15 @@ export default function ActivosPage() {
                 </div>
                 <div>
                   <label className={cx.label}>Vida útil (meses)</label>
-                  <input type="number" step="1" className={cx.input + ' w-full min-h-[44px]'} value={form.vida_util_meses} onChange={(e) => setForm((f) => ({ ...f, vida_util_meses: e.target.value }))} placeholder="60" />
+                  <input type="number" step="1" className={cx.input + ' w-full min-h-[44px]'} value={form.vida_util_meses} onChange={(e) => { setVidaTocada(true); setForm((f) => ({ ...f, vida_util_meses: e.target.value })); }} placeholder="60" />
+                  {sugVida && (
+                    <p className="text-[11px] text-stone-400 mt-1 leading-snug">
+                      SUNAT sugiere <span className="font-medium text-stone-600">{sugVida.meses} m</span> · {sugVida.label} ({sugVida.tasa})
+                      {String(sugVida.meses) !== String(form.vida_util_meses) && (
+                        <button type="button" onClick={() => { setForm((f) => ({ ...f, vida_util_meses: String(sugVida.meses) })); setVidaTocada(false); }} className="ml-1 text-[var(--accent)] hover:underline">usar</button>
+                      )}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className={cx.label}>Fecha de compra</label>
