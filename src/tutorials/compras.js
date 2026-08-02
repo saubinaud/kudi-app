@@ -10,7 +10,7 @@ export const COMPRAS_STEPS = [
   {
     id: 'why',
     title: '¿Por qué registrar compras?',
-    message: 'Cada vez que registras una compra, Kudi actualiza el precio de tus insumos automáticamente usando un promedio ponderado (WAC). Así tu costeo siempre está al día.',
+    message: 'Cada vez que registras una compra, Kudi actualiza el precio de tus insumos automáticamente usando el promedio de tus compras reales. Así tu costeo siempre está al día.',
     expression: 'eureka',
     position: 'center',
     route: '/pl/compras',

@@ -5,6 +5,7 @@ import { cx } from '../styles/tokens';
 import CustomSelect from '../components/CustomSelect';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { Plus, Pencil, Trash2, X, Save, Users, Search } from 'lucide-react';
+import { consultarDocumento } from '../utils/documento';
 
 const TIPO_DOC_OPTIONS = [
   { value: '1', label: 'DNI' },
@@ -267,7 +268,23 @@ export default function ClientesPage() {
                   <input
                     type="text"
                     value={form.num_doc}
-                    onChange={(e) => updateForm('num_doc', e.target.value)}
+                    onChange={async (e) => {
+                      const v = e.target.value.replace(/\D/g, '');
+                      updateForm('num_doc', v);
+                      const tipo = form.tipo_doc === '6' ? 'RUC' : 'DNI';
+                      const completo = (tipo === 'DNI' && v.length === 8) || (tipo === 'RUC' && v.length === 11);
+                      if (!completo) return;
+                      const res = await consultarDocumento(api, tipo, v);
+                      if (res.encontrado) {
+                        setForm(prev => ({
+                          ...prev,
+                          razon_social: res.nombre || prev.razon_social,
+                          email: res.email || prev.email,
+                          telefono: res.telefono || prev.telefono,
+                        }));
+                        toast.success(res.fuente === 'local' ? 'Cliente en tu base' : (tipo === 'DNI' ? 'Encontrado en RENIEC' : 'Encontrado en SUNAT'));
+                      }
+                    }}
                     className={cx.input}
                     placeholder={form.tipo_doc === '6' ? '20XXXXXXXXX' : '4XXXXXXX'}
                     maxLength={form.tipo_doc === '6' ? 11 : 8}

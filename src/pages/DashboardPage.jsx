@@ -974,6 +974,15 @@ export default function DashboardPage() {
           >
           <div className="relative bg-white rounded-xl w-full max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl">
 
+            {/* Burbuja X para cerrar (esquina) */}
+            <button
+              onClick={() => { setDetailModal(null); setDetailData(null); }}
+              className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white/90 backdrop-blur shadow-md flex items-center justify-center text-stone-600 hover:text-stone-900 hover:bg-white transition-colors duration-150"
+              aria-label="Cerrar"
+            >
+              <X size={18} />
+            </button>
+
             {/* Header with image */}
             {detailModal.imagen_url ? (
               <div className="aspect-[3/1] bg-stone-100 rounded-t-xl overflow-hidden">
@@ -1094,9 +1103,11 @@ export default function DashboardPage() {
                   {/* Action buttons */}
                   <div className="flex gap-3 mt-6">
                     <button onClick={() => navigate(`/cotizador/${detailModal.id}`)} className={cx.btnPrimary + ' flex-1 flex items-center justify-center gap-2'}>
-                      <Pencil size={16} /> Editar
+                      <Pencil size={16} /> Editar foodcost
                     </button>
-                    <button onClick={() => { setDetailModal(null); setDetailData(null); }} className={cx.btnSecondary + ' flex-1'}>Cerrar</button>
+                    <button onClick={() => navigate(`/ficha-tecnica/${detailModal.id}`)} className={cx.btnSecondary + ' flex-1 flex items-center justify-center gap-2'}>
+                      <Package size={16} /> Costos avanzados
+                    </button>
                   </div>
                 </>
               )}

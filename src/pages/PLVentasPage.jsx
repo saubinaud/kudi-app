@@ -6,6 +6,7 @@ import { cx } from '../styles/tokens';
 import * as printer from '../utils/printerService';
 import { formatCurrency, formatDate, formatDateTime, formatSmartDate } from '../utils/format';
 import { desglosarIGV } from '../utils/igv';
+import { consultarDocumento } from '../utils/documento';
 import SearchableSelect from '../components/SearchableSelect';
 import CustomSelect from '../components/CustomSelect';
 import PeriodoSelector from '../components/PeriodoSelector';
@@ -1820,7 +1821,18 @@ export default function PLVentasPage() {
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className={cx.label}>DNI/RUC</label>
-                        <input type="text" value={newClient.num_doc || ''} onChange={e => setNewClient(p => ({...p, num_doc: e.target.value}))} className={cx.input} placeholder="12345678" />
+                        <input type="text" value={newClient.num_doc || ''} onChange={async e => {
+                          const v = e.target.value.replace(/\D/g, '');
+                          setNewClient(p => ({...p, num_doc: v}));
+                          const tipo = v.length === 11 ? 'RUC' : 'DNI';
+                          const completo = (tipo === 'DNI' && v.length === 8) || (tipo === 'RUC' && v.length === 11);
+                          if (!completo) return;
+                          const res = await consultarDocumento(api, tipo, v);
+                          if (res.encontrado) {
+                            setNewClient(p => ({ ...p, razon_social: res.nombre || p.razon_social, email: res.email || p.email, telefono: res.telefono || p.telefono }));
+                            toast.success(res.fuente === 'local' ? 'Cliente en tu base' : (tipo === 'DNI' ? 'Encontrado en RENIEC' : 'Encontrado en SUNAT'));
+                          }
+                        }} className={cx.input} placeholder="12345678" />
                       </div>
                       <div>
                         <label className={cx.label}>Nombre/Razon social</label>

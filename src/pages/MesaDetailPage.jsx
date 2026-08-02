@@ -12,7 +12,7 @@ import { desglosarIGV } from '../utils/igv';
 import ProductGrid from '../components/ProductGrid';
 import PagoSheet from '../components/PagoSheet';
 import { API_BASE } from '../config/api';
-import { ArrowLeft, Clock, Users, Minus, Plus, Trash2, X, Package, CheckCircle, Banknote, CreditCard, Smartphone, Send, FileText, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Clock, Users, Minus, Plus, Trash2, X, Package, CheckCircle, Banknote, CreditCard, Smartphone, Send, FileText, ShoppingCart, Link2, Unlink } from 'lucide-react';
 
 function formatTimer(abiertaAt) {
   if (!abiertaAt) return '';
@@ -61,6 +61,8 @@ export default function MesaDetailPage() {
   const [precuentaData, setPrecuentaData] = useState(null);
   const [showCobrar, setShowCobrar] = useState(false);
   const [cobrando, setCobrando] = useState(false);
+  const [mesasUnidas, setMesasUnidas] = useState([]);
+  const [desuniendo, setDesuniendo] = useState(false);
 
   // Payment — el estado de pago (metodo, mixto, comision, vuelto) vive en <PagoSheet>,
   // compartido con el POS. Aqui solo el toggle Con/Sin IGV (afecta los montos).
@@ -103,6 +105,7 @@ export default function MesaDetailPage() {
           }
           setSesion(mesaData.sesion);
           setDbItems(mesaData.items || []);
+          setMesasUnidas(mesaData.mesas_unidas || []);
         }
         setProductos((prodRes?.data || prodRes || []).filter(p => p.tipo_producto !== 'no_transformable' || p.disponible_venta));
         setLoadingProductos(false);
@@ -373,6 +376,22 @@ export default function MesaDetailPage() {
     navigate(`/mesas${mesaInfo?.piso_id ? `?piso=${mesaInfo.piso_id}` : ''}`);
   };
 
+  // Desunir mesas — libera las secundarias; esta mesa (principal) conserva la orden.
+  const handleDesunir = async () => {
+    if (!sesion || desuniendo) return;
+    setDesuniendo(true);
+    try {
+      const r = await api.post(`/mesas/sesion/${sesion.id}/desunir`);
+      const n = (r?.data || r)?.liberadas ?? mesasUnidas.length;
+      setMesasUnidas([]);
+      toast.success(`${n} mesa${n !== 1 ? 's' : ''} liberada${n !== 1 ? 's' : ''}`);
+    } catch (err) {
+      toast.error(err.message || 'No se pudo desunir');
+    } finally {
+      setDesuniendo(false);
+    }
+  };
+
   // Group items by comanda
   const groupedItems = useMemo(() => {
     const comandados = dbItems.filter(i => i.estado === 'comandado');
@@ -421,9 +440,19 @@ export default function MesaDetailPage() {
             <div className="flex items-center gap-3 text-xs text-stone-500 mt-0.5">
               <span className="flex items-center gap-1"><Clock size={12} /> {formatTimer(sesion.abierta_at)}</span>
               <span className="flex items-center gap-1"><Users size={12} /> {sesion.comensales}</span>
+              {mesasUnidas.length > 0 && (
+                <span className="flex items-center gap-1 text-[var(--accent)] font-medium">
+                  <Link2 size={12} /> Unida con {mesasUnidas.map(m => m.numero).join(', ')}
+                </span>
+              )}
             </div>
           )}
         </div>
+        {sesion && mesasUnidas.length > 0 && (
+          <button onClick={handleDesunir} disabled={desuniendo} className={cx.btnGhost + ' text-xs flex items-center gap-1.5'}>
+            <Unlink size={14} /> {desuniendo ? 'Desuniendo...' : 'Desunir'}
+          </button>
+        )}
         <button onClick={handleCancelar} className={cx.btnDanger + ' text-xs'}>
           {sesion ? 'Cancelar mesa' : 'Volver'}
         </button>

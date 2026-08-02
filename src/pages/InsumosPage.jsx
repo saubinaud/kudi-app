@@ -291,7 +291,7 @@ export default function InsumosPage() {
                   <span className="text-[var(--accent)] text-sm font-semibold">
                     S/ {costoUnitario(ins).toFixed(3)}/{ins.unidad_base || ins.unidad_medida}
                   </span>
-                  {tieneWAC(ins) && <p className="text-[10px] text-teal-600">WAC</p>}
+                  {tieneWAC(ins) && <p className="text-[10px] text-teal-600" title="Promedio de tus compras reales">prom.</p>}
                 </div>
               </div>
               <div className="flex gap-2 mt-3 border-t border-stone-200 pt-3">
@@ -353,7 +353,7 @@ export default function InsumosPage() {
               <th className={cx.th}>Presentacion</th>
               <th className={cx.th}>Unidad</th>
               <th className={cx.th}>Precio</th>
-              <th className={cx.th}>Costo Unitario (WAC)</th>
+              <th className={cx.th}>Costo por g/ml</th>
               <th className={cx.th + ' text-right'}>Acciones</th>
             </tr>
           </thead>
@@ -409,7 +409,7 @@ export default function InsumosPage() {
                     <td className={cx.td + ' text-stone-600'}>{formatCurrency(ins.precio_presentacion)}</td>
                     <td className={cx.td + ' text-[var(--accent)] font-semibold font-mono text-xs'}>
                       S/ {costoUnitario(ins).toFixed(3)}/{ins.unidad_base || ins.unidad_medida}
-                      {tieneWAC(ins) && <span className="text-[10px] text-teal-600 ml-1">WAC</span>}
+                      {tieneWAC(ins) && <span className="text-[10px] text-teal-600 ml-1" title="Promedio de tus compras reales">prom.</span>}
                     </td>
                     <td className={cx.td + ' text-right'}>
                       <div className="flex justify-end gap-1">
@@ -509,7 +509,7 @@ export default function InsumosPage() {
             {/* KPIs */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
               <div className="bg-stone-50 rounded-lg p-3 text-center">
-                <p className="text-[10px] text-stone-400 uppercase">WAC</p>
+                <p className="text-[10px] text-stone-400 uppercase" title="Costo promedio ponderado de tus compras">Promedio</p>
                 <p className="text-sm font-bold text-stone-800">{formatCurrency(priceHistory.wac)}/{priceHistory.insumo?.unidad_base}</p>
               </div>
               <div className="bg-stone-50 rounded-lg p-3 text-center">

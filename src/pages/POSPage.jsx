@@ -325,6 +325,9 @@ export default function POSPage() {
   const buscarDocumento = async (tipo, numero) => {
     setBuscandoDoc(true);
     setClienteEncontrado(false);
+    // Partir SIEMPRE de cero: evita que queden los datos del cliente anterior
+    // cuando el nuevo documento no se encuentra o RENIEC solo devuelve el nombre.
+    setPosCliente(prev => ({ ...prev, nombre: '', email: '', telefono: '' }));
     try {
       // Step 1: buscar en BD local
       const local = await api.get(`/clientes/buscar?q=${numero}`).catch(() => ({ data: [] }));
@@ -750,11 +753,6 @@ export default function POSPage() {
               <Lock size={12} /> Cerrar caja
             </button>
           )}
-          {!caja && cajaDismissed && (
-            <button onClick={() => setShowAbrirCaja(true)} className="px-3 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-600 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors duration-100">
-              <ShoppingCart size={12} /> Abrir caja
-            </button>
-          )}
         </div>
 
         {/* Caja abierta — contadores */}
@@ -772,20 +770,20 @@ export default function POSPage() {
           </div>
         )}
 
-        {/* Banner abrir caja — dismissable */}
-        {!caja && !cajaDismissed && (
-          <div className="flex items-center gap-3 bg-stone-50 border border-stone-200 rounded-xl px-4 py-3">
-            <div className="w-8 h-8 rounded-lg bg-stone-100 flex items-center justify-center flex-shrink-0">
-              <DollarSign size={16} className="text-stone-400" />
+        {/* Banner abrir caja — advertencia (no descartable): si no hay caja, las ventas
+            quedan fuera del cuadre del turno. Boton grande para uso rapido. */}
+        {!caja && (
+          <div className="flex items-center gap-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3.5">
+            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <AlertTriangle size={20} className="text-amber-600" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-stone-700">Caja no abierta</p>
-              <p className="text-[11px] text-stone-400">Puedes vender, pero no se registrara el cuadre de caja</p>
+              <p className="text-sm font-semibold text-amber-800">Caja no abierta</p>
+              <p className="text-xs text-amber-700">Si vendes sin abrir caja, esas ventas no entrarán en el cuadre del turno.</p>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button id="pos-abrir-caja" onClick={() => setShowAbrirCaja(true)} className={cx.btnPrimary + ' text-xs px-3 py-1.5'}>Abrir caja</button>
-              <button onClick={() => setCajaDismissed(true)} className="text-stone-300 hover:text-stone-500 transition-colors duration-150"><X size={16} /></button>
-            </div>
+            <button id="pos-abrir-caja" onClick={() => setShowAbrirCaja(true)} className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg flex items-center gap-2 flex-shrink-0 transition-colors duration-100">
+              <DollarSign size={16} /> Abrir caja
+            </button>
           </div>
         )}
       </div>
@@ -965,7 +963,7 @@ export default function POSPage() {
                       compact
                       options={[{ value: 'DNI', label: 'DNI' }, { value: 'RUC', label: 'RUC' }]}
                       value={posCliente.tipo_doc}
-                      onChange={v => setPosCliente(p => ({ ...p, tipo_doc: v, num_doc: '', nombre: '' }))}
+                      onChange={v => { setPosCliente(p => ({ ...p, tipo_doc: v, num_doc: '', nombre: '', email: '', telefono: '' })); setClienteEncontrado(false); }}
                     />
                   </div>
                   <div className="flex-1 relative">
@@ -976,6 +974,8 @@ export default function POSPage() {
                         const v = e.target.value.replace(/\D/g, '');
                         setPosCliente(p => ({ ...p, num_doc: v }));
                         const tipo = posCliente.tipo_doc;
+                        const completo = (tipo === 'DNI' && v.length === 8) || (tipo === 'RUC' && v.length === 11);
+                        if (!completo) setClienteEncontrado(false);
                         if (tipo === 'DNI' && v.length === 8) buscarDocumento('DNI', v);
                         if (tipo === 'RUC' && v.length === 11) buscarDocumento('RUC', v);
                       }}

@@ -10,7 +10,7 @@ const DEFAULTS = {
   desmedro: 'Desmedro',
   tanda: 'Tanda',
   rendimiento: 'Rendimiento',
-  prep_pred: 'Prep. predeterminadas',
+  prep_pred: 'Recetas base',
 };
 
 const TerminosContext = createContext(DEFAULTS);

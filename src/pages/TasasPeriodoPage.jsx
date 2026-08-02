@@ -94,8 +94,20 @@ export default function TasasPeriodoPage() {
       const res = await api.get(`/tasas/${pid}`);
       const data = res?.data ?? res;
       // backend devuelve null/objeto vacío si no hay congelada
-      if (data && (data.id || data.tasa_mo_hora != null)) setFrozen(data);
-      else setFrozen(null);
+      if (data && (data.id || data.tasa_mo_hora != null)) {
+        setFrozen(data);
+      } else {
+        setFrozen(null);
+        // Sin tasa congelada: mostrar el cálculo EN VIVO (según los registros) sin que el
+        // usuario tenga que apretar "Recalcular". "Congelar" sigue siendo el paso que la fija.
+        try {
+          const cRes = await api.post('/tasas/calcular', { periodo_id: pid });
+          const cData = cRes?.data ?? cRes;
+          setCalc(cData);
+          setOvMo(cData?.tasa_mo_hora != null ? String(Number(cData.tasa_mo_hora).toFixed(4)) : '');
+          setOvMaq(cData?.tasa_maquina_hora != null ? String(Number(cData.tasa_maquina_hora).toFixed(4)) : '');
+        } catch { /* sin datos suficientes para calcular */ }
+      }
     } catch {
       // 404 = aún no congelada, no es error de usuario
       setFrozen(null);

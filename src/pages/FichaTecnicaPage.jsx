@@ -30,6 +30,35 @@ function Section({ title, number, isOpen, onToggle, children }) {
   );
 }
 
+// EditInput y Field viven a nivel de modulo (NO dentro del componente): si se definen
+// dentro, cada render crea una identidad nueva y React remonta el <input>, que pierde el
+// foco tras cada tecla. `editing` se pasa por prop (antes venia del closure).
+function EditInput({ value, onChange, placeholder, type = 'number', suffix }) {
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type={type}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={cx.input + ' max-w-[160px]'}
+      />
+      {suffix && <span className="text-xs text-stone-400">{suffix}</span>}
+    </div>
+  );
+}
+
+function Field({ label, value, accent, edit, editing }) {
+  return (
+    <div>
+      <span className={cx.label}>{label}</span>
+      {editing && edit ? edit : (
+        <p className={`text-sm font-medium ${accent ? 'text-[var(--accent)]' : 'text-stone-800'}`}>{value}</p>
+      )}
+    </div>
+  );
+}
+
 export default function FichaTecnicaPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -156,31 +185,6 @@ export default function FichaTecnicaPage() {
     onToggle: () => setOpenSections(s => ({ ...s, [number]: s[number] === false ? true : false })),
   });
 
-  function EditInput({ value, onChange, placeholder, type = 'number', suffix }) {
-    return (
-      <div className="flex items-center gap-2">
-        <input
-          type={type}
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder={placeholder}
-          className={cx.input + ' max-w-[160px]'}
-        />
-        {suffix && <span className="text-xs text-stone-400">{suffix}</span>}
-      </div>
-    );
-  }
-
-  function Field({ label, value, accent, edit }) {
-    return (
-      <div>
-        <span className={cx.label}>{label}</span>
-        {editing && edit ? edit : (
-          <p className={`text-sm font-medium ${accent ? 'text-[var(--accent)]' : 'text-stone-800'}`}>{value}</p>
-        )}
-      </div>
-    );
-  }
 
   if (loading) {
     return (
@@ -245,12 +249,12 @@ export default function FichaTecnicaPage() {
         {/* Section 1 — Identificacion */}
         <Section title="1. Identificacion" number={1} {...sectionProps(1)}>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            <Field label="Nombre" value={producto.nombre} />
-            <Field label="Codigo" value={`#${String(producto.id).padStart(4, '0')}`} />
-            <Field label="Tipo presentacion" value={producto.tipo_presentacion === 'entero' ? 'Entero' : 'Unidad'} />
-            <Field label="Unidades por producto" value={producto.unidades_por_producto || 1} />
-            <Field label="Creado" value={formatDate(producto.created_at)} />
-            <Field label="Actualizado" value={formatDate(producto.updated_at)} />
+            <Field editing={editing} label="Nombre" value={producto.nombre} />
+            <Field editing={editing} label="Codigo" value={`#${String(producto.id).padStart(4, '0')}`} />
+            <Field editing={editing} label="Tipo presentacion" value={producto.tipo_presentacion === 'entero' ? 'Entero' : 'Unidad'} />
+            <Field editing={editing} label="Unidades por producto" value={producto.unidades_por_producto || 1} />
+            <Field editing={editing} label="Creado" value={formatDate(producto.created_at)} />
+            <Field editing={editing} label="Actualizado" value={formatDate(producto.updated_at)} />
           </div>
           {producto.imagen_url && (
             <div className="mt-4">
@@ -262,18 +266,18 @@ export default function FichaTecnicaPage() {
         {/* Section 2 — Produccion */}
         <Section title="2. Produccion" number={2} {...sectionProps(2)}>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Field label="Tamano tanda" value={`${producto.unidades_por_producto || 1} unidades`} />
-            <Field
+            <Field editing={editing} label="Tamano tanda" value={`${producto.unidades_por_producto || 1} unidades`} />
+            <Field editing={editing}
               label="Tiempo activo MO (persona)"
               value={`${calculos.tiempo_activo} min`}
               edit={<EditInput value={editForm.tiempo_activo_min} onChange={v => ef('tiempo_activo_min', v)} placeholder="min" suffix="min" />}
             />
-            <Field
+            <Field editing={editing}
               label="Tiempo de maquina activa"
               value={`${producto.tiempo_maquina_min || 0} min`}
               edit={<EditInput value={editForm.tiempo_maquina_min} onChange={v => ef('tiempo_maquina_min', v)} placeholder="min" suffix="min" />}
             />
-            <Field
+            <Field editing={editing}
               label="Tiempo horno/reposo"
               value={`${producto.tiempo_horno_min || 0} min`}
               edit={<EditInput value={editForm.tiempo_horno_min} onChange={v => ef('tiempo_horno_min', v)} placeholder="min" suffix="min" />}
@@ -419,7 +423,7 @@ export default function FichaTecnicaPage() {
               </div>
             )}
 
-            <Field
+            <Field editing={editing}
               label="Tarifa MO override (opcional)"
               value={`${simbolo} ${calculos.tarifa_mo}/hora`}
               accent={!!producto.tarifa_mo_override}
@@ -487,7 +491,7 @@ export default function FichaTecnicaPage() {
               </p>
             )}
 
-            <Field
+            <Field editing={editing}
               label="Gas / electricidad por unidad (residual manual)"
               value={formatCurrency(calculos.cif_gas)}
               edit={
@@ -497,7 +501,7 @@ export default function FichaTecnicaPage() {
                 </div>
               }
             />
-            <Field
+            <Field editing={editing}
               label="Overhead por unidad (alquiler, depreciacion, limpieza)"
               value={formatCurrency(calculos.cif_overhead)}
               edit={<EditInput value={editForm.cif_overhead_unitario} onChange={v => ef('cif_overhead_unitario', v)} placeholder="0.00" />}
@@ -545,7 +549,7 @@ export default function FichaTecnicaPage() {
         {/* Section 9 — Precio de venta */}
         <Section title={`${hasMermaPrep ? '9' : '8'}. Precio de venta`} number={9} {...sectionProps(9)}>
           <div className="space-y-2">
-            <Field
+            <Field editing={editing}
               label={`Margen minimo objetivo (${producto.margen_minimo_override ? 'producto' : 'global'})`}
               value={`${calculos.margen_minimo}%`}
               edit={
