@@ -3,6 +3,8 @@ import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency, formatDate } from '../utils/format';
+import { noContadoEf, noContadoTr } from '../utils/arqueo';
+import { API_BASE } from '../config/api';
 import CustomSelect from '../components/CustomSelect';
 import ConfirmDialog from '../components/ConfirmDialog';
 import {
@@ -108,15 +110,26 @@ export default function PLCashflowPage() {
 
   // Arqueo
   const [periodos, setPeriodos] = useState([]);
-  const [arqueoFecha, setArqueoFecha] = useState(new Date().toISOString().slice(0, 10));
+  const [arqueoFecha, setArqueoFecha] = useState(new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' }));
   const [arqueoData, setArqueoData] = useState(null);
   const [arqueoHistorial, setArqueoHistorial] = useState([]);
+  const [turnosDia, setTurnosDia] = useState([]);
+  const [histRango, setHistRango] = useState('mes');
+  const [histDesde, setHistDesde] = useState('');
+  const [histHasta, setHistHasta] = useState('');
+  const [histTurnos, setHistTurnos] = useState([]);
+  const [histConciliaciones, setHistConciliaciones] = useState([]);
+  const [expandedDia, setExpandedDia] = useState(null);
+  const [revisarTurno, setRevisarTurno] = useState(null);
+  const [justificacionRev, setJustificacionRev] = useState('');
+  const [savingRev, setSavingRev] = useState(false);
   const [arqueoForm, setArqueoForm] = useState([]);
   const [arqueoObs, setArqueoObs] = useState('');
   const [savingArqueo, setSavingArqueo] = useState(false);
 
   // Cuentas
   const [cuentas, setCuentas] = useState([]);
+  const [mapeoMC, setMapeoMC] = useState([]); // mapeo metodo_pago -> cuenta (opcional)
   const [showCuentaForm, setShowCuentaForm] = useState(false);
   const [cuentaForm, setCuentaForm] = useState({ nombre: '', tipo: 'efectivo', saldo_actual: '' });
   const [editingCuentaId, setEditingCuentaId] = useState(null);
@@ -138,7 +151,7 @@ export default function PLCashflowPage() {
 
   // Movimiento form
   const [showMovForm, setShowMovForm] = useState(false);
-  const [movForm, setMovForm] = useState({ seccion: '', flujo_categoria_id: '', cuenta_id: '', monto_absoluto: '', fecha: new Date().toISOString().slice(0, 10), descripcion: '' });
+  const [movForm, setMovForm] = useState({ seccion: '', flujo_categoria_id: '', cuenta_id: '', monto_absoluto: '', fecha: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' }), descripcion: '' });
   const [categorias, setCategorias] = useState([]);
   const [savingMov, setSavingMov] = useState(false);
 
@@ -165,8 +178,12 @@ export default function PLCashflowPage() {
 
   async function loadCuentas() {
     try {
-      const res = await api.get('/flujo/cuentas');
+      const [res, mapRes] = await Promise.all([
+        api.get('/flujo/cuentas'),
+        api.get('/flujo/metodo-cuenta').catch(() => ({ data: [] })),
+      ]);
       setCuentas(res.data || res || []);
+      setMapeoMC(mapRes.data || mapRes || []);
     } catch { /* silent */ }
   }
 
@@ -198,6 +215,30 @@ export default function PLCashflowPage() {
       const res = await api.get(`/flujo/arqueo?fecha=${fecha}`);
       const d = res.data || res;
       setArqueoData(d);
+      // Turnos (cierres de caja POS) del día — vía /arqueo/historial que trae el cajero.
+      // Se ordenan por hora de apertura (ASC) para numerarlos Turno 1, 2, 3...
+      try {
+        const tRes = await api.get(`/arqueo/historial?desde=${fecha}&hasta=${fecha}`);
+        const turnos = (tRes.data || tRes || []).slice()
+          .sort((a, b) => new Date(a.abierto_at) - new Date(b.abierto_at));
+        // Turno EN CURSO: en /historial sus ventas vienen en 0 (se llenan al cerrar);
+        // traemos las ventas en vivo desde /arqueo/actual y las fusionamos.
+        const hoyLima = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
+        const abierto = turnos.find(t => t.estado === 'abierto');
+        if (abierto && fecha === hoyLima) {
+          try {
+            const actRes = await api.get('/arqueo/actual');
+            const act = actRes.data || actRes;
+            if (act && act.id === abierto.id) {
+              abierto.ventas_efectivo = act.ventas_efectivo;
+              abierto.ventas_transferencia = act.ventas_transferencia;
+              abierto.ventas_total = act.ventas_total;
+              abierto.cantidad_ventas = act.cantidad_ventas;
+            }
+          } catch {}
+        }
+        setTurnosDia(turnos);
+      } catch { setTurnosDia([]); }
       // Load recent arqueos history
       try {
         const histRes = await api.get('/flujo/arqueo/historial');
@@ -212,16 +253,65 @@ export default function PLCashflowPage() {
           tipo: c.tipo,
           saldo_sistema: det?.saldo_sistema ?? c.saldo_actual ?? 0,
           saldo_real: det?.saldo_real ?? '',
+          ingresos_dia: c.ingresos_dia || 0,
         };
       }));
       setArqueoObs(d.arqueo?.observaciones || '');
     } catch { toast.error('Error cargando arqueo'); }
   }
 
+  // Historial de turnos (cierres de caja POS) filtrable por rango, como el Timeline.
+  function rangoHist() {
+    const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
+    if (histRango === 'hoy') return { desde: hoy, hasta: hoy };
+    if (histRango === 'semana') {
+      const [y, m, d] = hoy.split('-').map(Number);
+      const dt = new Date(Date.UTC(y, m - 1, d));
+      const dow = (dt.getUTCDay() + 6) % 7; // 0 = lunes
+      dt.setUTCDate(dt.getUTCDate() - dow);
+      return { desde: dt.toISOString().slice(0, 10), hasta: hoy };
+    }
+    if (histRango === 'rango') return { desde: histDesde, hasta: histHasta };
+    const [y, m] = hoy.split('-');
+    const last = new Date(Number(y), Number(m), 0).getDate();
+    return { desde: `${y}-${m}-01`, hasta: `${y}-${m}-${String(last).padStart(2, '0')}` };
+  }
+
+  async function loadHistTurnos() {
+    const r = rangoHist();
+    if (!r.desde || !r.hasta) { setHistTurnos([]); setHistConciliaciones([]); return; }
+    try {
+      const [tRes, cRes] = await Promise.all([
+        api.get(`/arqueo/historial?desde=${r.desde}&hasta=${r.hasta}`),
+        api.get(`/flujo/arqueo/historial?desde=${r.desde}&hasta=${r.hasta}`),
+      ]);
+      setHistTurnos(tRes.data || tRes || []);
+      setHistConciliaciones(cRes.data || cRes || []);
+    } catch { setHistTurnos([]); setHistConciliaciones([]); }
+  }
+
+  useEffect(() => {
+    if (tab === 'arqueo') loadHistTurnos();
+  }, [histRango, histDesde, histHasta]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function submitRevision() {
+    if (!revisarTurno) return;
+    setSavingRev(true);
+    try {
+      await api.post(`/arqueo/${revisarTurno.id}/revisar`, { justificacion: justificacionRev.trim() || null });
+      setRevisarTurno(null);
+      setJustificacionRev('');
+      loadArqueo(arqueoFecha);
+      loadHistTurnos();
+      toast.success('Descuadre revisado');
+    } catch { toast.error('Error al revisar'); }
+    finally { setSavingRev(false); }
+  }
+
   // ── Movimiento submit ────────────────────────────────────
 
   function openMovForm() {
-    setMovForm({ seccion: '', flujo_categoria_id: '', cuenta_id: '', monto_absoluto: '', fecha: new Date().toISOString().slice(0, 10), descripcion: '' });
+    setMovForm({ seccion: '', flujo_categoria_id: '', cuenta_id: '', monto_absoluto: '', fecha: new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' }), descripcion: '' });
     setShowMovForm(true);
   }
 
@@ -389,6 +479,20 @@ export default function PLCashflowPage() {
     .map(c => ({ value: c.id, label: `${c.nombre} (${c.tipo})` }));
 
   const cuentaOpts = cuentas.map(c => ({ value: c.id, label: c.nombre }));
+  const METODOS_MC = [
+    { key: 'efectivo', label: 'Efectivo' },
+    { key: 'yape', label: 'Yape' },
+    { key: 'transferencia', label: 'Transferencia' },
+    { key: 'tarjeta', label: 'Tarjeta' },
+  ];
+  const mcFor = (metodo) => { const f = mapeoMC.find(x => x.metodo_pago === metodo); return f ? f.cuenta_id : null; };
+  const asignarCuenta = async (metodo, valorRaw) => {
+    const cuenta_id = (valorRaw === '' || valorRaw == null) ? null : parseInt(valorRaw);
+    const mapeo = METODOS_MC.map(m => ({ metodo_pago: m.key, cuenta_id: m.key === metodo ? cuenta_id : mcFor(m.key) }));
+    setMapeoMC(mapeo.filter(x => x.cuenta_id != null));
+    try { await api.put('/flujo/metodo-cuenta', { mapeo }); toast.success('Guardado'); }
+    catch { toast.error('Error guardando'); }
+  };
 
   const tipoBadge = (tipo) => {
     if (tipo === 'efectivo') return cx.badge('bg-emerald-50 text-emerald-700');
@@ -409,7 +513,7 @@ export default function PLCashflowPage() {
             { key: 'cuentas', label: 'Cuentas', icon: Wallet },
           ]}
           value={tab}
-          onChange={(key) => { setTab(key); if (key === 'arqueo') loadArqueo(arqueoFecha); }}
+          onChange={(key) => { setTab(key); if (key === 'arqueo') { loadArqueo(arqueoFecha); loadHistTurnos(); } }}
           layoutId="cashflow-tab"
           variant="light"
         />
@@ -569,7 +673,7 @@ export default function PLCashflowPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-xl font-bold text-stone-900">Arqueo de Caja</h1>
-              <p className="text-sm text-stone-500 mt-0.5">Conciliacion diaria de saldos</p>
+              <p className="text-sm text-stone-500 mt-0.5">Saldos del día y cierres de caja por turno</p>
             </div>
             <div className="flex items-center gap-3">
               <input
@@ -579,7 +683,7 @@ export default function PLCashflowPage() {
                 className={cx.input + ' w-44'}
               />
               <button
-                onClick={() => { const hoy = new Date().toISOString().slice(0, 10); setArqueoFecha(hoy); loadArqueo(hoy); }}
+                onClick={() => { const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' }); setArqueoFecha(hoy); loadArqueo(hoy); }}
                 className={cx.btnGhost + ' text-xs'}
               >
                 Hoy
@@ -587,6 +691,14 @@ export default function PLCashflowPage() {
             </div>
           </div>
 
+          {arqueoData?.ingresos_sin_asignar > 0 && (
+            <div className="mb-3 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+              <AlertTriangle size={16} className="text-amber-600 flex-none mt-0.5" />
+              <p className="text-xs text-amber-800">
+                Hay <strong>{formatCurrency(arqueoData.ingresos_sin_asignar)}</strong> en ventas del día cuyo método de pago no tiene cuenta asignada. Asignalos en <strong>Cuentas → "A qué cuenta entra cada pago"</strong> para que se reflejen aquí.
+              </p>
+            </div>
+          )}
           {arqueoForm.length === 0 ? (
             <div className={cx.card + ' p-12 text-center'}>
               <p className="text-sm text-stone-500">No hay cuentas registradas. Crea cuentas en la pestana "Cuentas".</p>
@@ -599,6 +711,7 @@ export default function PLCashflowPage() {
                     <tr className="border-b border-stone-200">
                       <th className={cx.th}>Cuenta</th>
                       <th className={cx.th}>Tipo</th>
+                      <th className={cx.th + ' text-right'}>Ventas del día</th>
                       <th className={cx.th + ' text-right'}>Saldo Sistema</th>
                       <th className={cx.th + ' text-right'}>Saldo Real</th>
                       <th className={cx.th + ' text-right'}>Diferencia</th>
@@ -612,6 +725,7 @@ export default function PLCashflowPage() {
                         <tr key={row.cuenta_id} className={cx.tr}>
                           <td className={cx.td + ' font-medium text-stone-800'}>{row.nombre}</td>
                           <td className={cx.td}><span className={tipoBadge(row.tipo)}>{row.tipo}</span></td>
+                          <td className={cx.td + ' text-right font-mono text-emerald-600'}>{row.ingresos_dia > 0 ? '+' + formatCurrency(row.ingresos_dia) : '—'}</td>
                           <td className={cx.td + ' text-right font-mono text-stone-600'}>{formatCurrency(row.saldo_sistema)}</td>
                           <td className={cx.td + ' text-right'}>
                             <div className="flex items-center gap-1 justify-end">
@@ -653,6 +767,9 @@ export default function PLCashflowPage() {
                     {/* Totals */}
                     <tr className="border-t-2 border-stone-300 bg-stone-50">
                       <td className={cx.td + ' font-bold text-stone-900'} colSpan={2}>TOTAL</td>
+                      <td className={cx.td + ' text-right font-bold text-emerald-600'}>
+                        {formatCurrency(arqueoForm.reduce((s, r) => s + Number(r.ingresos_dia || 0), 0))}
+                      </td>
                       <td className={cx.td + ' text-right font-bold text-stone-900'}>
                         {formatCurrency(arqueoForm.reduce((s, r) => s + Number(r.saldo_sistema), 0))}
                       </td>
@@ -675,6 +792,118 @@ export default function PLCashflowPage() {
               </div>
 
               {/* Desglose modal is rendered at the bottom of the page */}
+
+              {/* Cierres de caja del POS por TURNO — cada apertura→cierre del día,
+                  numerado por orden cronológico, con cajero y movimiento de dinero. */}
+              {turnosDia.length > 0 && (
+                <div className="px-4 pt-4">
+                  <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
+                    <h3 className="text-sm font-semibold text-stone-900">Cierres de caja por turno</h3>
+                    <span className="text-[11px] text-stone-400">
+                      {turnosDia.length} turno{turnosDia.length !== 1 ? 's' : ''} · {formatCurrency(turnosDia.reduce((s, t) => s + (Number(t.ventas_total) || 0), 0))} vendido
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {turnosDia.map((cc, idx) => {
+                      const hora = (t) => t ? new Date(t).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' }) : '—';
+                      const abierta = cc.estado !== 'cerrado';
+                      const apert = Number(cc.monto_apertura) || 0;
+                      const cierreEf = Number(cc.cierre_efectivo_real) || 0;
+                      const efectivoNeto = cierreEf - apert;          // ingreso efectivo por conteo físico
+                      const descuadreEf = Number(cc.diferencia_efectivo) || 0;  // cierre − esperado (real)
+                      const descuadreTr = Number(cc.diferencia_transferencia) || 0;
+                      const sinContarEf = abierta || noContadoEf(cc);
+                      const sinContarTr = abierta || noContadoTr(cc);
+                      return (
+                        <div key={cc.id} className="rounded-xl border border-stone-200 p-3">
+                          <div className="flex items-center justify-between mb-2 flex-wrap gap-1.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="inline-flex items-center justify-center rounded-full bg-stone-900 text-white text-[11px] font-semibold px-2.5 py-1">Turno {idx + 1}</span>
+                              <span className="text-xs font-medium text-stone-700">
+                                {hora(cc.abierto_at)}{abierta ? '' : ` → ${hora(cc.cerrado_at)}`}
+                              </span>
+                              {abierta && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-semibold px-2 py-0.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />En curso</span>}
+                              {cc.usuario_nombre && <span className="text-[11px] text-stone-400">· abrió {cc.usuario_nombre}{cc.cerrado_nombre && cc.cerrado_nombre !== cc.usuario_nombre ? `, cerró ${cc.cerrado_nombre}` : ''}</span>}
+                            </div>
+                            <span className="text-sm font-bold text-stone-900">{formatCurrency(cc.ventas_total)}{abierta && <span className="text-[10px] font-normal text-stone-400 ml-1">en vivo</span>}</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 text-xs mb-2">
+                            <div className="bg-stone-50 rounded-lg px-3 py-1.5">
+                              <p className="text-[10px] text-stone-400">Apertura</p>
+                              <p className="text-stone-700 font-medium">{formatCurrency(cc.monto_apertura)}</p>
+                            </div>
+                            <div className="bg-stone-50 rounded-lg px-3 py-1.5">
+                              <p className="text-[10px] text-stone-400">Ventas efectivo</p>
+                              <p className="text-stone-700 font-medium">{formatCurrency(cc.ventas_efectivo)}</p>
+                            </div>
+                            <div className="bg-stone-50 rounded-lg px-3 py-1.5">
+                              <p className="text-[10px] text-stone-400">Ventas digital</p>
+                              <p className="text-stone-700 font-medium">{formatCurrency(cc.ventas_transferencia)}</p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="bg-stone-50 rounded-lg px-3 py-1.5">
+                              <div className="flex justify-between">
+                                <span className="text-stone-500">Cierre efectivo</span>
+                                {sinContarEf
+                                  ? <span className="text-stone-400 italic">{abierta ? '—' : 'sin contar'}</span>
+                                  : <span className="text-stone-700 font-medium">{formatCurrency(cierreEf)}</span>}
+                              </div>
+                              {!sinContarEf && (
+                                <div className="flex justify-between mt-0.5 text-[11px]">
+                                  <span className="text-stone-400">Neto (cierre−apert.)</span>
+                                  <span className="text-stone-600">
+                                    {formatCurrency(efectivoNeto)}
+                                    {descuadreEf === 0
+                                      ? <span className="text-emerald-600"> · cuadra</span>
+                                      : <span className={descuadreEf > 0 ? 'text-sky-600' : 'text-rose-600'}> · {descuadreEf > 0 ? '+' : ''}{formatCurrency(descuadreEf)}</span>}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="bg-stone-50 rounded-lg px-3 py-1.5">
+                              <div className="flex justify-between">
+                                <span className="text-stone-500">Cierre digital</span>
+                                {sinContarTr
+                                  ? <span className="text-stone-400 italic">{abierta ? '—' : 'sin contar'}</span>
+                                  : <span className="text-stone-700 font-medium">{formatCurrency(Number(cc.cierre_transferencia_real) || 0)}</span>}
+                              </div>
+                              {!sinContarTr && descuadreTr !== 0 && (
+                                <div className="flex justify-between mt-0.5 text-[11px]">
+                                  <span className="text-stone-400">Descuadre</span>
+                                  <span className={descuadreTr > 0 ? 'text-sky-600' : 'text-rose-600'}>{descuadreTr > 0 ? '+' : ''}{formatCurrency(descuadreTr)}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-stone-400 mt-2">{cc.cantidad_ventas || 0} ventas en este turno</p>
+                          {!abierta && <button onClick={() => window.open(`${API_BASE.replace('/api', '')}/api/ticket/arqueo/${cc.id}?token=${localStorage.getItem('nodum_token')}`, '_blank')} className="text-[11px] text-stone-500 hover:text-stone-700 underline mt-1">Imprimir comprobante</button>}
+                          {Number(cc.movimientos_count) > 0 && (
+                            <p className="text-[11px] text-stone-500 mt-1">
+                              {cc.movimientos_count} movimiento{Number(cc.movimientos_count) !== 1 ? 's' : ''} de caja:{' '}
+                              <span className={Number(cc.movimientos_neto) < 0 ? 'text-rose-600' : 'text-emerald-600'}>{Number(cc.movimientos_neto) > 0 ? '+' : ''}{formatCurrency(cc.movimientos_neto)}</span>
+                            </p>
+                          )}
+                          {cc.nota_cierre && <p className="text-xs text-stone-500 bg-stone-100 rounded-lg px-3 py-1.5 mt-2 whitespace-pre-wrap">📝 {cc.nota_cierre}</p>}
+                          {(() => {
+                            const tieneDescuadre = (!sinContarEf && descuadreEf !== 0) || (!sinContarTr && descuadreTr !== 0);
+                            if (!tieneDescuadre) return null;
+                            if (cc.revisado_por) return (
+                              <p className="text-[11px] text-emerald-700 bg-emerald-50 rounded-lg px-3 py-1.5 mt-2">✓ Descuadre revisado{cc.revisado_nombre ? ` por ${cc.revisado_nombre}` : ''}{cc.justificacion ? ` — ${cc.justificacion}` : ''}</p>
+                            );
+                            return (
+                              <div className="flex items-center justify-between gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5 mt-2">
+                                <span className="text-[11px] text-amber-800">Descuadre sin revisar</span>
+                                <button onClick={() => { setRevisarTurno(cc); setJustificacionRev(''); }} className="text-[11px] font-semibold text-amber-800 hover:text-amber-900 underline">Revisar</button>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Observaciones + buttons */}
               <div className="p-4 border-t border-stone-200 space-y-4">
@@ -707,33 +936,157 @@ export default function PLCashflowPage() {
             </div>
           )}
 
-          {/* Historial de arqueos */}
-          {arqueoHistorial.length > 0 && (
-            <div className={cx.card + ' mt-4 overflow-hidden'}>
-              <div className="p-4 border-b border-stone-100">
-                <h3 className="text-sm font-semibold text-stone-900">Arqueos recientes</h3>
+          {/* Resumen del período (F4 insights) */}
+          {(histTurnos || []).some(t => t.estado === 'cerrado') && (() => {
+            const cerrados = histTurnos.filter(t => t.estado === 'cerrado');
+            const vendido = cerrados.reduce((s, t) => s + (Number(t.ventas_total) || 0), 0);
+            const efvo = cerrados.reduce((s, t) => s + (Number(t.ventas_efectivo) || 0), 0);
+            const digital = cerrados.reduce((s, t) => s + (Number(t.ventas_transferencia) || 0), 0);
+            const baseMix = efvo + digital;
+            const pctEfvo = baseMix > 0 ? Math.round((efvo / baseMix) * 100) : 0;
+            const contados = cerrados.filter(t => !noContadoEf(t));
+            const descuadre = contados.reduce((s, t) => s + (Number(t.diferencia_efectivo) || 0), 0);
+            const conDescuadre = contados.filter(t => Number(t.diferencia_efectivo) !== 0).length;
+            return (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                <div className={cx.card + ' p-4'}>
+                  <p className="text-xs text-stone-400">Vendido · {cerrados.length} turno{cerrados.length !== 1 ? 's' : ''}</p>
+                  <p className="text-lg font-bold text-stone-900 mt-0.5">{formatCurrency(vendido)}</p>
+                </div>
+                <div className={cx.card + ' p-4'}>
+                  <p className="text-xs text-stone-400">Efectivo vs digital</p>
+                  <p className="text-lg font-bold text-stone-900 mt-0.5">{pctEfvo}%<span className="text-xs font-normal text-stone-400"> efvo</span></p>
+                  <p className="text-[11px] text-stone-400 truncate">{formatCurrency(efvo)} · {formatCurrency(digital)}</p>
+                </div>
+                <div className={cx.card + ' p-4'}>
+                  <p className="text-xs text-stone-400">Descuadre acumulado</p>
+                  <p className={`text-lg font-bold mt-0.5 ${descuadre === 0 ? 'text-emerald-600' : descuadre > 0 ? 'text-sky-600' : 'text-rose-600'}`}>{descuadre > 0 ? '+' : ''}{formatCurrency(descuadre)}</p>
+                  <p className="text-[11px] text-stone-400">{contados.length} turno{contados.length !== 1 ? 's' : ''} contados</p>
+                </div>
+                <div className={cx.card + ' p-4'}>
+                  <p className="text-xs text-stone-400">Turnos con descuadre</p>
+                  <p className="text-lg font-bold text-stone-900 mt-0.5">{conDescuadre}</p>
+                  <p className="text-[11px] text-stone-400">de {contados.length} contados</p>
+                </div>
               </div>
-              <div className="divide-y divide-stone-100">
-                {arqueoHistorial.map(a => (
-                  <div key={a.id} className="flex items-center justify-between px-4 py-3 hover:bg-stone-50/50">
-                    <div>
-                      <p className="text-sm text-stone-800">{formatDate(a.fecha)}</p>
-                      <p className="text-xs text-stone-400">{a.tipo === 'diario' ? 'Diario' : 'Mensual'}{a.cerrado ? ' — Cerrado' : ''}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-stone-600">Sistema: {formatCurrency(a.saldo_sistema)}</p>
-                      <p className="text-sm font-medium text-stone-800">Real: {formatCurrency(a.saldo_real)}</p>
-                      {parseFloat(a.diferencia) !== 0 && (
-                        <p className={`text-xs font-semibold ${parseFloat(a.diferencia) > 0 ? 'text-sky-600' : 'text-rose-600'}`}>
-                          Dif: {parseFloat(a.diferencia) > 0 ? '+' : ''}{formatCurrency(a.diferencia)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
+            );
+          })()}
+
+          {/* Historial unificado por día: turnos de caja (POS) + conciliación de cuentas */}
+          <div className={cx.card + ' mt-4 overflow-hidden'}>
+            <div className="p-4 border-b border-stone-100 flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-stone-900">Historial por día</h3>
+                <p className="text-xs text-stone-400 mt-0.5">Abrí un día para ver sus turnos de caja y su conciliación de cuentas</p>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <SegmentedControl
+                  layoutId="arqueoHistRango"
+                  size="sm"
+                  value={histRango}
+                  onChange={setHistRango}
+                  options={[{ key: 'hoy', label: 'Hoy' }, { key: 'semana', label: 'Semana' }, { key: 'mes', label: 'Mes' }, { key: 'rango', label: 'Rango' }]}
+                />
+                {histRango === 'rango' && (
+                  <>
+                    <input type="date" value={histDesde} onChange={e => setHistDesde(e.target.value)} className={cx.input + ' w-36'} />
+                    <input type="date" value={histHasta} onChange={e => setHistHasta(e.target.value)} className={cx.input + ' w-36'} />
+                  </>
+                )}
               </div>
             </div>
-          )}
+            {(() => {
+              const hora = (t) => t ? new Date(t).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' }) : '—';
+              const byDay = {};
+              (histTurnos || []).forEach(t => { const d = t.fecha?.slice(0, 10); if (!d) return; (byDay[d] = byDay[d] || { fecha: d, turnos: [], conc: null }).turnos.push(t); });
+              (histConciliaciones || []).forEach(c => { const d = c.fecha?.slice(0, 10); if (!d) return; byDay[d] = byDay[d] || { fecha: d, turnos: [], conc: null }; if (!byDay[d].conc) byDay[d].conc = c; });
+              Object.values(byDay).forEach(x => x.turnos.sort((a, b) => new Date(a.abierto_at) - new Date(b.abierto_at)));
+              const dias = Object.values(byDay).sort((a, b) => b.fecha.localeCompare(a.fecha));
+              if (dias.length === 0) return <div className="p-8 text-center text-sm text-stone-500">Sin actividad en este rango.</div>;
+              return (
+                <div className="divide-y divide-stone-100">
+                  {dias.map(dia => {
+                    const abierto = expandedDia === dia.fecha;
+                    const totalVendido = dia.turnos.reduce((s, t) => s + (Number(t.ventas_total) || 0), 0);
+                    const conc = dia.conc;
+                    const sinConc = conc && Number(conc.saldo_real) === 0 && Math.abs(Number(conc.diferencia) + Number(conc.saldo_sistema)) < 0.01;
+                    const difConc = conc ? parseFloat(conc.diferencia) : 0;
+                    return (
+                      <div key={dia.fecha}>
+                        <button onClick={() => setExpandedDia(abierto ? null : dia.fecha)} className="w-full px-4 py-3 flex items-center justify-between gap-2 hover:bg-stone-50/50 text-left">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <ChevronRight size={15} className={`text-stone-400 flex-none transition-transform duration-150 ${abierto ? 'rotate-90' : ''}`} />
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-stone-800">{formatDate(dia.fecha)}</p>
+                              <p className="text-xs text-stone-400">{dia.turnos.length} turno{dia.turnos.length !== 1 ? 's' : ''}{conc ? ' · conciliación de cuentas' : ''}</p>
+                            </div>
+                          </div>
+                          <div className="text-right flex-none">
+                            <p className="text-sm font-semibold text-stone-800">{formatCurrency(totalVendido)}</p>
+                            {conc && (sinConc
+                              ? <p className="text-[11px] text-stone-400 italic">cuentas sin conciliar</p>
+                              : difConc !== 0
+                                ? <p className={`text-[11px] font-semibold ${difConc > 0 ? 'text-sky-600' : 'text-rose-600'}`}>cuentas: {difConc > 0 ? '+' : ''}{formatCurrency(difConc)}</p>
+                                : <p className="text-[11px] text-emerald-600">cuentas cuadran</p>)}
+                          </div>
+                        </button>
+                        {abierto && (
+                          <div className="px-4 pb-3 bg-stone-50/40 space-y-3">
+                            <div>
+                              <p className="text-[11px] font-semibold text-stone-500 uppercase tracking-wide pt-3 pb-1.5">Turnos de caja (POS)</p>
+                              <div className="space-y-1.5">
+                                {dia.turnos.length === 0 && <p className="text-xs text-stone-400">Sin turnos este día.</p>}
+                                {dia.turnos.map((a, idx) => {
+                                  const dEf = Number(a.diferencia_efectivo) || 0;
+                                  const abierta = a.estado !== 'cerrado';
+                                  return (
+                                    <div key={a.id} className="flex items-center justify-between gap-2 text-xs">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <span className="inline-flex items-center rounded-full bg-stone-200/70 text-stone-600 text-[10px] font-semibold px-2 py-0.5 flex-none">T{idx + 1}</span>
+                                        <span className="text-stone-500 flex-none">{hora(a.abierto_at)}{abierta ? '' : `→${hora(a.cerrado_at)}`}</span>
+                                        {a.usuario_nombre && <span className="text-stone-400 truncate">· {a.usuario_nombre}{a.cerrado_nombre && a.cerrado_nombre !== a.usuario_nombre ? ` → ${a.cerrado_nombre}` : ''}</span>}
+                                        {Number(a.movimientos_count) > 0 && <span className="text-stone-400 flex-none">· {a.movimientos_count} mov.</span>}
+                                      </div>
+                                      <div className="flex items-center gap-2 flex-none tabular-nums">
+                                        {abierta ? (
+                                          <span className="inline-flex items-center gap-1 text-emerald-600 text-[11px] font-medium"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />en curso</span>
+                                        ) : (
+                                          <>
+                                            <span className="font-semibold text-stone-700">{formatCurrency(a.ventas_total)}</span>
+                                            {!noContadoEf(a) && dEf !== 0 && <span className={dEf > 0 ? 'text-sky-600' : 'text-rose-500'}>{dEf > 0 ? '+' : ''}{formatCurrency(dEf)}</span>}
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            {conc && (
+                              <div>
+                                <p className="text-[11px] font-semibold text-stone-500 uppercase tracking-wide pb-1.5">Conciliación de cuentas</p>
+                                <div className="flex items-center justify-between gap-2 text-xs bg-white rounded-lg border border-stone-200 px-3 py-2">
+                                  <span className="text-stone-500">Saldo del día{conc.cerrado ? ' · cerrado' : ''}</span>
+                                  <span className="text-stone-700 text-right">
+                                    Sistema {formatCurrency(conc.saldo_sistema)}
+                                    {sinConc
+                                      ? <span className="text-stone-400 italic"> · sin conciliar</span>
+                                      : <> · Real {formatCurrency(conc.saldo_real)}{difConc !== 0 && <span className={difConc > 0 ? 'text-sky-600' : 'text-rose-600'}> · {difConc > 0 ? '+' : ''}{formatCurrency(difConc)}</span>}</>}
+                                  </span>
+                                </div>
+                                {conc.observaciones && <p className="text-xs text-stone-500 bg-stone-100 rounded-lg px-3 py-1.5 mt-1.5 whitespace-pre-wrap">📝 {conc.observaciones}</p>}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+
         </>
       )}
 
@@ -860,6 +1213,27 @@ export default function PLCashflowPage() {
             </div>
           )}
 
+          {/* Mapeo método de pago -> cuenta (opcional) */}
+          <div className={cx.card + ' p-4 mt-4'}>
+            <h3 className="text-sm font-semibold text-stone-900">A qué cuenta entra cada pago</h3>
+            <p className="text-xs text-stone-500 mt-0.5 mb-3">Opcional — sirve para que el arqueo cuadre cada cuenta. Si dejás "Sin asignar", igual podés cobrar.</p>
+            <div className="space-y-2 max-w-md">
+              {METODOS_MC.map(m => (
+                <div key={m.key} className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-stone-700">{m.label}</span>
+                  <div className="w-56">
+                    <CustomSelect
+                      options={[{ value: '', label: '— Sin asignar —' }, ...cuentaOpts]}
+                      value={mcFor(m.key) ?? ''}
+                      onChange={v => asignarCuenta(m.key, v)}
+                      placeholder="Sin asignar"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Transferencias */}
           <div className={cx.card + ' p-4 mt-4'}>
             <div className="flex items-center justify-between mb-3">
@@ -899,7 +1273,7 @@ export default function PLCashflowPage() {
                   </div>
                   <div>
                     <label className={cx.label}>Fecha</label>
-                    <input type="date" value={transferForm.fecha || new Date().toISOString().slice(0, 10)} onChange={e => setTransferForm(prev => ({ ...prev, fecha: e.target.value }))} className={cx.input} />
+                    <input type="date" value={transferForm.fecha || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' })} onChange={e => setTransferForm(prev => ({ ...prev, fecha: e.target.value }))} className={cx.input} />
                   </div>
                 </div>
                 <div>
@@ -1000,6 +1374,21 @@ export default function PLCashflowPage() {
         </div>
       )}
       {/* ═══════════════════ DESGLOSE MODAL ═══════════════════ */}
+      {revisarTurno && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setRevisarTurno(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-stone-900">Revisar descuadre</h3>
+              <button onClick={() => setRevisarTurno(null)} className={cx.btnGhost + ' p-1'}><X size={16} /></button>
+            </div>
+            <p className="text-xs text-stone-500">Registrá el motivo del descuadre (error de vuelto, retiro no registrado…). Queda como revisado a tu nombre.</p>
+            <textarea value={justificacionRev} onChange={e => setJustificacionRev(e.target.value)} className={cx.input + ' min-h-[80px]'} placeholder="Motivo del descuadre..." autoFocus />
+            <button onClick={submitRevision} disabled={savingRev} className={cx.btnPrimary + ' w-full'}>{savingRev ? 'Guardando...' : 'Marcar como revisado'}</button>
+          </div>
+        </div>
+      )}
+
       {showDesglose && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDesglose(null)} />

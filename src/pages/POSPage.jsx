@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApi } from '../hooks/useApi';
+import * as printer from '../utils/printerService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
@@ -17,7 +18,7 @@ import PagoSheet from '../components/PagoSheet';
 import { API_BASE } from '../config/api';
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
 }
 
 export default function POSPage() {
@@ -45,7 +46,8 @@ export default function POSPage() {
 
   // Cart
   const [cartItems, setCartItems] = useState([]);
-  const [conIgv, setConIgv] = useState(user?.tipo_negocio !== 'informal'); // informal = sin IGV por defecto
+  // exonerada (Amazonía) = siempre sin IGV; informal = sin IGV por defecto
+  const [conIgv, setConIgv] = useState(!user?.igv_exonerada && user?.tipo_negocio !== 'informal');
   const itemPrecio = (item) => conIgv
     ? (item.precio_con_igv || item.precio || 0)
     : (item.precio_sin_igv || item.precio_con_igv || item.precio || 0);
@@ -70,11 +72,30 @@ export default function POSPage() {
   const [cajaCierreEfectivo, setCajaCierreEfectivo] = useState('');
   const [cajaCierreTransf, setCajaCierreTransf] = useState('');
   const [cajaNota, setCajaNota] = useState('');
+  const [confirmarSinContar, setConfirmarSinContar] = useState(false);
+  const [showMovimiento, setShowMovimiento] = useState(false);
+  const [movTipo, setMovTipo] = useState('retiro');
+  const [movMonto, setMovMonto] = useState('');
+  const [movMotivo, setMovMotivo] = useState('');
+  const [savingMov, setSavingMov] = useState(false);
+  const [aperturaSugerida, setAperturaSugerida] = useState(null);
+  const [resumenCierre, setResumenCierre] = useState(null);
+  const [denominaciones, setDenominaciones] = useState([]);
+  const [showDesglosePos, setShowDesglosePos] = useState(false);
+  const [desglosePos, setDesglosePos] = useState({});
   const [savingCaja, setSavingCaja] = useState(false);
   const [cajaDismissed, setCajaDismissed] = useState(false);
 
   const loadCaja = () => api.get('/arqueo/actual').then(r => setCaja(r.data || null)).catch(() => {});
-  useEffect(() => { loadCaja(); }, []);
+  useEffect(() => {
+    loadCaja();
+    api.get('/arqueo/apertura-sugerida').then(r => setAperturaSugerida((r.data || r)?.sugerido ?? null)).catch(() => {});
+    api.get('/flujo/denominaciones').then(r => setDenominaciones(r.data || r || [])).catch(() => {});
+  }, []);
+  // Precargar el fondo sugerido al abrir el modal de apertura (editable)
+  useEffect(() => {
+    if (showAbrirCaja && !cajaMontoApertura && aperturaSugerida != null) setCajaMontoApertura(String(aperturaSugerida));
+  }, [showAbrirCaja]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Delivery
   const [tipoEntrega, setTipoEntrega] = useState('recojo'); // recojo | delivery
@@ -589,6 +610,7 @@ export default function POSPage() {
               <PagoSheet
                 conIgv={conIgv}
                 setConIgv={setConIgv}
+                mostrarToggleIgv={!user?.igv_exonerada}
                 tasaIgv={tasaIgvPOS}
                 precioMode={precioMode}
                 base={cartDesglose.base}
@@ -718,6 +740,11 @@ export default function POSPage() {
       <div className="mb-5 space-y-2">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold text-stone-900">Caja virtual</h1>
+          {caja && (
+            <button onClick={() => { setMovTipo('retiro'); setMovMonto(''); setMovMotivo(''); setShowMovimiento(true); }} className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors duration-100">
+              <Banknote size={12} /> Movimiento
+            </button>
+          )}
           {caja && (
             <button onClick={() => { loadCaja(); setShowCerrarCaja(true); }} className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors duration-100">
               <Lock size={12} /> Cerrar caja
@@ -1110,7 +1137,15 @@ export default function POSPage() {
               </button>
               ) : (
               <button
-                onClick={() => {
+                onClick={async () => {
+                  // Cascada: WebUSB → agente local (cualquier browser) → ticket HTML
+                  try {
+                    const r = await api.get(`/print/venta/${lastSaleId}/raw`);
+                    await printer.imprimirBase64(r.data.bytes);
+                    toast.success('Ticket impreso');
+                    setLastSaleId(null);
+                    return;
+                  } catch { /* sin vía directa → ticket HTML universal */ }
                   window.open(`${API_BASE.replace('/api','')}/api/ticket/venta/${lastSaleId}?token=${localStorage.getItem('nodum_token')}`, '_blank');
                   setLastSaleId(null);
                 }}
@@ -1147,6 +1182,11 @@ export default function POSPage() {
               <label className={cx.label}>Monto de apertura (S/)</label>
               <input type="number" min="0" step="0.01" value={cajaMontoApertura} onChange={e => setCajaMontoApertura(e.target.value)}
                 className={cx.input + ' text-center text-lg font-semibold'} placeholder="0.00" autoFocus />
+              {aperturaSugerida != null && (
+                <button type="button" onClick={() => setCajaMontoApertura(String(aperturaSugerida))} className="text-[11px] text-stone-500 hover:text-stone-700 mt-1.5 block mx-auto">
+                  Sugerido según tu último turno: <span className="font-semibold">{formatCurrency(aperturaSugerida)}</span>
+                </button>
+              )}
             </div>
             <div className="flex gap-2">
               <button onClick={() => setShowAbrirCaja(false)} className={cx.btnGhost + ' flex-1'}>Cancelar</button>
@@ -1173,19 +1213,144 @@ export default function POSPage() {
         </div>
       )}
 
+      {/* Modal: Contar billetes/monedas (F2) */}
+      {showDesglosePos && (() => {
+        const total = Object.entries(desglosePos).reduce((sum, [id, qty]) => { const d = denominaciones.find(x => x.id === parseInt(id)); return sum + (qty * (d ? parseFloat(d.valor) : 0)); }, 0);
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDesglosePos(false)} />
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[85vh] overflow-y-auto">
+              <div className="p-4 border-b border-stone-100 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-stone-900">Contar efectivo</h3>
+                <button onClick={() => setShowDesglosePos(false)} className="text-stone-400 hover:text-stone-600 p-1"><X size={16} /></button>
+              </div>
+              <div className="p-4 space-y-0.5">
+                {['billete', 'moneda'].map(tipo => (
+                  <div key={tipo}>
+                    <p className="text-[9px] text-stone-400 uppercase tracking-wider font-semibold mt-2 mb-1">{tipo === 'billete' ? 'Billetes' : 'Monedas'}</p>
+                    {denominaciones.filter(d => d.tipo === tipo).map(denom => {
+                      const qty = desglosePos[denom.id] || 0;
+                      const sub = qty * parseFloat(denom.valor);
+                      return (
+                        <div key={denom.id} className="flex items-center gap-2 py-1">
+                          <span className="text-xs text-stone-600 w-16">{denom.nombre}</span>
+                          <span className="text-stone-300 text-xs">×</span>
+                          <input type="number" min="0" step="1" value={qty || ''} onChange={e => setDesglosePos(prev => ({ ...prev, [denom.id]: parseInt(e.target.value) || 0 }))} className="w-14 px-2 py-1 bg-white border border-stone-200 rounded text-xs text-center focus:outline-none focus:border-stone-400" placeholder="0" />
+                          <span className="text-stone-300 text-xs">=</span>
+                          <span className={`text-xs w-20 text-right ${sub > 0 ? 'text-stone-700 font-medium' : 'text-stone-300'}`}>{sub > 0 ? formatCurrency(sub) : '-'}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+              <div className="p-4 border-t border-stone-100">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-semibold text-stone-900">Total contado</span>
+                  <span className="text-lg font-bold text-stone-900">{formatCurrency(total)}</span>
+                </div>
+                <button onClick={() => { setCajaCierreEfectivo(total.toFixed(2)); setShowDesglosePos(false); }} className={cx.btnPrimary + ' w-full'}>
+                  Usar {formatCurrency(total)}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Modal: Resumen post-cierre (M4) */}
+      {resumenCierre && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setResumenCierre(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-2">
+                <CheckCircle size={24} className="text-emerald-600" />
+              </div>
+              <h3 className="text-lg font-bold text-stone-900">Turno cerrado</h3>
+            </div>
+            <div className="bg-stone-50 rounded-xl p-4 space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-stone-500">Ventas del turno</span><span className="font-bold text-stone-800">{resumenCierre.cantidad_ventas || 0} — {formatCurrency(resumenCierre.ventas_total)}</span></div>
+              {(() => {
+                const fila = (label, contado, dif) => {
+                  if (contado == null) return <div className="flex justify-between"><span className="text-stone-500">{label}</span><span className="text-stone-400 italic">sin contar</span></div>;
+                  const d = Number(dif) || 0;
+                  return (
+                    <div className="flex justify-between">
+                      <span className="text-stone-500">{label}</span>
+                      <span className="text-stone-700">{formatCurrency(contado)} {d === 0 ? <span className="text-emerald-600">· cuadra</span> : <span className={d > 0 ? 'text-sky-600' : 'text-rose-600'}>· {d > 0 ? '+' : ''}{formatCurrency(d)}</span>}</span>
+                    </div>
+                  );
+                };
+                return <>{fila('Efectivo', resumenCierre.cierre_efectivo_real, resumenCierre.diferencia_efectivo)}{fila('Digital', resumenCierre.cierre_transferencia_real, resumenCierre.diferencia_transferencia)}</>;
+              })()}
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => window.open(`${API_BASE.replace('/api', '')}/api/ticket/arqueo/${resumenCierre.id}?token=${localStorage.getItem('nodum_token')}`, '_blank')} className={cx.btnSecondary + ' flex-1'}>Imprimir</button>
+              <button onClick={() => setResumenCierre(null)} className={cx.btnPrimary + ' flex-1'}>Listo</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Movimiento de caja (retiro/ingreso) */}
+      {showMovimiento && caja && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowMovimiento(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-stone-900">Movimiento de caja</h3>
+              <button onClick={() => setShowMovimiento(false)} className="text-stone-400 hover:text-stone-600"><X size={18} /></button>
+            </div>
+            <p className="text-xs text-stone-500">Registrá dinero que sacás o agregás a la caja durante el turno (depósito, gasto, cambio). Así el cierre cuadra bien y no aparece como faltante.</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => setMovTipo('retiro')} className={`py-2.5 rounded-xl text-sm font-semibold border transition-colors duration-100 ${movTipo === 'retiro' ? 'bg-rose-50 border-rose-300 text-rose-700' : 'bg-white border-stone-200 text-stone-500'}`}>Retiro (sale)</button>
+              <button onClick={() => setMovTipo('ingreso')} className={`py-2.5 rounded-xl text-sm font-semibold border transition-colors duration-100 ${movTipo === 'ingreso' ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-white border-stone-200 text-stone-500'}`}>Ingreso (entra)</button>
+            </div>
+            <div>
+              <label className={cx.label}>Monto</label>
+              <input type="number" step="0.01" value={movMonto} onChange={e => setMovMonto(e.target.value)} className={cx.input} placeholder="0.00" autoFocus />
+            </div>
+            <div>
+              <label className={cx.label}>Motivo (opcional)</label>
+              <input type="text" value={movMotivo} onChange={e => setMovMotivo(e.target.value)} className={cx.input} placeholder="Ej. depósito al banco, compra de insumos..." />
+            </div>
+            <button
+              disabled={savingMov || !(parseFloat(movMonto) > 0)}
+              onClick={async () => {
+                setSavingMov(true);
+                try {
+                  await api.post('/arqueo/movimiento', { tipo: movTipo, monto: parseFloat(movMonto), motivo: movMotivo.trim() || null });
+                  setShowMovimiento(false);
+                  loadCaja();
+                  toast.success(movTipo === 'retiro' ? 'Retiro registrado' : 'Ingreso registrado');
+                } catch (err) { toast.error(err.message || 'Error registrando movimiento'); }
+                finally { setSavingMov(false); }
+              }}
+              className={`w-full py-3 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors duration-100 disabled:opacity-50 ${movTipo === 'retiro' ? 'bg-rose-500 hover:bg-rose-600' : 'bg-emerald-500 hover:bg-emerald-600'}`}
+            >
+              {savingMov ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Registrar movimiento'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Modal: Cerrar caja */}
       {showCerrarCaja && caja && (() => {
-        const efectivoSistema = parseFloat(caja.monto_apertura || 0) + parseFloat(caja.ventas_efectivo || 0);
+        const efectivoSistema = caja.esperado_efectivo != null
+          ? parseFloat(caja.esperado_efectivo)
+          : parseFloat(caja.monto_apertura || 0) + parseFloat(caja.ventas_efectivo || 0);
         const transfSistema = parseFloat(caja.ventas_transferencia || 0);
         const diffEfectivo = (parseFloat(cajaCierreEfectivo) || 0) - efectivoSistema;
         const diffTransf = (parseFloat(cajaCierreTransf) || 0) - transfSistema;
+        const ciego = !!caja.cierre_ciego;
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowCerrarCaja(false)} />
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setShowCerrarCaja(false); setConfirmarSinContar(false); }} />
             <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold text-stone-900">Cerrar caja</h3>
-                <button onClick={() => setShowCerrarCaja(false)} className="text-stone-400 hover:text-stone-600"><X size={18} /></button>
+                <button onClick={() => { setShowCerrarCaja(false); setConfirmarSinContar(false); }} className="text-stone-400 hover:text-stone-600"><X size={18} /></button>
               </div>
 
               {/* Resumen del turno */}
@@ -1193,21 +1358,31 @@ export default function POSPage() {
                 <div className="flex justify-between"><span className="text-stone-500">Apertura</span><span className="font-medium">{new Date(caja.abierto_at).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' })}</span></div>
                 <div className="flex justify-between"><span className="text-stone-500">Ventas del turno</span><span className="font-bold text-stone-800">{caja.cantidad_ventas || 0} — {formatCurrency(parseFloat(caja.ventas_total || 0))}</span></div>
                 <div className="flex justify-between"><span className="text-stone-500">Monto apertura</span><span>{formatCurrency(parseFloat(caja.monto_apertura || 0))}</span></div>
+                {caja.movimientos_neto != null && Number(caja.movimientos_neto) !== 0 && (
+                  <div className="flex justify-between"><span className="text-stone-500">Movimientos (retiros/ingresos)</span><span className={Number(caja.movimientos_neto) < 0 ? 'text-rose-600' : 'text-emerald-600'}>{Number(caja.movimientos_neto) > 0 ? '+' : ''}{formatCurrency(caja.movimientos_neto)}</span></div>
+                )}
               </div>
 
               {/* Cuadre Efectivo */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-stone-500 uppercase">Efectivo</p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-stone-500">Según sistema</span>
-                  <span className="font-semibold text-stone-800">{formatCurrency(efectivoSistema)}</span>
-                </div>
-                <div className="flex items-center justify-between gap-3">
+                {!ciego && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-stone-500">Según sistema</span>
+                    <span className="font-semibold text-stone-800">{formatCurrency(efectivoSistema)}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-sm text-stone-500">En tu caja</span>
-                  <input type="number" step="0.01" value={cajaCierreEfectivo} onChange={e => setCajaCierreEfectivo(e.target.value)}
-                    className={cx.input + ' w-32 text-right font-semibold'} placeholder="0.00" />
+                  <div className="flex items-center gap-1.5">
+                    {denominaciones.length > 0 && (
+                      <button type="button" onClick={() => { setDesglosePos({}); setShowDesglosePos(true); }} className={cx.btnGhost + ' text-[11px] px-2 py-1 whitespace-nowrap'}>Contar billetes</button>
+                    )}
+                    <input type="number" step="0.01" value={cajaCierreEfectivo} onChange={e => setCajaCierreEfectivo(e.target.value)}
+                      className={cx.input + ' w-28 text-right font-semibold'} placeholder="0.00" />
+                  </div>
                 </div>
-                {cajaCierreEfectivo && (
+                {!ciego && cajaCierreEfectivo && (
                   <div className={`text-right text-sm font-semibold ${diffEfectivo >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                     Diferencia: {diffEfectivo >= 0 ? '+' : ''}{formatCurrency(diffEfectivo)}
                     {diffEfectivo > 0 && <span className="text-xs font-normal ml-1">(sobrante)</span>}
@@ -1219,16 +1394,18 @@ export default function POSPage() {
               {/* Cuadre Transferencias */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-stone-500 uppercase">Transferencias / Yape</p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-stone-500">Según sistema</span>
-                  <span className="font-semibold text-stone-800">{formatCurrency(transfSistema)}</span>
-                </div>
+                {!ciego && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-stone-500">Según sistema</span>
+                    <span className="font-semibold text-stone-800">{formatCurrency(transfSistema)}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-sm text-stone-500">En tu dispositivo</span>
                   <input type="number" step="0.01" value={cajaCierreTransf} onChange={e => setCajaCierreTransf(e.target.value)}
                     className={cx.input + ' w-32 text-right font-semibold'} placeholder="0.00" />
                 </div>
-                {cajaCierreTransf && (
+                {!ciego && cajaCierreTransf && (
                   <div className={`text-right text-sm font-semibold ${diffTransf >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                     Diferencia: {diffTransf >= 0 ? '+' : ''}{formatCurrency(diffTransf)}
                     {diffTransf > 0 && <span className="text-xs font-normal ml-1">(sobrante)</span>}
@@ -1244,29 +1421,49 @@ export default function POSPage() {
               </div>
 
               {/* Confirmar */}
-              <button
-                disabled={savingCaja}
-                onClick={async () => {
-                  setSavingCaja(true);
-                  try {
-                    await api.post('/arqueo/cerrar', {
-                      cierre_efectivo_real: parseFloat(cajaCierreEfectivo) || 0,
-                      cierre_transferencia_real: parseFloat(cajaCierreTransf) || 0,
-                      nota_cierre: cajaNota.trim() || null,
-                    });
-                    setCaja(null);
-                    setShowCerrarCaja(false);
-                    setCajaCierreEfectivo('');
-                    setCajaCierreTransf('');
-                    setCajaNota('');
-                    toast.success('Caja cerrada correctamente');
-                  } catch (err) { toast.error(err.message || 'Error cerrando caja'); }
-                  finally { setSavingCaja(false); }
-                }}
-                className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors duration-100"
-              >
-                {savingCaja ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Lock size={14} /> Confirmar cierre</>}
-              </button>
+              {(() => {
+                const faltaContarEf = cajaCierreEfectivo === '' && efectivoSistema > 0;
+                const faltaContarTr = cajaCierreTransf === '' && transfSistema > 0;
+                const faltaContar = faltaContarEf || faltaContarTr;
+                return (
+                  <div className="space-y-2">
+                    {faltaContar && (
+                      <div className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5">
+                        <AlertTriangle size={15} className="text-amber-600 flex-none mt-0.5" />
+                        <p className="text-xs text-amber-800">
+                          No ingresaste {faltaContarEf ? 'el efectivo' : ''}{faltaContarEf && faltaContarTr ? ' ni las transferencias' : faltaContarTr ? 'las transferencias' : ''} en tu caja. Se cerrará <strong>sin calcular diferencia</strong> (no como faltante). Para cuadrar el turno, contá el dinero e ingresalo arriba.
+                        </p>
+                      </div>
+                    )}
+                    <button
+                      disabled={savingCaja}
+                      onClick={async () => {
+                        if (faltaContar && !confirmarSinContar) { setConfirmarSinContar(true); return; }
+                        setSavingCaja(true);
+                        try {
+                          const rc = await api.post('/arqueo/cerrar', {
+                            cierre_efectivo_real: cajaCierreEfectivo === '' ? null : parseFloat(cajaCierreEfectivo),
+                            cierre_transferencia_real: cajaCierreTransf === '' ? null : parseFloat(cajaCierreTransf),
+                            nota_cierre: cajaNota.trim() || null,
+                          });
+                          setCaja(null);
+                          setShowCerrarCaja(false);
+                          setCajaCierreEfectivo('');
+                          setCajaCierreTransf('');
+                          setCajaNota('');
+                          setConfirmarSinContar(false);
+                          setResumenCierre(rc.data || rc);
+                          toast.success('Caja cerrada correctamente');
+                        } catch (err) { toast.error(err.message || 'Error cerrando caja'); }
+                        finally { setSavingCaja(false); }
+                      }}
+                      className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors duration-100"
+                    >
+                      {savingCaja ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Lock size={14} /> {faltaContar && confirmarSinContar ? 'Cerrar sin contar' : 'Confirmar cierre'}</>}
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         );

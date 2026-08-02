@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });
 }
 
 function estadoBadge(estado) {

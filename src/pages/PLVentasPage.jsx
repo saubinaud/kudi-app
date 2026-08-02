@@ -3,6 +3,7 @@ import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
+import * as printer from '../utils/printerService';
 import { formatCurrency, formatDate, formatDateTime, formatSmartDate } from '../utils/format';
 import { desglosarIGV } from '../utils/igv';
 import SearchableSelect from '../components/SearchableSelect';
@@ -728,6 +729,23 @@ export default function PLVentasPage() {
     } catch (e) { toast.error('Error al cargar detalle'); }
   };
 
+  // Imprimir precuenta de una orden (cascada USB/agente → ventana imprimible). NO es comprobante.
+  const imprimirPrecuentaOrden = async (venta) => {
+    try {
+      const r = await api.get(`/print/precuenta/venta/${venta.id}/raw`);
+      await printer.imprimirBase64(r.data.bytes);
+      toast.success('Precuenta impresa');
+    } catch {
+      const items = (venta.items || []).map((i) => ({
+        nombre: i.producto_nombre || i.descripcion_custom || 'Producto',
+        cantidad: i.cantidad, subtotal: i.subtotal,
+      }));
+      printer.imprimirPrecuentaHTML(`Orden ${venta.codigo || '#' + venta.id}`, {
+        items, totales: { total: parseFloat(venta.total || 0), igv: 0 },
+      }, user?.logo_url);
+    }
+  };
+
   // Cancel sale handler
   const handleCancelVenta = async () => {
     if (!cancelTarget) return;
@@ -1117,7 +1135,7 @@ export default function PLVentasPage() {
                             </span>
                           )}
                         </p>
-                        <p className="text-[11px] text-stone-400">{formatDate(v.fecha)}{v.codigo_pedido && <span className="font-mono ml-1">{v.codigo_pedido}</span>}</p>
+                        <p className="text-[11px] text-stone-400">{formatDate(v.fecha)}{v.created_at ? ` · ${new Date(v.created_at).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' })}` : ''}{v.codigo_pedido && <span className="font-mono ml-1">{v.codigo_pedido}</span>}</p>
                       </div>
                     </div>
                     <span className="text-sm font-semibold text-stone-900 flex-shrink-0 ml-3">{formatCurrency(v.total)}</span>
@@ -2290,6 +2308,12 @@ export default function PLVentasPage() {
                   );
                 })()}
               </div>
+
+              {/* Imprimir precuenta (cuenta previa — NO es comprobante) */}
+              <button onClick={() => imprimirPrecuentaOrden(ventaDetalle)}
+                className={cx.btnSecondary + ' w-full py-3 text-sm flex items-center justify-center gap-2 mb-2'}>
+                <FileText size={16} /> Imprimir precuenta
+              </button>
 
               {/* Emitir boleta button */}
               {!ventaDetalle.facturado && ventaDetalle.estado_pago !== 'cancelado' && (

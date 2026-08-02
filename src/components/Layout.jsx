@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { estadoVista, puedeVerRuta, primeraRutaPermitida } from '../utils/permisos';
 import { useAuth } from '../context/AuthContext';
 import { TerminosProvider } from '../context/TerminosContext';
 import { API_BASE } from '../config/api';
@@ -117,10 +118,11 @@ export default function Layout() {
     return () => clearInterval(interval);
   }, [user]);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const t = {}; // Kudi universal — no per-giro terminology
 
-  const HIDDEN_ROUTES = ['/shopify', '/proyeccion', '/comisiones', '/analisis'];
+  const HIDDEN_ROUTES = ['/shopify', '/proyeccion', '/comisiones'];
 
   const sidebarGroups = [
     {
@@ -158,7 +160,8 @@ export default function Layout() {
       links: [
         { to: '/pl/compras', label: 'Compras', icon: ShoppingBag, perm: 'finanzas' },
         { to: '/pl/gastos', label: 'Pagos', icon: Receipt, perm: 'finanzas' },
-        { to: '/equipo', label: 'Equipo', icon: Users, perm: 'finanzas' },
+        // OCULTO EN PROD (WIP, solo en uat): módulo Equipo/planilla. Reactivar al lanzar.
+        // { to: '/equipo', label: 'Equipo', icon: Users, perm: 'finanzas' },
         { to: '/perdidas', label: 'Pérdidas', icon: TrendingDown, perm: 'finanzas' },
       ],
     },
@@ -169,7 +172,9 @@ export default function Layout() {
       links: [
         { to: '/pl', label: 'Timeline', icon: Activity, perm: 'finanzas', end: true },
         { to: '/pl/resumen', label: 'Estado de resultados', icon: BarChart3, perm: 'finanzas' },
-        { to: '/pl/tasas', label: 'Tasas del período', icon: Gauge, perm: 'finanzas' },
+        { to: '/analisis', label: 'Análisis', icon: BarChart3, perm: 'finanzas' },
+        // OCULTO EN PROD (WIP, solo en uat): Tasas del período (costeo por absorción). Reactivar al lanzar.
+        // { to: '/pl/tasas', label: 'Tasas del período', icon: Gauge, perm: 'finanzas' },
         { to: '/pl/cashflow', label: 'Flujo de Caja', icon: Wallet, perm: 'finanzas' },
         { to: '/proveedores', label: 'Proveedores', icon: Truck, perm: 'finanzas' },
       ],
@@ -203,20 +208,8 @@ export default function Layout() {
     localStorage.setItem('kudi_nav_groups', JSON.stringify(next));
   };
   const isAdmin = user?.rol === 'admin';
-  const rawPermisos = Array.isArray(user?.permisos) ? user.permisos : ['dashboard', 'cotizador', 'insumos', 'materiales', 'preparaciones', 'empaques', 'canales', 'ventas', 'finanzas', 'facturacion'];
-  // Map old permission keys to new ones for backward compatibility
-  const permAliases = { pl: 'finanzas', cotizador: 'cotizador', proyeccion: 'ventas', perdidas: 'finanzas' };
-  const permState = (perm) => {
-    if (!perm) return 'full';
-    if (isAdmin) return 'full';
-    if (rawPermisos.includes(perm)) return 'full';
-    if (rawPermisos.includes(`~${perm}`)) return 'vitrina';
-    // Check aliases (old perm keys still in DB)
-    const alias = permAliases[perm];
-    if (alias && rawPermisos.includes(alias)) return 'full';
-    if (alias && rawPermisos.includes(`~${alias}`)) return 'vitrina';
-    return 'hidden';
-  };
+  // Estado de vista (fuente única en utils/permisos): 'full' | 'vitrina' | 'hidden'
+  const permState = (perm) => estadoVista(user, perm);
 
   const [bannerDismissed, setBannerDismissed] = useState(() => sessionStorage.getItem('kudi_banner_dismissed') === '1');
 
@@ -574,7 +567,11 @@ export default function Layout() {
 
         <main className="p-4 pb-14 lg:px-10 lg:py-6 lg:pb-14 relative">
           <TerminosProvider terminos={null}>
-            <Outlet />
+            {/* Guarda de acceso: si la vista está oculta para este usuario, redirige
+                a la primera que sí puede ver (owner/admin ven todo). */}
+            {puedeVerRuta(user, location.pathname)
+              ? <Outlet />
+              : <Navigate to={primeraRutaPermitida(user)} replace />}
           </TerminosProvider>
         </main>
 

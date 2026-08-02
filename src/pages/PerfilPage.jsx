@@ -37,6 +37,8 @@ export default function PerfilPage() {
   const [editing, setEditing] = useState(false);
   const [profileForm, setProfileForm] = useState({});
   const [savingProfile, setSavingProfile] = useState(false);
+  // Confirmación al marcarse exonerado de IGV (decisión fiscal — Amazonía Ley 27037).
+  const [confirmExonerada, setConfirmExonerada] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
   // Password
@@ -68,6 +70,38 @@ export default function PerfilPage() {
     }).catch(() => toast.error('Error cargando datos'));
   }, []);
 
+  // Impresión: logo en la térmica (invertir + tamaño)
+  const [logoInvertir, setLogoInvertir] = useState(false);
+  const [logoAncho, setLogoAncho] = useState(240);
+  const [printCfg, setPrintCfg] = useState({});
+  useEffect(() => {
+    api.get('/print/config').then(r => {
+      const c = r.data || r || {};
+      setPrintCfg(c);
+      setLogoInvertir(!!c.logo_invertir);
+      setLogoAncho(c.logo_ancho || 240);
+    }).catch(() => {});
+  }, []);
+  const guardarPrint = async (cambios) => {
+    try {
+      await api.put('/print/config', { ...printCfg, logo_invertir: logoInvertir, logo_ancho: logoAncho, ...cambios });
+      setPrintCfg(p => ({ ...p, ...cambios }));
+    } catch { toast.error('No se pudo guardar'); return false; }
+    return true;
+  };
+  const toggleLogoInvertir = async (valor) => {
+    setLogoInvertir(valor);
+    if (await guardarPrint({ logo_invertir: valor })) toast.success(valor ? 'El logo se imprimirá invertido' : 'El logo se imprimirá normal');
+    else setLogoInvertir(!valor);
+  };
+  const cambiarLogoAncho = async (px) => {
+    const prev = logoAncho;
+    setLogoAncho(px);
+    if (await guardarPrint({ logo_ancho: px })) toast.success('Tamaño del logo actualizado');
+    else setLogoAncho(prev);
+  };
+  const TAM_LOGO = [{ px: 180, label: 'Chico' }, { px: 240, label: 'Mediano' }, { px: 320, label: 'Grande' }];
+
   useEffect(() => {
     if (tab === 'plan' && pagos.length === 0) {
       setLoadingPagos(true);
@@ -84,6 +118,7 @@ export default function PerfilPage() {
       igv_rate: user?.igv_rate != null ? (Number(user.igv_rate) < 1 ? parseFloat((Number(user.igv_rate) * 100).toFixed(2)) : Number(user.igv_rate)) : 18,
       pais: user?.pais || 'PE',
       tipo_negocio: user?.tipo_negocio || 'formal',
+      igv_exonerada: user?.igv_exonerada || false,
       precio_decimales: user?.precio_decimales || 'variable',
       giro_negocio_id: user?.giro_negocio_id || '',
     });
@@ -151,6 +186,7 @@ export default function PerfilPage() {
         margen_minimo_global: Number(ajustesForm.margen_minimo_global) || 33,
         comision_pos: ajustesForm.comision_pos !== '' ? Number(ajustesForm.comision_pos) : 0,
         impedir_venta_sin_stock: !!ajustesForm.impedir_venta_sin_stock,
+        cierre_ciego: !!ajustesForm.cierre_ciego,
         operarios_count: ajustesForm.operarios_count !== '' ? Number(ajustesForm.operarios_count) : 1,
         jornada_horas_dia: ajustesForm.jornada_horas_dia !== '' ? Number(ajustesForm.jornada_horas_dia) : 8,
         dias_laborables_mes: ajustesForm.dias_laborables_mes !== '' ? Number(ajustesForm.dias_laborables_mes) : 22,
@@ -201,6 +237,48 @@ export default function PerfilPage() {
             {!editing && <button onClick={startEditing} className={cx.btnGhost + ' flex items-center gap-1'}><Pencil size={16} /> Editar</button>}
           </div>
 
+          {/* Logo en la impresión térmica — tamaño + invertir */}
+          <div className="mb-4 rounded-xl border border-stone-200 px-4 py-3.5 space-y-3.5">
+            <div className="flex items-center gap-3">
+              {user?.logo_url && (
+                <img src={user.logo_url} alt="" className="w-10 h-10 rounded-lg object-contain bg-stone-50 border border-stone-100 shrink-0" />
+              )}
+              <p className="text-sm font-semibold text-stone-800">Logo en el ticket</p>
+            </div>
+
+            {/* Tamaño */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-stone-700">Tamaño</p>
+                <p className="text-[12px] text-stone-500">Recomendado: Mediano (~30mm en papel de 80mm).</p>
+              </div>
+              <div className="flex rounded-lg bg-stone-100 p-0.5 shrink-0">
+                {TAM_LOGO.map(t => (
+                  <button key={t.px} type="button" onClick={() => cambiarLogoAncho(t.px)}
+                    className={`px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors duration-100 ${logoAncho === t.px ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Invertir */}
+            <div className="flex items-center justify-between gap-3 pt-3 border-t border-stone-100">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-stone-700">Invertir logo al imprimir</p>
+                <p className="text-[12px] text-stone-500">Actívalo si tu logo es claro sobre fondo oscuro (para que salga en negro sobre el papel).</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => toggleLogoInvertir(!logoInvertir)}
+                className={`relative w-11 h-6 rounded-full transition-colors duration-150 shrink-0 ${logoInvertir ? 'bg-[#16A34A]' : 'bg-stone-300'}`}
+                aria-pressed={logoInvertir}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-150 ${logoInvertir ? 'translate-x-5' : ''}`} />
+              </button>
+            </div>
+          </div>
+
           {editing ? (
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -226,37 +304,33 @@ export default function PerfilPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className={cx.label}>IGV en tus precios</label>
-                  {user?.igv_exonerada ? (
-                    <div className="mt-1">
-                      <span className={cx.badge('bg-emerald-50 text-emerald-600')}>Exonerada de IGV — Amazonía</span>
-                      <p className="text-[10px] text-stone-400 mt-1.5 leading-relaxed">
-                        Tu empresa está exonerada de IGV (Ley 27037): tus boletas oficiales salen sin IGV automáticamente. Esta condición la gestiona el equipo de Kudi.
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <CustomSelect
-                        value={profileForm.tipo_negocio === 'informal' ? `no_igv_${profileForm.igv_rate || 18}` : `formal_${profileForm.igv_rate}`}
-                        onChange={(val) => {
-                          if (val === 'no_igv_18') setProfileForm(prev => ({ ...prev, tipo_negocio: 'informal', igv_rate: 18 }));
-                          else if (val === 'no_igv_10.5') setProfileForm(prev => ({ ...prev, tipo_negocio: 'informal', igv_rate: 10.5 }));
-                          else if (val === 'formal_10.5') setProfileForm(prev => ({ ...prev, tipo_negocio: 'formal', igv_rate: 10.5 }));
-                          else setProfileForm(prev => ({ ...prev, tipo_negocio: 'formal', igv_rate: 18 }));
-                        }}
-                        options={[
-                          { value: 'formal_18', label: 'Mis precios incluyen IGV (18%)' },
-                          { value: 'formal_10.5', label: 'Mis precios incluyen IGV (10.5%)' },
-                          { value: 'no_igv_18', label: 'Mis precios NO incluyen IGV · Al boletear: 18%' },
-                          { value: 'no_igv_10.5', label: 'Mis precios NO incluyen IGV · Al boletear: 10.5%' },
-                        ]}
-                      />
-                      <p className="text-[10px] text-stone-400 mt-1.5 leading-relaxed">
-                        {profileForm.tipo_negocio === 'informal'
-                          ? 'Tus productos se crean al precio que pones. Al boletear, Kudi agrega el IGV automáticamente.'
-                          : 'Tus precios ya incluyen IGV. El margen se calcula descontando el IGV.'}
-                      </p>
-                    </>
-                  )}
+                  <CustomSelect
+                    value={profileForm.igv_exonerada
+                      ? 'exonerada'
+                      : (profileForm.tipo_negocio === 'informal' ? `no_igv_${profileForm.igv_rate || 18}` : `formal_${profileForm.igv_rate}`)}
+                    onChange={(val) => {
+                      // Marcarse exonerado abre confirmación (fiscal); las demás opciones son directas.
+                      if (val === 'exonerada') { if (!profileForm.igv_exonerada) setConfirmExonerada(true); }
+                      else if (val === 'no_igv_18') setProfileForm(prev => ({ ...prev, igv_exonerada: false, tipo_negocio: 'informal', igv_rate: 18 }));
+                      else if (val === 'no_igv_10.5') setProfileForm(prev => ({ ...prev, igv_exonerada: false, tipo_negocio: 'informal', igv_rate: 10.5 }));
+                      else if (val === 'formal_10.5') setProfileForm(prev => ({ ...prev, igv_exonerada: false, tipo_negocio: 'formal', igv_rate: 10.5 }));
+                      else setProfileForm(prev => ({ ...prev, igv_exonerada: false, tipo_negocio: 'formal', igv_rate: 18 }));
+                    }}
+                    options={[
+                      { value: 'formal_18', label: 'Mis precios incluyen IGV (18%)' },
+                      { value: 'formal_10.5', label: 'Mis precios incluyen IGV (10.5%)' },
+                      { value: 'no_igv_18', label: 'Mis precios NO incluyen IGV · Al boletear: 18%' },
+                      { value: 'no_igv_10.5', label: 'Mis precios NO incluyen IGV · Al boletear: 10.5%' },
+                      { value: 'exonerada', label: 'Estoy exonerado de IGV (Amazonía) · Sin IGV en precios ni boletas' },
+                    ]}
+                  />
+                  <p className={`text-[10px] mt-1.5 leading-relaxed ${profileForm.igv_exonerada ? 'text-amber-600' : 'text-stone-400'}`}>
+                    {profileForm.igv_exonerada
+                      ? 'Solo si tu domicilio fiscal está en zona de Amazonía (Ley 27037). Tus boletas saldrán SIN IGV. Si no corresponde, SUNAT puede observar tus comprobantes.'
+                      : (profileForm.tipo_negocio === 'informal'
+                        ? 'Tus productos se crean al precio que pones. Al boletear, Kudi agrega el IGV automáticamente.'
+                        : 'Tus precios ya incluyen IGV. El margen se calcula descontando el IGV.')}
+                  </p>
                 </div>
                 <div>
                   <label className={cx.label}>Pais</label>
@@ -314,6 +388,17 @@ export default function PerfilPage() {
           )}
         </div>
       )}
+
+      {/* Confirmación al marcarse exonerado de IGV — vive en PerfilPage (mismo scope
+          que confirmExonerada/profileForm), no en los subcomponentes de más abajo. */}
+      <ConfirmDialog
+        open={confirmExonerada}
+        title="Marcar exoneración de IGV"
+        message="Confirma que el domicilio fiscal de tu negocio está en zona de Amazonía (Ley 27037). A partir de ahora tus boletas oficiales saldrán SIN IGV. Si tu negocio no califica, SUNAT puede observar tus comprobantes."
+        confirmText="Sí, estoy exonerado"
+        onConfirm={() => { setProfileForm(prev => ({ ...prev, igv_exonerada: true })); setConfirmExonerada(false); }}
+        onCancel={() => setConfirmExonerada(false)}
+      />
 
       {/* ══════ Tab: Mi plan ══════ */}
       {tab === 'plan' && (
@@ -416,7 +501,7 @@ export default function PerfilPage() {
         <div className={cx.card + ' p-5'}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-stone-900">Ajustes globales</h3>
-            {!editingAjustes && <button onClick={() => { setAjustesForm({ tarifa_mo_global: user?.tarifa_mo_global || '', margen_minimo_global: user?.margen_minimo_global || 33, comision_pos: user?.comision_pos || 0, impedir_venta_sin_stock: user?.impedir_venta_sin_stock || false, operarios_count: user?.operarios_count ?? 1, jornada_horas_dia: user?.jornada_horas_dia ?? 8, dias_laborables_mes: user?.dias_laborables_mes ?? 22 }); setEditingAjustes(true); }} className={cx.btnGhost + ' flex items-center gap-1'}><Pencil size={16} /> Editar</button>}
+            {!editingAjustes && <button onClick={() => { setAjustesForm({ tarifa_mo_global: user?.tarifa_mo_global || '', margen_minimo_global: user?.margen_minimo_global || 33, comision_pos: user?.comision_pos || 0, impedir_venta_sin_stock: user?.impedir_venta_sin_stock || false, cierre_ciego: user?.cierre_ciego || false, operarios_count: user?.operarios_count ?? 1, jornada_horas_dia: user?.jornada_horas_dia ?? 8, dias_laborables_mes: user?.dias_laborables_mes ?? 22 }); setEditingAjustes(true); }} className={cx.btnGhost + ' flex items-center gap-1'}><Pencil size={16} /> Editar</button>}
           </div>
           {editingAjustes ? (
             <div className="space-y-4 max-w-sm">
@@ -471,6 +556,13 @@ export default function PerfilPage() {
                 </label>
                 <p className="text-[11px] text-stone-400 mt-1">⚠️ <b>Desmarcado (recomendado):</b> se permite vender aunque no haya stock (queda en negativo, con aviso). <b>Marcado:</b> se bloquea la venta de productos sin stock disponible.</p>
               </div>
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={!!ajustesForm.cierre_ciego} onChange={e => setAjustesForm({ ...ajustesForm, cierre_ciego: e.target.checked })} className="w-4 h-4 rounded" />
+                  <span className="text-sm font-medium text-stone-700">Cierre de caja ciego</span>
+                </label>
+                <p className="text-[11px] text-stone-400 mt-1">Al cerrar caja, el cajero cuenta el efectivo <b>sin ver</b> el monto esperado por el sistema. Evita que "ajusten" el conteo; la diferencia se muestra recién después de cerrar.</p>
+              </div>
               <div className="flex gap-2">
                 <button onClick={handleSaveAjustes} disabled={savingAjustes} className={cx.btnPrimary + ' flex items-center gap-2'}>
                   {savingAjustes ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Save size={16} /> Guardar</>}
@@ -484,6 +576,7 @@ export default function PerfilPage() {
               <div><label className={cx.label}>Margen minimo</label><p className="text-stone-800 text-sm">{user?.margen_minimo_global || 33}%</p></div>
               <div><label className={cx.label}>Comisión POS tarjeta</label><p className="text-stone-800 text-sm">{user?.comision_pos ? `${Number(user.comision_pos)}%` : 'No configurada'}</p></div>
               <div><label className={cx.label}>Venta sin stock</label><p className="text-stone-800 text-sm">{user?.impedir_venta_sin_stock ? 'Bloqueada' : 'Permitida'}</p></div>
+              <div><label className={cx.label}>Cierre de caja</label><p className="text-stone-800 text-sm">{user?.cierre_ciego ? 'Ciego' : 'Normal'}</p></div>
               <div className="col-span-2 border-t border-stone-100 pt-3 mt-1">
                 <label className={cx.label}>Capacidad del taller</label>
                 <p className="text-stone-800 text-sm">

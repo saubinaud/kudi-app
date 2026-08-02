@@ -1995,9 +1995,10 @@ export default function CotizadorPage() {
                 </div>
                 )}
 
-                {(comisionPosPct > 0 || user?.tipo_negocio === 'informal') && (
+                {(comisionPosPct > 0 || (user?.tipo_negocio === 'informal' && !user?.igv_exonerada)) && (
                   <div className="py-3 border-b border-stone-100 space-y-2">
-                    {user?.tipo_negocio === 'informal' && (
+                    {/* exonerada (Amazonía) = siempre sin IGV → no se ofrece el toggle */}
+                    {user?.tipo_negocio === 'informal' && !user?.igv_exonerada && (
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={igvRate > 0} onChange={e => setIgvRate(e.target.checked ? (parseFloat(user?.igv_rate * 100) || 18) : 0)} className="w-3.5 h-3.5 rounded accent-[var(--accent)]" />
                         <span className="text-xs text-stone-500">Calcular con IGV ({parseFloat(user?.igv_rate * 100) || 18}%)</span>
@@ -2142,9 +2143,10 @@ export default function CotizadorPage() {
                 </div>
                 )}
 
-                {(comisionPosPct > 0 || user?.tipo_negocio === 'informal') && (
+                {(comisionPosPct > 0 || (user?.tipo_negocio === 'informal' && !user?.igv_exonerada)) && (
                   <div className="py-3 border-b border-stone-100 space-y-2">
-                    {user?.tipo_negocio === 'informal' && (
+                    {/* exonerada (Amazonía) = siempre sin IGV → no se ofrece el toggle */}
+                    {user?.tipo_negocio === 'informal' && !user?.igv_exonerada && (
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={igvRate > 0} onChange={e => setIgvRate(e.target.checked ? (parseFloat(user?.igv_rate * 100) || 18) : 0)} className="w-3.5 h-3.5 rounded accent-[var(--accent)]" />
                         <span className="text-xs text-stone-500">Calcular con IGV ({parseFloat(user?.igv_rate * 100) || 18}%)</span>

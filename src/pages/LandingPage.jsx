@@ -5,7 +5,7 @@ import { useScrollReveal, useScrollRevealAll } from '../hooks/useScrollReveal';
 import {
   ChefHat, Gem, Sparkles, CakeSlice, Flame, Scissors,
   Calculator, FileText, ShoppingCart, Package, BarChart3, Link2,
-  Check, X, ArrowRight, Menu, X as XIcon
+  Check, X, ArrowRight, Menu, X as XIcon, Clock
 } from 'lucide-react';
 import '../styles/landing.css';
 
@@ -92,7 +92,7 @@ const plans = [
     features: [
       { text: 'Todo de Emprendedor', included: true },
       { text: 'Usuarios ilimitados', included: true },
-      { text: 'Multi-sede', included: true },
+      { text: 'Multisede', included: false, soon: true },
       { text: 'Reportes avanzados', included: true },
       { text: 'Comisiones por vendedor', included: true },
       { text: 'API access', included: true },
@@ -404,11 +404,16 @@ export default function LandingPage() {
                 <ul className="mt-6 space-y-2.5">
                   {plan.features.map(f => (
                     <li key={f.text} className="flex items-center gap-2.5 text-sm">
-                      {f.included
-                        ? <Check size={15} className="text-[#16A34A] flex-shrink-0" />
-                        : <X size={15} className="text-stone-300 flex-shrink-0" />
+                      {f.soon
+                        ? <Clock size={15} className="text-amber-500 flex-shrink-0" />
+                        : f.included
+                          ? <Check size={15} className="text-[#16A34A] flex-shrink-0" />
+                          : <X size={15} className="text-stone-300 flex-shrink-0" />
                       }
-                      <span className={f.included ? 'text-stone-700' : 'text-stone-400'}>{f.text}</span>
+                      <span className={f.soon ? 'text-stone-600' : f.included ? 'text-stone-700' : 'text-stone-400'}>
+                        {f.text}
+                        {f.soon && <span className="ml-1.5 text-[10px] font-semibold text-amber-600 bg-amber-50 rounded-full px-1.5 py-0.5 align-middle">Pronto</span>}
+                      </span>
                     </li>
                   ))}
                 </ul>

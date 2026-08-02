@@ -3,6 +3,7 @@ import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
 import { cx } from '../styles/tokens';
 import { formatCurrency, formatDate } from '../utils/format';
+import { noContadoEf } from '../utils/arqueo';
 import CustomSelect from '../components/CustomSelect';
 import PeriodoSelector from '../components/PeriodoSelector';
 import SearchableSelect from '../components/SearchableSelect';
@@ -41,8 +42,14 @@ function formatDateLabel(dateStr) {
   return d.toLocaleDateString('es-PE', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'America/Lima' });
 }
 
+function fmtHora(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' });
+}
+
 // Timeline item component
 function TimelineItem({ t, onDelete }) {
+  const hora = fmtHora(t.created_at);
   return (
     <div className="flex items-start gap-3 px-4 py-3">
       <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
@@ -65,6 +72,7 @@ function TimelineItem({ t, onDelete }) {
                   ? `Compra \u2014 ${t.descripcion || 'Sin proveedor'}`
                   : `${t.categoria_nombre || t.descripcion || 'Gasto'}`}
             </p>
+            {hora && <p className="text-[11px] text-stone-400 mt-0.5">{hora}</p>}
             {t.nota && <p className="text-xs text-stone-400 mt-0.5 truncate">{t.nota}</p>}
             {t.tipo === 'gasto' && t.descripcion && t.categoria_nombre && (
               <p className="text-xs text-stone-400 mt-0.5 truncate">{t.descripcion}</p>
@@ -98,6 +106,9 @@ export default function PLTimelinePage() {
   const [periodo, setPeriodo] = useState(null);
   const [transacciones, setTransacciones] = useState([]);
   const [balance, setBalance] = useState(null);
+  const [vista, setVista] = useState('mes'); // 'hoy' | 'semana' | 'mes' | 'rango'
+  const [rangoDesde, setRangoDesde] = useState(todayStr());
+  const [rangoHasta, setRangoHasta] = useState(todayStr());
   const [productos, setProductos] = useState([]);
   const [categorias, setCategorias] = useState([]);
 
@@ -128,6 +139,7 @@ export default function PLTimelinePage() {
   const [submitting, setSubmitting] = useState(false);
   const [cuentas, setCuentas] = useState([]);
   const [ventaClientes, setVentaClientes] = useState([]);
+  const [arqueosPorDia, setArqueosPorDia] = useState({});
 
   // Load initial data
   useEffect(() => {
@@ -150,37 +162,83 @@ export default function PLTimelinePage() {
   }, []);
 
   // Load transacciones + balance when periodo changes
-  const loadData = async (p, tipo) => {
-    if (!p) return;
+  function rangoActual() {
+    const hoy = todayStr();
+    if (vista === 'hoy') return { desde: hoy, hasta: hoy };
+    if (vista === 'semana') {
+      const [y, m, d] = hoy.split('-').map(Number);
+      const dt = new Date(Date.UTC(y, m - 1, d));
+      const dow = (dt.getUTCDay() + 6) % 7; // 0 = lunes
+      dt.setUTCDate(dt.getUTCDate() - dow);
+      return { desde: dt.toISOString().slice(0, 10), hasta: hoy };
+    }
+    if (vista === 'rango') return { desde: rangoDesde, hasta: rangoHasta };
+    if (!periodo) return null;
+    const last = new Date(periodo.year, periodo.month, 0).getDate();
+    return {
+      desde: `${periodo.year}-${String(periodo.month).padStart(2, '0')}-01`,
+      hasta: `${periodo.year}-${String(periodo.month).padStart(2, '0')}-${String(last).padStart(2, '0')}`,
+    };
+  }
+
+  const loadData = async () => {
+    const r = rangoActual();
+    if (!r || !r.desde || !r.hasta) return;
     setLoadingTx(true);
     try {
-      const qs = `year=${p.year}&month=${p.month}`;
-      const tipoParam = tipo ? `&tipo=${tipo}` : '';
-      const [txRes, balRes] = await Promise.all([
-        api.get(`/pl/transacciones?${qs}${tipoParam}`),
-        api.get(`/pl/transacciones/balance?${qs}`),
-      ]);
+      const txRes = await api.get(`/pl/transacciones?desde=${r.desde}&hasta=${r.hasta}`);
       setTransacciones(txRes.data || []);
-      setBalance(balRes.data || null);
     } catch {
       toast.error('Error cargando transacciones');
     }
+    // Cierres de caja (arqueo POS) del rango — agrupados por día para el timeline
+    try {
+      const aqRes = await api.get(`/arqueo/historial?desde=${r.desde}&hasta=${r.hasta}`);
+      const byDay = {};
+      (aqRes.data || aqRes || []).forEach(a => {
+        const d = a.fecha?.slice(0, 10);
+        if (!d) return;
+        (byDay[d] = byDay[d] || []).push(a);
+      });
+      Object.values(byDay).forEach(list => list.sort((a, b) => new Date(a.abierto_at) - new Date(b.abierto_at)));
+      setArqueosPorDia(byDay);
+    } catch { setArqueosPorDia({}); }
     setLoadingTx(false);
   };
 
   useEffect(() => {
-    if (periodo) loadData(periodo, filterTipo);
-  }, [periodo, filterTipo]); // eslint-disable-line
+    loadData();
+  }, [vista, periodo, rangoDesde, rangoHasta]); // eslint-disable-line
+
+  // Filtro por tipo (client-side): Todo / Ingresos(venta) / Egresos(compra+gasto) / detalle fino
+  const transaccionesFiltradas = useMemo(() => {
+    if (!filterTipo) return transacciones;
+    if (filterTipo === 'ingresos') return transacciones.filter(t => t.tipo === 'venta');
+    if (filterTipo === 'egresos') return transacciones.filter(t => t.tipo === 'compra' || t.tipo === 'gasto');
+    return transacciones.filter(t => t.tipo === filterTipo);
+  }, [transacciones, filterTipo]);
 
   // Group by date
   const grouped = useMemo(() => {
     const groups = {};
-    transacciones.forEach(t => {
+    transaccionesFiltradas.forEach(t => {
       const date = t.fecha?.slice(0, 10);
       if (!groups[date]) groups[date] = [];
       groups[date].push(t);
     });
     return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a));
+  }, [transaccionesFiltradas]);
+
+  // Resumen del período (client-side, todos los tipos)
+  const resumen = useMemo(() => {
+    let ingresos = 0, compras = 0, gastos = 0;
+    transacciones.forEach(t => {
+      const m = Math.abs(parseFloat(t.monto) || 0);
+      if (t.tipo === 'venta') ingresos += m;
+      else if (t.tipo === 'compra') compras += m;
+      else if (t.tipo === 'gasto') gastos += m;
+    });
+    return { ingresos, compras, gastos, balance: ingresos - compras - gastos };
   }, [transacciones]);
 
   // Auto-create current month period
@@ -234,7 +292,7 @@ export default function PLTimelinePage() {
       toast.success('Transaccion registrada');
       setModalOpen(false);
       resetForm();
-      loadData(periodo, filterTipo);
+      loadData();
     } catch (e) {
       toast.error(e.message);
     }
@@ -258,7 +316,7 @@ export default function PLTimelinePage() {
       await api.del(`/pl/transacciones/${deleteTarget.id}`);
       toast.success('Transaccion eliminada');
       setDeleteTarget(null);
-      loadData(periodo, filterTipo);
+      loadData();
     } catch (e) {
       toast.error(e.message);
     }
@@ -274,7 +332,9 @@ export default function PLTimelinePage() {
 
   const periodoOptions = periodos.map(p => ({ value: p.id, label: p.nombre }));
   const filterOptions = [
-    { value: '', label: 'Todas' },
+    { value: '', label: 'Todo' },
+    { value: 'ingresos', label: 'Ingresos' },
+    { value: 'egresos', label: 'Egresos' },
     { value: 'venta', label: 'Ventas' },
     { value: 'compra', label: 'Compras' },
     { value: 'gasto', label: 'Gastos' },
@@ -320,9 +380,20 @@ export default function PLTimelinePage() {
         </button>
       </div>
 
-      {/* Period selector + filter */}
-      <div className="flex gap-3 mb-4 items-start">
-        <div className="flex-1">
+      {/* Período: vista (Hoy / Semana / Mes / Rango) */}
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {[{ v: 'hoy', l: 'Hoy' }, { v: 'semana', l: 'Semana' }, { v: 'mes', l: 'Mes' }, { v: 'rango', l: 'Rango' }].map(o => (
+          <button
+            key={o.v}
+            onClick={() => setVista(o.v)}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${vista === o.v ? 'bg-[var(--accent)] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+          >
+            {o.l}
+          </button>
+        ))}
+      </div>
+      {vista === 'mes' && (
+        <div className="mb-4">
           <PeriodoSelector
             periodos={periodos}
             value={periodo}
@@ -341,35 +412,50 @@ export default function PLTimelinePage() {
             }}
           />
         </div>
-        <div className="w-32">
-          <CustomSelect
-            options={filterOptions}
-            value={filterTipo || ''}
-            onChange={(v) => setFilterTipo(v || null)}
-            placeholder="Filtro"
-          />
+      )}
+      {vista === 'rango' && (
+        <div className="mb-4 flex items-center gap-2">
+          <input type="date" value={rangoDesde} onChange={e => setRangoDesde(e.target.value)} className={cx.input + ' text-sm'} />
+          <span className="text-stone-400 text-sm">a</span>
+          <input type="date" value={rangoHasta} onChange={e => setRangoHasta(e.target.value)} className={cx.input + ' text-sm'} />
         </div>
+      )}
+
+      {/* Filtro por tipo (chips) */}
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        {filterOptions.map(opt => {
+          const active = (filterTipo || '') === opt.value;
+          return (
+            <button
+              key={opt.value || 'todo'}
+              onClick={() => setFilterTipo(opt.value || null)}
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${active ? 'bg-[var(--accent)] text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'}`}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Balance summary cards */}
-      {balance && (
+      {(
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           <div className={`${cx.card} p-4`}>
             <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1">Ingresos</p>
-            <p className="text-base font-bold text-teal-600 tabular-nums">{formatCurrency(balance.ingresos)}</p>
+            <p className="text-base font-bold text-teal-600 tabular-nums">{formatCurrency(resumen.ingresos)}</p>
           </div>
           <div className={`${cx.card} p-4`}>
             <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1">Compras</p>
-            <p className="text-base font-bold text-amber-600 tabular-nums">{formatCurrency(balance.compras)}</p>
+            <p className="text-base font-bold text-amber-600 tabular-nums">{formatCurrency(resumen.compras)}</p>
           </div>
           <div className={`${cx.card} p-4`}>
             <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1">Gastos</p>
-            <p className="text-base font-bold text-rose-600 tabular-nums">{formatCurrency(balance.gastos)}</p>
+            <p className="text-base font-bold text-rose-600 tabular-nums">{formatCurrency(resumen.gastos)}</p>
           </div>
           <div className={`${cx.card} p-4`}>
             <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mb-1">Balance</p>
-            <p className={`text-base font-bold tabular-nums ${parseFloat(balance.balance) >= 0 ? 'text-teal-600' : 'text-rose-600'}`}>
-              {formatCurrency(balance.balance)}
+            <p className={`text-base font-bold tabular-nums ${resumen.balance >= 0 ? 'text-teal-600' : 'text-rose-600'}`}>
+              {formatCurrency(resumen.balance)}
             </p>
           </div>
         </div>
@@ -380,7 +466,7 @@ export default function PLTimelinePage() {
         <div className="space-y-3">
           {[1,2,3].map(i => <div key={i} className={`${cx.skeleton} h-16`} />)}
         </div>
-      ) : transacciones.length === 0 ? (
+      ) : transaccionesFiltradas.length === 0 ? (
         <div className={`${cx.card} p-8 text-center`}>
           <Activity size={28} className="mx-auto text-stone-300 mb-3" />
           <p className="text-stone-500 text-sm">Sin transacciones en este periodo.</p>
@@ -392,9 +478,19 @@ export default function PLTimelinePage() {
         <div className="space-y-4">
           {grouped.map(([date, items]) => (
             <div key={date}>
-              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider py-2 sticky top-0 bg-[#f7f7f7] z-10">
-                {formatDateLabel(date)}
-              </p>
+              <div className="flex items-baseline justify-between py-2 sticky top-0 bg-[#f7f7f7] z-10">
+                <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider">{formatDateLabel(date)}</p>
+                {(() => {
+                  let ing = 0, egr = 0;
+                  items.forEach(t => { const m = parseFloat(t.monto) || 0; if (m >= 0) ing += m; else egr += -m; });
+                  return (
+                    <span className="text-xs font-semibold tabular-nums">
+                      {ing > 0 && <span className="text-teal-600">+{formatCurrency(ing)}</span>}
+                      {egr > 0 && <span className="text-rose-500 ml-2">−{formatCurrency(egr)}</span>}
+                    </span>
+                  );
+                })()}
+              </div>
               <div className={`${cx.card} divide-y divide-stone-100`}>
                 {items.map(t => (
                   <div key={t.id} className="group/item">
@@ -402,6 +498,42 @@ export default function PLTimelinePage() {
                   </div>
                 ))}
               </div>
+              {arqueosPorDia[date]?.length > 0 && (
+                <div className="mt-2 rounded-xl border border-stone-200 bg-white px-3 py-2">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-[11px] font-semibold text-stone-500 uppercase tracking-wide">Cierres de caja</p>
+                    <span className="text-[11px] text-stone-400">{arqueosPorDia[date].length} turno{arqueosPorDia[date].length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="space-y-1">
+                    {arqueosPorDia[date].map((a, idx) => {
+                      const hora = (t) => t ? new Date(t).toLocaleTimeString('es-PE', { timeZone: 'America/Lima', hour: '2-digit', minute: '2-digit' }) : '—';
+                      const dEf = Number(a.diferencia_efectivo) || 0;
+                      const abierta = a.estado !== 'cerrado';
+                      return (
+                        <div key={a.id} className="flex items-center justify-between gap-2 text-xs py-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="inline-flex items-center rounded-full bg-stone-100 text-stone-600 text-[10px] font-semibold px-2 py-0.5 flex-none">T{idx + 1}</span>
+                            <span className="text-stone-500 flex-none">{hora(a.abierto_at)}{abierta ? '' : `→${hora(a.cerrado_at)}`}</span>
+                            {a.usuario_nombre && <span className="text-stone-400 truncate">· {a.usuario_nombre}</span>}
+                          </div>
+                          <div className="flex items-center gap-2 flex-none tabular-nums">
+                            {abierta ? (
+                              <span className="inline-flex items-center gap-1 text-emerald-600 text-[11px] font-medium"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />en curso</span>
+                            ) : (
+                              <>
+                                <span className="font-semibold text-stone-700">{formatCurrency(a.ventas_total)}</span>
+                                {!noContadoEf(a) && dEf !== 0 && (
+                                  <span className={dEf > 0 ? 'text-sky-600' : 'text-rose-500'}>{dEf > 0 ? '+' : ''}{formatCurrency(dEf)}</span>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -557,7 +689,7 @@ export default function PLTimelinePage() {
                     <SearchableSelect
                       options={categorias}
                       value={form.categoria_id}
-                      onChange={v => setForm(prev => ({ ...prev, categoria_id: v }))}
+                      onChange={v => setForm(prev => ({ ...prev, categoria_id: v?.id ?? v }))}
                       placeholder="Buscar categoria..."
                     />
                   </div>

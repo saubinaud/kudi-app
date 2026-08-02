@@ -1,3 +1,7 @@
+// @deprecated · HUÉRFANO (jul-2026) — no está ruteado ni enlazado.
+// Su contenido (historial de cierres de caja del POS) se absorbió en el
+// "Arqueo del día" (PLCashflowPage → tab Arqueo, bloque "Cierre de caja (POS)").
+// Candidato a eliminar.
 import { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';

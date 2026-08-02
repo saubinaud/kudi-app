@@ -1,3 +1,6 @@
+// @deprecated · HUÉRFANO (jul-2026) — no está ruteado ni enlazado.
+// La gestión de cartas (crear/renombrar/borrar/asignar productos) ya vive en
+// DashboardPage (config de cartas). Candidato a eliminar.
 import { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';

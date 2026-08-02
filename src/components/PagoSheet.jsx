@@ -22,6 +22,7 @@ import { X } from 'lucide-react';
 export default function PagoSheet({
   conIgv,
   setConIgv,
+  mostrarToggleIgv = true,   // exoneradas de IGV siempre venden sin IGV → se oculta
   tasaIgv = 0,
   precioMode = 'variable',
   base = 0,
@@ -85,7 +86,8 @@ export default function PagoSheet({
 
   return (
     <div className="space-y-4">
-      {/* Toggle IGV */}
+      {/* Toggle IGV — oculto para empresas exoneradas (siempre sin IGV) */}
+      {mostrarToggleIgv && (
       <div className="flex items-center justify-center gap-1">
         <button
           onClick={() => setConIgv(true)}
@@ -100,6 +102,7 @@ export default function PagoSheet({
           Sin IGV
         </button>
       </div>
+      )}
 
       {/* Metodo de pago — oculto en pago mixto */}
       {!pagoMixto && (

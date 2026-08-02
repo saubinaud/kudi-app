@@ -1,3 +1,5 @@
+// @deprecated · HUÉRFANO (jul-2026) — no está ruteado ni enlazado en ningún lado.
+// Su funcionalidad fue portada a AdminPage (Tab "Usuarios"). Candidato a eliminar.
 import { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useToast } from '../context/ToastContext';
