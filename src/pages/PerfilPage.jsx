@@ -187,6 +187,7 @@ export default function PerfilPage() {
         comision_pos: ajustesForm.comision_pos !== '' ? Number(ajustesForm.comision_pos) : 0,
         impedir_venta_sin_stock: !!ajustesForm.impedir_venta_sin_stock,
         cierre_ciego: !!ajustesForm.cierre_ciego,
+        caja_modo: ajustesForm.caja_modo || 'advertir',
         operarios_count: ajustesForm.operarios_count !== '' ? Number(ajustesForm.operarios_count) : 1,
         jornada_horas_dia: ajustesForm.jornada_horas_dia !== '' ? Number(ajustesForm.jornada_horas_dia) : 8,
         dias_laborables_mes: ajustesForm.dias_laborables_mes !== '' ? Number(ajustesForm.dias_laborables_mes) : 22,
@@ -501,7 +502,7 @@ export default function PerfilPage() {
         <div className={cx.card + ' p-5'}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-stone-900">Ajustes globales</h3>
-            {!editingAjustes && <button onClick={() => { setAjustesForm({ tarifa_mo_global: user?.tarifa_mo_global || '', margen_minimo_global: user?.margen_minimo_global || 33, comision_pos: user?.comision_pos || 0, impedir_venta_sin_stock: user?.impedir_venta_sin_stock || false, cierre_ciego: user?.cierre_ciego || false, operarios_count: user?.operarios_count ?? 1, jornada_horas_dia: user?.jornada_horas_dia ?? 8, dias_laborables_mes: user?.dias_laborables_mes ?? 22 }); setEditingAjustes(true); }} className={cx.btnGhost + ' flex items-center gap-1'}><Pencil size={16} /> Editar</button>}
+            {!editingAjustes && <button onClick={() => { setAjustesForm({ tarifa_mo_global: user?.tarifa_mo_global || '', margen_minimo_global: user?.margen_minimo_global || 33, comision_pos: user?.comision_pos || 0, impedir_venta_sin_stock: user?.impedir_venta_sin_stock || false, cierre_ciego: user?.cierre_ciego || false, caja_modo: user?.caja_modo || 'advertir', operarios_count: user?.operarios_count ?? 1, jornada_horas_dia: user?.jornada_horas_dia ?? 8, dias_laborables_mes: user?.dias_laborables_mes ?? 22 }); setEditingAjustes(true); }} className={cx.btnGhost + ' flex items-center gap-1'}><Pencil size={16} /> Editar</button>}
           </div>
           {editingAjustes ? (
             <div className="space-y-4 max-w-sm">
@@ -563,6 +564,15 @@ export default function PerfilPage() {
                 </label>
                 <p className="text-[11px] text-stone-400 mt-1">Al cerrar caja, el cajero cuenta el efectivo <b>sin ver</b> el monto esperado por el sistema. Evita que "ajusten" el conteo; la diferencia se muestra recién después de cerrar.</p>
               </div>
+              <div>
+                <label className={cx.label}>Venta sin caja abierta</label>
+                <select value={ajustesForm.caja_modo || 'advertir'} onChange={e => setAjustesForm({ ...ajustesForm, caja_modo: e.target.value })} className={cx.input}>
+                  <option value="permitir">Permitir (sin aviso)</option>
+                  <option value="advertir">Advertir (banner, recomendado)</option>
+                  <option value="bloquear">Bloquear (exige caja para cobrar)</option>
+                </select>
+                <p className="text-[11px] text-stone-400 mt-1">Qué pasa si venden en el POS sin caja abierta. <b>Advertir:</b> avisa pero deja vender (esas ventas quedan fuera del cuadre del turno). <b>Bloquear:</b> no se puede cobrar sin abrir caja.</p>
+              </div>
               <div className="flex gap-2">
                 <button onClick={handleSaveAjustes} disabled={savingAjustes} className={cx.btnPrimary + ' flex items-center gap-2'}>
                   {savingAjustes ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Save size={16} /> Guardar</>}
@@ -577,6 +587,7 @@ export default function PerfilPage() {
               <div><label className={cx.label}>Comisión POS tarjeta</label><p className="text-stone-800 text-sm">{user?.comision_pos ? `${Number(user.comision_pos)}%` : 'No configurada'}</p></div>
               <div><label className={cx.label}>Venta sin stock</label><p className="text-stone-800 text-sm">{user?.impedir_venta_sin_stock ? 'Bloqueada' : 'Permitida'}</p></div>
               <div><label className={cx.label}>Cierre de caja</label><p className="text-stone-800 text-sm">{user?.cierre_ciego ? 'Ciego' : 'Normal'}</p></div>
+              <div><label className={cx.label}>Venta sin caja</label><p className="text-stone-800 text-sm">{user?.caja_modo === 'bloquear' ? 'Bloqueada' : user?.caja_modo === 'permitir' ? 'Permitida' : 'Advertir'}</p></div>
               <div className="col-span-2 border-t border-stone-100 pt-3 mt-1">
                 <label className={cx.label}>Capacidad del taller</label>
                 <p className="text-stone-800 text-sm">

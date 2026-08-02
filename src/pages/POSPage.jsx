@@ -361,6 +361,12 @@ export default function POSPage() {
   // Checkout submit — recibe la decision de pago desde <PagoSheet>.
   const handleCheckout = async ({ conIgv: ventaConIgv, metodoPago: metodoPagoFinal, pagoDetalle, comisionTarjeta }) => {
     if (cartItems.length === 0 || cartTotal <= 0) return;
+    // Guard de caja: si el negocio configuró caja obligatoria, no se cobra sin caja abierta.
+    if (!caja && user?.caja_modo === 'bloquear') {
+      toast.error('Abre la caja antes de cobrar (tu negocio tiene caja obligatoria).');
+      setShowAbrirCaja(true);
+      return;
+    }
     setSaving(true);
     try {
       // Create or find client if doc number provided
@@ -394,6 +400,7 @@ export default function POSPage() {
         fecha: todayStr(),
         cliente_id: clienteId,
         tipo_venta: 'directo',
+        origen_caja: true, // marca venta de POS → activa el guard de caja obligatoria en el back
         metodo_pago: metodoPagoFinal,
         pago_detalle: pagoDetalle,
         comision_tarjeta: comisionTarjeta,
@@ -770,18 +777,22 @@ export default function POSPage() {
           </div>
         )}
 
-        {/* Banner abrir caja — advertencia (no descartable): si no hay caja, las ventas
-            quedan fuera del cuadre del turno. Boton grande para uso rapido. */}
-        {!caja && (
-          <div className="flex items-center gap-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3.5">
-            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-              <AlertTriangle size={20} className="text-amber-600" />
+        {/* Banner abrir caja — según config del negocio (Perfil > Ajustes):
+            'permitir' = sin banner · 'advertir' = ámbar · 'bloquear' = rojo (no deja cobrar). */}
+        {!caja && user?.caja_modo !== 'permitir' && (
+          <div className={`flex items-center gap-3 rounded-xl px-4 py-3.5 border ${user?.caja_modo === 'bloquear' ? 'bg-rose-50 border-rose-300' : 'bg-amber-50 border-amber-300'}`}>
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${user?.caja_modo === 'bloquear' ? 'bg-rose-100' : 'bg-amber-100'}`}>
+              <AlertTriangle size={20} className={user?.caja_modo === 'bloquear' ? 'text-rose-600' : 'text-amber-600'} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-amber-800">Caja no abierta</p>
-              <p className="text-xs text-amber-700">Si vendes sin abrir caja, esas ventas no entrarán en el cuadre del turno.</p>
+              <p className={`text-sm font-semibold ${user?.caja_modo === 'bloquear' ? 'text-rose-800' : 'text-amber-800'}`}>Caja no abierta</p>
+              <p className={`text-xs ${user?.caja_modo === 'bloquear' ? 'text-rose-700' : 'text-amber-700'}`}>
+                {user?.caja_modo === 'bloquear'
+                  ? 'Tu negocio tiene caja obligatoria: abre la caja para poder cobrar.'
+                  : 'Si vendes sin abrir caja, esas ventas no entrarán en el cuadre del turno.'}
+              </p>
             </div>
-            <button id="pos-abrir-caja" onClick={() => setShowAbrirCaja(true)} className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg flex items-center gap-2 flex-shrink-0 transition-colors duration-100">
+            <button id="pos-abrir-caja" onClick={() => setShowAbrirCaja(true)} className={`px-5 py-2.5 text-white text-sm font-semibold rounded-lg flex items-center gap-2 flex-shrink-0 transition-colors duration-100 ${user?.caja_modo === 'bloquear' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-amber-600 hover:bg-amber-700'}`}>
               <DollarSign size={16} /> Abrir caja
             </button>
           </div>
