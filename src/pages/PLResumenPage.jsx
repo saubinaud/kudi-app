@@ -277,7 +277,7 @@ export default function PLResumenPage() {
             </div>
             <div className="px-3 sm:px-6 py-3 border-t border-stone-200 bg-stone-50/50">
               <div className="flex justify-between text-sm font-bold">
-                <span className="text-stone-700">Total COGS</span>
+                <span className="text-stone-700">Total COGS<InfoTip wide text="Costo de lo que vendiste: ingredientes, empaque, mano de obra y costos de equipos, de los productos que sí se vendieron." /></span>
                 <span className="text-stone-900 tabular-nums">{fmt(data.cogs.total)}</span>
               </div>
             </div>
@@ -508,7 +508,7 @@ export default function PLResumenPage() {
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Target size={18} className="text-[var(--accent)]" />
-                  <h3 className="text-lg font-semibold text-stone-900">Punto de Equilibrio</h3>
+                  <h3 className="text-lg font-semibold text-stone-900">Punto de Equilibrio<InfoTip wide text="Las ventas que necesitas para no perder ni ganar." /></h3>
                 </div>
                 <p className="text-sm text-stone-600 mb-4">
                   Necesitas vender <span className="font-bold text-stone-900">{fmt(data.kpis.punto_equilibrio)}</span> para cubrir tus gastos fijos.

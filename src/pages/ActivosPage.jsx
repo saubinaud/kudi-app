@@ -134,7 +134,7 @@ export default function ActivosPage() {
       <div className="grid grid-cols-3 gap-3 mb-6">
         <Stat label="Activos vigentes" value={totales.count} />
         <Stat label="CAPEX invertido" value={formatCurrency(totales.capex)} />
-        <Stat label="Depreciación / mes" value={formatCurrency(totales.deprecMes)} />
+        <Stat label="Depreciación / mes" value={formatCurrency(totales.deprecMes)} tip="El desgaste de tus equipos repartido mes a mes durante su vida útil." />
       </div>
 
       {/* Lista */}
@@ -250,10 +250,10 @@ export default function ActivosPage() {
   );
 }
 
-function Stat({ label, value }) {
+function Stat({ label, value, tip }) {
   return (
     <div className={cx.card + ' px-4 py-3'}>
-      <div className="text-[11px] uppercase tracking-wider text-stone-400 font-semibold">{label}</div>
+      <div className="text-[11px] uppercase tracking-wider text-stone-400 font-semibold">{label}{tip && <InfoTip wide text={tip} />}</div>
       <div className="text-lg font-semibold text-stone-800 tabular-nums mt-0.5">{value}</div>
     </div>
   );

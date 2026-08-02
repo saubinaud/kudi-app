@@ -7,6 +7,7 @@ import { formatCurrency, formatDate } from '../utils/format';
 import CustomSelect from '../components/CustomSelect';
 import PeriodoSelector from '../components/PeriodoSelector';
 import ConfirmDialog from '../components/ConfirmDialog';
+import InfoTip from '../components/InfoTip';
 import { API_BASE } from '../config/api';
 import {
   Plus, X, Trash2, Pencil, ChevronDown, ChevronUp,
@@ -850,7 +851,7 @@ export default function PLGastosPage() {
                   </div>
                   {/* Naturaleza — clasificación para el modelo de costeo */}
                   <div>
-                    <label className={cx.label}>Naturaleza del gasto</label>
+                    <label className={cx.label}>Naturaleza del gasto<InfoTip wide text="A qué parte de tu negocio se destina este gasto: a producir, a administrar, o a atender y vender." /></label>
                     <CustomSelect
                       value={catForm.naturaleza || 'otro'}
                       onChange={(v) => setCatForm((f) => ({ ...f, naturaleza: v }))}

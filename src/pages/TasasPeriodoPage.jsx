@@ -466,7 +466,12 @@ function TasaCard({ icon: Icon, titulo, tasa, numeradorLabel, numerador, denomLa
           <span className="text-stone-700 font-medium tabular-nums">{fmtMoney(numerador)}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-stone-400">{denomLabel}</span>
+          <span className="text-stone-400">
+            {denomLabel}
+            {tipMo && (
+              <InfoTip wide text="Hora hombre: una hora de trabajo de una persona. Hora máquina: una hora de uso de un equipo." />
+            )}
+          </span>
           <span className="text-stone-700 font-medium tabular-nums">{fmtNum(denom)} h</span>
         </div>
         <div className="flex items-center justify-between text-stone-300">

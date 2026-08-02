@@ -18,6 +18,7 @@ import {
   Ban,
 } from 'lucide-react';
 import Tooltip from '../components/Tooltip';
+import InfoTip from '../components/InfoTip';
 
 // Badge-style dropdown — uses fixed positioning to escape overflow:hidden
 function StatusBadge({ value, options, onChange, colorMap = {} }) {
@@ -907,7 +908,7 @@ export default function PLVentasPage() {
           />
           <SummaryCard
             icon={<Package size={20} />}
-            label="COGS"
+            label={<>COGS<InfoTip wide text="Costo de lo que vendiste: ingredientes, empaque, mano de obra y costos de equipos, de los productos que sí se vendieron." /></>}
             value={formatCurrency(resumen.cogs_total)}
           />
           <SummaryCard

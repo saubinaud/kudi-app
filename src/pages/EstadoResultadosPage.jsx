@@ -58,6 +58,7 @@ export default function EstadoResultadosPage() {
           <Row label="A · Food cost (insumos + empaques)" amount={-data.costo_ventas.food_cost} indent />
           <Row
             label="B · Conversión (MO + CIF)"
+            tip="Costos Indirectos de Fabricación: todo lo que gastas en equipos y local para producir (luz, desgaste de máquinas, mantenimiento), aparte de los ingredientes."
             amount={-data.costo_ventas.conversion}
             indent
             sub={`MO ${formatCurrency(data.costo_ventas.conversion_detalle.mo)} · CIF ${formatCurrency(data.costo_ventas.conversion_detalle.cif_total)}`}
@@ -73,18 +74,18 @@ export default function EstadoResultadosPage() {
           <Section title="Gastos de administración" />
           <Row label="Gastos de administración" amount={-data.gastos.administracion} indent
             sub={`Planilla admin ${formatCurrency(data.gastos.administracion_detalle.planilla_administrativa)}`} />
-          <Subtotal label="EBITDA" amount={data.ebitda} note={`${data.margenes.ebitda_pct}%`} strong />
+          <Subtotal label="EBITDA" tip="Tu ganancia antes de descontar la depreciación de tus equipos y los impuestos." amount={data.ebitda} note={`${data.margenes.ebitda_pct}%`} strong />
 
           {/* 4 · D&A → EBIT */}
-          <Row label="(−) Depreciación y amortización admin." amount={-data.depreciacion_amortizacion} indent muted />
-          <Subtotal label="Utilidad operativa (EBIT)" amount={data.ebit} note={`${data.margenes.ebit_pct}%`} strong />
+          <Row label="(−) Depreciación y amortización admin." tip="El desgaste de tus equipos repartido mes a mes durante su vida útil." amount={-data.depreciacion_amortizacion} indent muted />
+          <Subtotal label="Utilidad operativa (EBIT)" tip="Tu ganancia operativa real, ya con el desgaste de tus equipos descontado." amount={data.ebit} note={`${data.margenes.ebit_pct}%`} strong />
 
           {/* 5 · Financiero → UAI */}
           <Row label="(−) Gastos financieros" amount={-data.gasto_financiero} indent muted />
-          <Subtotal label="Utilidad antes de impuestos" amount={data.uai} />
+          <Subtotal label="Utilidad antes de impuestos" tip="Lo que ganaste antes de pagar Impuesto a la Renta." amount={data.uai} />
 
           {/* 6 · IR → NETA */}
-          <Row label="(−) Impuesto a la Renta" amount={-data.impuesto_renta} indent muted />
+          <Row label="(−) Impuesto a la Renta" tip="El impuesto que pagas por tu ganancia (distinto del IGV, que es de tus ventas)." amount={-data.impuesto_renta} indent muted />
           <div className="px-4 sm:px-6 py-4 border-t-2 border-stone-200 bg-stone-50/60 flex items-center justify-between">
             <span className="text-base font-bold text-stone-800 flex items-center gap-2">
               Utilidad neta
@@ -112,11 +113,11 @@ function Section({ title, note }) {
   );
 }
 
-function Row({ label, amount, indent, muted, sub, note }) {
+function Row({ label, amount, indent, muted, sub, note, tip }) {
   return (
     <div className={`px-4 sm:px-6 py-1.5 flex items-start justify-between ${indent ? 'pl-7 sm:pl-9' : ''}`}>
       <div className="min-w-0">
-        <span className={`text-sm ${muted ? 'text-stone-500' : 'text-stone-700'}`}>{label}</span>
+        <span className={`text-sm ${muted ? 'text-stone-500' : 'text-stone-700'}`}>{label}{tip && <InfoTip wide text={tip} />}</span>
         {sub && <div className="text-[11px] text-stone-400">{sub}</div>}
       </div>
       <span className={`text-sm tabular-nums shrink-0 ml-3 ${amount < 0 ? 'text-stone-500' : 'text-stone-800'}`}>{formatCurrency(amount)}</span>
@@ -124,10 +125,10 @@ function Row({ label, amount, indent, muted, sub, note }) {
   );
 }
 
-function Subtotal({ label, amount, note, strong }) {
+function Subtotal({ label, amount, note, strong, tip }) {
   return (
     <div className="px-4 sm:px-6 py-2.5 border-t border-stone-200 bg-stone-50/40 flex items-center justify-between">
-      <span className={`${strong ? 'text-sm font-bold text-stone-800' : 'text-sm font-semibold text-stone-700'}`}>{label}</span>
+      <span className={`${strong ? 'text-sm font-bold text-stone-800' : 'text-sm font-semibold text-stone-700'}`}>{label}{tip && <InfoTip wide text={tip} />}</span>
       <span className="flex items-baseline gap-2">
         {note && <span className="text-[11px] text-stone-400 font-medium">{note}</span>}
         <span className={`tabular-nums ${strong ? 'text-base font-bold' : 'text-sm font-semibold'} ${amount < 0 ? 'text-rose-600' : 'text-stone-900'}`}>{formatCurrency(amount)}</span>

@@ -10,6 +10,7 @@ import {
   AlertTriangle, ChevronDown, ChevronUp, Package
 } from 'lucide-react';
 import { useTerminos } from '../context/TerminosContext';
+import InfoTip from '../components/InfoTip';
 
 function Section({ title, number, isOpen, onToggle, children }) {
   return (
@@ -521,11 +522,11 @@ export default function FichaTecnicaPage() {
               <span className="text-stone-700">{formatCurrency(calculos.food_cost)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-stone-500">Mano de obra</span>
+              <span className="text-stone-500">Mano de obra<InfoTip wide text="El costo de tu tiempo y el de las personas que te ayudan a producir." /></span>
               <span className="text-stone-700">{formatCurrency(calculos.costo_mo_unitario)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-stone-500">CIF</span>
+              <span className="text-stone-500">CIF<InfoTip wide text="Costos Indirectos de Fabricación: todo lo que gastas en equipos y local para producir (luz, desgaste de máquinas, mantenimiento), aparte de los ingredientes." /></span>
               <span className="text-stone-700">{formatCurrency(calculos.cif_unitario)}</span>
             </div>
             <div className="flex justify-between items-center pt-3 border-t border-stone-200">
