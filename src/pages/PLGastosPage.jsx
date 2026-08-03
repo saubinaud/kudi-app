@@ -21,8 +21,9 @@ const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', '
 const NATURALEZA_HINTS = {
   operativo_mo: 'Sueldos del personal operativo (cocina, producción). Alimentan la tasa de mano de obra.',
   cif: 'Costos indirectos de fabricación: gas, luz, depreciación, mantenimiento de máquina.',
-  administrativo: 'Gastos administrativos (contador, dirección). No entran al costo del producto.',
+  administrativo: 'Gastos administrativos (contador, dirección, multas). No entran al costo del producto.',
   otro: 'Sin clasificar. No afecta el costeo. Es el valor por defecto.',
+  excluir_eerr: 'IGV, detracciones y todo lo relacionado al IGV. No entra al Estado de Resultados (es traslado a SUNAT).',
 };
 
 const NATURALEZA_LABELS = {
@@ -30,6 +31,7 @@ const NATURALEZA_LABELS = {
   cif: 'CIF',
   administrativo: 'Administrativo',
   otro: 'Otro',
+  excluir_eerr: 'Fuera del EERR',
 };
 
 const NATURALEZA_OPTIONS = [
@@ -37,6 +39,7 @@ const NATURALEZA_OPTIONS = [
   { value: 'cif', label: 'CIF' },
   { value: 'administrativo', label: 'Administrativo' },
   { value: 'otro', label: 'Otro' },
+  { value: 'excluir_eerr', label: 'Fuera del EERR (IGV)' },
 ];
 
 // Color del badge/selector por naturaleza. 'otro' queda neutro (invita a clasificar).
@@ -45,20 +48,22 @@ const NATURALEZA_BADGE = {
   cif: 'bg-sky-50 text-sky-600',
   administrativo: 'bg-stone-100 text-stone-500',
   otro: 'bg-stone-50 text-stone-400',
+  excluir_eerr: 'bg-amber-50 text-amber-600',
 };
 
 // Autocategorización por palabras clave (item 2). Sugiere la naturaleza a partir del
 // nombre de la categoría. Es solo una SUGERENCIA editable; nunca muta sin que el usuario aplique.
 const NATURALEZA_KEYWORDS = {
   operativo_mo: ['sueldo', 'planilla', 'salario', 'cocina', 'produccion', 'producción', 'operario', 'operación', 'operacion', 'mano de obra', 'rxh cocina', 'rxh produccion', 'rxh producción', 'chef', 'panadero', 'ayudante', 'personal operativo', 'mozo', 'barista'],
-  cif: ['luz', 'agua', 'gas', 'energia', 'energía', 'electricidad', 'mantenimiento', 'depreciacion', 'depreciación', 'maquina', 'máquina', 'horno', 'taller', 'combustible', 'reparacion', 'reparación', 'servicios basicos', 'servicios básicos', 'alquiler local', 'internet', 'telefono', 'teléfono'],
-  administrativo: ['contador', 'contabilidad', 'direccion', 'dirección', 'renta 5ta', 'administrativo', 'gerencia', 'legal', 'oficina', 'licencia', 'software', 'publicidad', 'marketing', 'dietas directorio', 'rxh contador', 'utiles oficina', 'útiles oficina'],
+  cif: ['luz', 'agua', 'gas', 'energia', 'energía', 'electricidad', 'mantenimiento', 'depreciacion', 'depreciación', 'maquina', 'máquina', 'horno', 'taller', 'combustible', 'reparacion', 'reparación', 'servicios basicos', 'servicios básicos', 'internet', 'telefono', 'teléfono'],
+  administrativo: ['contador', 'contabilidad', 'direccion', 'dirección', 'renta 5ta', 'administrativo', 'gerencia', 'legal', 'oficina', 'licencia', 'software', 'publicidad', 'marketing', 'dietas directorio', 'rxh contador', 'utiles oficina', 'útiles oficina', 'multa', 'sancion', 'sanción', 'infraccion', 'infracción'],
+  excluir_eerr: ['igv', 'detraccion', 'detracción', 'percepcion', 'percepción', 'retencion', 'retención'],
 };
 
 function sugerirNaturaleza(nombre) {
   if (!nombre) return null;
   const n = nombre.toLowerCase().trim();
-  for (const nat of ['operativo_mo', 'cif', 'administrativo']) {
+  for (const nat of ['excluir_eerr', 'operativo_mo', 'cif', 'administrativo']) {
     if (NATURALEZA_KEYWORDS[nat].some((k) => n.includes(k))) return nat;
   }
   return null; // sin coincidencia → no se sugiere (queda 'otro')
