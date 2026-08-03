@@ -134,6 +134,7 @@ export default function FichaTecnicaPage() {
       tiempo_activo_min: p.tiempo_activo_min ?? '',
       tiempo_horno_min: p.tiempo_horno_min ?? '',
       tiempo_maquina_min: p.tiempo_maquina_min ?? '',
+      maquina_id: p.maquina_id ?? '',
       tarifa_mo_override: p.tarifa_mo_override ?? '',
       margen_minimo_override: p.margen_minimo_override ?? '',
       cif_gas_unitario: p.cif_gas_unitario ?? '',
@@ -156,6 +157,7 @@ export default function FichaTecnicaPage() {
         tiempo_activo_min: editForm.tiempo_activo_min || null,
         tiempo_horno_min: editForm.tiempo_horno_min || null,
         tiempo_maquina_min: editForm.tiempo_maquina_min || null,
+        maquina_id: editForm.maquina_id ? Number(editForm.maquina_id) : null,
         tarifa_mo_override: editForm.tarifa_mo_override || null,
         margen_minimo_override: editForm.margen_minimo_override || null,
         cif_gas_unitario: editForm.cif_gas_unitario || null,
@@ -218,6 +220,8 @@ export default function FichaTecnicaPage() {
 
   const { producto, preparaciones, materiales, user_settings, calculos } = data;
   const hasMermaPrep = preparaciones.some(p => p.merma_pct > 0);
+  const maquinas = data.maquinas || [];
+  const maquinaSel = maquinas.find(m => m.id === producto.maquina_id);
 
   return (
     <div className="max-w-6xl mx-auto print:max-w-none">
@@ -547,10 +551,44 @@ export default function FichaTecnicaPage() {
               value={formatCurrency(calculos.cif_overhead)}
               edit={<EditInput value={editForm.cif_overhead_unitario} onChange={v => ef('cif_overhead_unitario', v)} placeholder="0.00" />}
             />
+
+            {/* Ticket 4: maquina asociada + energia por kW */}
+            <Field editing={editing}
+              label="Maquina asociada"
+              value={maquinaSel ? `${maquinaSel.nombre} (${maquinaSel.consumo_kw} kW)` : 'Ninguna'}
+              edit={
+                <select
+                  value={editForm.maquina_id ?? ''}
+                  onChange={e => ef('maquina_id', e.target.value)}
+                  className={cx.input + ' max-w-[220px]'}
+                >
+                  <option value="">Ninguna</option>
+                  {maquinas.map(m => (
+                    <option key={m.id} value={m.id}>{m.nombre} ({m.consumo_kw} kW)</option>
+                  ))}
+                </select>
+              }
+            />
+            <div className="flex justify-between text-sm">
+              <span className="text-stone-500">Energia</span>
+              <span className="text-stone-700">{formatCurrency(calculos.costo_energia)}</span>
+            </div>
+            {calculos.costo_energia > 0 && (
+              <p className="text-[10px] text-stone-400 -mt-1">
+                {calculos.consumo_kw} kW x {calculos.tiempo_maquina_min} min x {formatCurrency(calculos.tarifa_kwh)}/kWh
+              </p>
+            )}
+
             <div className="flex justify-between text-sm font-bold pt-2 border-t border-stone-100">
               <span className="text-stone-800">CIF unitario total</span>
               <span className="text-[var(--accent)]">{formatCurrency(calculos.cif_unitario)}</span>
             </div>
+
+            {calculos.consumo_kw > 0 && calculos.tarifa_kwh > 0 && (
+              <p className="text-[10px] text-stone-400">
+                La luz de esta maquina ya se costea por kW en esta ficha. No la registres ademas como gasto CIF en el P&L para no contarla dos veces.
+              </p>
+            )}
           </div>
         </Section>
 
