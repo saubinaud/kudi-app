@@ -294,6 +294,8 @@ export default function TasasPeriodoPage() {
                 numerador={calc.sueldos_operativos}
                 denomLabel="Horas-hombre del mes"
                 denom={calc.horas_hombre_mes}
+                utilizacion={calc.utilizacion_mo}
+                horasUsadas={calc.horas_hombre_usadas}
                 tipMo
               />
               {/* Tasa máquina */}
@@ -305,6 +307,8 @@ export default function TasasPeriodoPage() {
                 numerador={calc.cif_total}
                 denomLabel="Horas-máquina del mes"
                 denom={calc.horas_maquina_mes}
+                utilizacion={calc.utilizacion_maquina}
+                horasUsadas={calc.horas_maquina_usadas}
               />
             </div>
 
@@ -443,8 +447,52 @@ export default function TasasPeriodoPage() {
   );
 }
 
+// ── Aviso de capacidad: % de utilización (solo informativo) ──
+// util: % (usadas/teoricas × 100). Puede venir null (sin capacidad configurada)
+// o undefined (tasa vieja sin el campo). En ambos casos no debe romper.
+function UtilIndicador({ util, usadas, teoricas }) {
+  if (util === undefined) return null; // tasa vieja: sin dato, no mostramos nada
+  if (util === null) {
+    return (
+      <p className="text-[10px] text-stone-300 mt-2">
+        Utilización: sin capacidad configurada
+      </p>
+    );
+  }
+  const u = Number(util);
+  if (isNaN(u)) return null;
+
+  // Semáforo: verde con holgura, ámbar cerca del límite, rojo si se superó
+  let bar = 'bg-emerald-500';
+  let text = 'text-emerald-600';
+  let excedido = false;
+  if (u > 100) {
+    bar = 'bg-rose-500'; text = 'text-rose-600'; excedido = true;
+  } else if (u >= 85) {
+    bar = 'bg-amber-500'; text = 'text-amber-700';
+  }
+  const ancho = Math.min(100, Math.max(0, u));
+
+  return (
+    <div className="mt-2.5">
+      <div className="flex items-center justify-between text-[10px] mb-1">
+        <span className="text-stone-400">Utilización</span>
+        <span className={`font-semibold tabular-nums ${text}`}>
+          {Math.round(u)}% ({fmtNum(usadas, 0)} de {fmtNum(teoricas, 0)} h)
+        </span>
+      </div>
+      <div className="h-1.5 rounded-full bg-stone-100 overflow-hidden">
+        <div className={`h-full rounded-full ${bar}`} style={{ width: `${ancho}%` }} />
+      </div>
+      {excedido && (
+        <p className={`text-[10px] font-medium mt-1 ${text}`}>Superaste tu capacidad</p>
+      )}
+    </div>
+  );
+}
+
 // ── Card de tasa calculada con insumos ──
-function TasaCard({ icon: Icon, titulo, tasa, numeradorLabel, numerador, denomLabel, denom, tipMo }) {
+function TasaCard({ icon: Icon, titulo, tasa, numeradorLabel, numerador, denomLabel, denom, tipMo, utilizacion, horasUsadas }) {
   return (
     <div className="rounded-xl border border-stone-200 p-4">
       <div className="flex items-center gap-2 mb-2">
@@ -481,6 +529,9 @@ function TasaCard({ icon: Icon, titulo, tasa, numeradorLabel, numerador, denomLa
           </span>
         </div>
       </div>
+
+      {/* Aviso de capacidad: % de utilización (informativo) */}
+      <UtilIndicador util={utilizacion} usadas={horasUsadas} teoricas={denom} />
     </div>
   );
 }
@@ -512,6 +563,11 @@ function FrozenCard({ frozen }) {
           <p className="text-[10px] text-stone-400 mt-1 tabular-nums">
             {fmtMoney(frozen.sueldos_operativos)} ÷ {fmtNum(frozen.horas_hombre_mes)} h
           </p>
+          <UtilIndicador
+            util={frozen.utilizacion_mo}
+            usadas={frozen.horas_hombre_usadas}
+            teoricas={frozen.horas_hombre_mes}
+          />
         </div>
         <div className="rounded-lg bg-white/70 border border-emerald-100 p-3">
           <div className="flex items-center gap-1.5 mb-1">
@@ -522,6 +578,11 @@ function FrozenCard({ frozen }) {
           <p className="text-[10px] text-stone-400 mt-1 tabular-nums">
             {fmtMoney(frozen.cif_total)} ÷ {fmtNum(frozen.horas_maquina_mes)} h
           </p>
+          <UtilIndicador
+            util={frozen.utilizacion_maquina}
+            usadas={frozen.horas_maquina_usadas}
+            teoricas={frozen.horas_maquina_mes}
+          />
         </div>
       </div>
 
