@@ -14,8 +14,9 @@ import {
   Users, Plus, Pencil, Trash2, Check, X, Loader2, Factory, Headphones, Briefcase, Link2,
 } from 'lucide-react';
 
-// Las 3 secciones de la planilla. Cada una está predestinada a conectar con la
-// naturaleza del gasto (conexión real pendiente — por ahora solo estructura).
+// Las 3 secciones de la planilla. Cada una se conecta con el costeo y el EERR:
+// Producción → mano de obra (costo), Operativa → gasto operativo, Administrativa →
+// gasto administrativo. Una persona puede repartirse entre ellas por % (Ticket 5).
 const SECCIONES = [
   { key: 'produccion', label: 'Producción', sub: 'Mano de obra → costo de productos', icon: Factory, color: 'bg-stone-100 text-stone-500' },
   { key: 'operativa', label: 'Operativa', sub: 'Atención al cliente → gastos operativos', icon: Headphones, color: 'bg-stone-100 text-stone-500' },
@@ -124,19 +125,37 @@ function PersonalManager({ seccion, personal, reload, api, toast, simbolo }) {
   const startEdit = (p) => {
     setAddSeccion(null);
     setEditId(p.id);
-    setEditForm({ nombre: p.nombre, rol: p.rol || '', sueldo: p.sueldo != null ? Number(p.sueldo) : '', seccion: p.seccion });
+    const tieneReparto = p.pct_produccion != null || p.pct_operativa != null || p.pct_administrativa != null;
+    setEditForm({
+      nombre: p.nombre, rol: p.rol || '', sueldo: p.sueldo != null ? Number(p.sueldo) : '', seccion: p.seccion,
+      reparto: tieneReparto,
+      pct_produccion: p.pct_produccion ?? '',
+      pct_operativa: p.pct_operativa ?? '',
+      pct_administrativa: p.pct_administrativa ?? '',
+    });
   };
 
   const saveEdit = async (id) => {
     if (!editForm.nombre?.trim()) { toast.error('Ponle un nombre'); return; }
+    const payload = {
+      nombre: editForm.nombre.trim(),
+      rol: editForm.rol?.trim() || null,
+      sueldo: editForm.sueldo !== '' ? Number(editForm.sueldo) : 0,
+      seccion: editForm.seccion,
+    };
+    if (editForm.reparto) {
+      const pp = parseInt(editForm.pct_produccion, 10) || 0;
+      const po = parseInt(editForm.pct_operativa, 10) || 0;
+      const pa = parseInt(editForm.pct_administrativa, 10) || 0;
+      if (pp + po + pa !== 100) { toast.error(`Los porcentajes deben sumar 100 (suman ${pp + po + pa})`); return; }
+      payload.pct_produccion = pp; payload.pct_operativa = po; payload.pct_administrativa = pa;
+    } else {
+      // Sin reparto: limpiar (vuelve a 100% de la sección elegida).
+      payload.pct_produccion = null; payload.pct_operativa = null; payload.pct_administrativa = null;
+    }
     setSavingEdit(true);
     try {
-      await api.put(`/personal/${id}`, {
-        nombre: editForm.nombre.trim(),
-        rol: editForm.rol?.trim() || null,
-        sueldo: editForm.sueldo !== '' ? Number(editForm.sueldo) : 0,
-        seccion: editForm.seccion,
-      });
+      await api.put(`/personal/${id}`, payload);
       setEditId(null);
       toast.success('Guardado');
       await reload();
@@ -235,6 +254,33 @@ function PersonalManager({ seccion, personal, reload, api, toast, simbolo }) {
                             />
                           </div>
                         </div>
+                        {/* Reparto del sueldo entre secciones (Ticket 5) */}
+                        <div className="rounded-lg border border-stone-200 bg-white p-2.5">
+                          <label className="flex items-center gap-2 cursor-pointer select-none">
+                            <input type="checkbox" checked={!!editForm.reparto} onChange={(e) => setEditForm({ ...editForm, reparto: e.target.checked })} className="w-4 h-4 accent-[var(--accent)]" />
+                            <span className="text-sm text-stone-700">Repartir el sueldo entre varias áreas</span>
+                          </label>
+                          {editForm.reparto && (
+                            <div className="mt-2">
+                              <p className="text-[11px] text-stone-400 mb-2">Cuando una persona cumple varios roles (ej. cocina, atiende y administra). Los porcentajes deben sumar 100.</p>
+                              <div className="grid grid-cols-3 gap-2">
+                                {SECCIONES.map((s) => (
+                                  <div key={s.key}>
+                                    <label className={cx.label + ' text-[11px]'}>{s.label}</label>
+                                    <div className="relative">
+                                      <input type="number" min="0" max="100" inputMode="numeric" value={editForm['pct_' + s.key] ?? ''} onChange={(e) => setEditForm({ ...editForm, ['pct_' + s.key]: e.target.value })} className={cx.input + ' text-sm pr-6'} placeholder="0" />
+                                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-stone-400">%</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              {(() => {
+                                const suma = SECCIONES.reduce((a, s) => a + (parseInt(editForm['pct_' + s.key], 10) || 0), 0);
+                                return <p className={'text-[11px] mt-1.5 font-medium ' + (suma === 100 ? 'text-emerald-600' : 'text-red-500')}>Suma: {suma}%{suma === 100 ? ' correcto' : ' (debe ser 100)'}</p>;
+                              })()}
+                            </div>
+                          )}
+                        </div>
                         <div className="flex gap-2 pt-0.5">
                           <motion.button whileTap={{ scale: 0.97 }} onClick={() => saveEdit(p.id)} disabled={savingEdit} className={cx.btnPrimary + ' flex items-center gap-1.5 min-h-[44px]'}>
                             {savingEdit ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Guardar
@@ -256,6 +302,9 @@ function PersonalManager({ seccion, personal, reload, api, toast, simbolo }) {
                           <p className="text-sm font-medium text-stone-800 truncate">{p.nombre}</p>
                           {p.cuenta_usuario_id && (
                             <span className={cx.badge('bg-stone-100 text-stone-500') + ' flex items-center gap-0.5'}><Link2 size={10} /> cuenta</span>
+                          )}
+                          {(p.pct_produccion != null || p.pct_operativa != null || p.pct_administrativa != null) && (
+                            <span className={cx.badge('bg-violet-50 text-violet-600')} title={`Producción ${p.pct_produccion || 0}% · Operativa ${p.pct_operativa || 0}% · Administrativa ${p.pct_administrativa || 0}%`}>repartida</span>
                           )}
                         </div>
                         {p.rol && <p className="text-[11px] text-stone-400 truncate">{p.rol}</p>}
