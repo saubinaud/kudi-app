@@ -191,6 +191,8 @@ export default function PerfilPage() {
         operarios_count: ajustesForm.operarios_count !== '' ? Number(ajustesForm.operarios_count) : 1,
         jornada_horas_dia: ajustesForm.jornada_horas_dia !== '' ? Number(ajustesForm.jornada_horas_dia) : 8,
         dias_laborables_mes: ajustesForm.dias_laborables_mes !== '' ? Number(ajustesForm.dias_laborables_mes) : 22,
+        regimen_laboral: ajustesForm.regimen_laboral || '',
+        factor_laboral_override: ajustesForm.factor_laboral_override !== '' ? Number(ajustesForm.factor_laboral_override) : '',
       });
       setUser({ ...user, ...data.data });
       localStorage.setItem('nodum_user', JSON.stringify({ ...user, ...data.data }));
@@ -502,7 +504,7 @@ export default function PerfilPage() {
         <div className={cx.card + ' p-5'}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-stone-900">Ajustes globales</h3>
-            {!editingAjustes && <button onClick={() => { setAjustesForm({ tarifa_mo_global: user?.tarifa_mo_global || '', margen_minimo_global: user?.margen_minimo_global || 33, comision_pos: user?.comision_pos || 0, impedir_venta_sin_stock: user?.impedir_venta_sin_stock || false, cierre_ciego: user?.cierre_ciego || false, caja_modo: user?.caja_modo || 'advertir', operarios_count: user?.operarios_count ?? 1, jornada_horas_dia: user?.jornada_horas_dia ?? 8, dias_laborables_mes: user?.dias_laborables_mes ?? 22 }); setEditingAjustes(true); }} className={cx.btnGhost + ' flex items-center gap-1'}><Pencil size={16} /> Editar</button>}
+            {!editingAjustes && <button onClick={() => { setAjustesForm({ tarifa_mo_global: user?.tarifa_mo_global || '', margen_minimo_global: user?.margen_minimo_global || 33, comision_pos: user?.comision_pos || 0, impedir_venta_sin_stock: user?.impedir_venta_sin_stock || false, cierre_ciego: user?.cierre_ciego || false, caja_modo: user?.caja_modo || 'advertir', operarios_count: user?.operarios_count ?? 1, jornada_horas_dia: user?.jornada_horas_dia ?? 8, dias_laborables_mes: user?.dias_laborables_mes ?? 22, regimen_laboral: user?.regimen_laboral || '', factor_laboral_override: user?.factor_laboral_override ?? '' }); setEditingAjustes(true); }} className={cx.btnGhost + ' flex items-center gap-1'}><Pencil size={16} /> Editar</button>}
           </div>
           {editingAjustes ? (
             <div className="space-y-4 max-w-sm">
@@ -539,6 +541,25 @@ export default function PerfilPage() {
                     {ajustesForm.operarios_count || 0} operarios × {ajustesForm.jornada_horas_dia || 0} h/día × {ajustesForm.dias_laborables_mes || 0} días
                   </p>
                 </div>
+              </div>
+
+              {/* ── Régimen laboral (factor de cargas sobre el sueldo) ── */}
+              <div className="border-t border-stone-100 pt-4">
+                <p className="text-sm font-semibold text-stone-700 mb-1">Régimen laboral</p>
+                <p className="text-[11px] text-stone-400 mb-3 leading-relaxed">El costo real de un trabajador incluye cargas de ley (EsSalud, gratificaciones, CTS, vacaciones). Elige tu régimen y aplicaremos un factor sobre los sueldos del equipo en el costeo y el EERR. Déjalo en Ninguno para usar el sueldo tal cual.</p>
+                <select value={ajustesForm.regimen_laboral || ''} onChange={e => setAjustesForm({ ...ajustesForm, regimen_laboral: e.target.value })} className={cx.input}>
+                  <option value="">Ninguno (sueldo sin cargas)</option>
+                  <option value="microempresa">Microempresa (factor 1.10)</option>
+                  <option value="pequena">Pequeña empresa (factor 1.32)</option>
+                  <option value="general">Régimen general (factor 1.50)</option>
+                </select>
+                {ajustesForm.regimen_laboral ? (
+                  <div className="mt-3">
+                    <label className={cx.label}>Ajustar factor manualmente (opcional)</label>
+                    <input type="number" step="0.01" min="1" value={ajustesForm.factor_laboral_override} onChange={e => setAjustesForm({ ...ajustesForm, factor_laboral_override: e.target.value })} className={cx.input} placeholder="Ej: 1.45" />
+                    <p className="text-[11px] text-stone-400 mt-1">Si lo dejas vacío se usa el factor del régimen. Un factor 1.30 significa que el costo real es 30% mayor al sueldo.</p>
+                  </div>
+                ) : null}
               </div>
 
               <div>
@@ -596,6 +617,17 @@ export default function PerfilPage() {
                 <p className="text-[11px] text-stone-400 mt-0.5">
                   = {((Number(user?.operarios_count ?? 1)) * (Number(user?.jornada_horas_dia ?? 8)) * (Number(user?.dias_laborables_mes ?? 22))).toLocaleString('es-PE', { maximumFractionDigits: 2 })} horas-hombre / mes
                 </p>
+              </div>
+              <div className="col-span-2 border-t border-stone-100 pt-3 mt-1">
+                <label className={cx.label}>Régimen laboral</label>
+                {(() => {
+                  const F = { microempresa: 1.10, pequena: 1.32, general: 1.50 };
+                  const L = { microempresa: 'Microempresa', pequena: 'Pequeña empresa', general: 'Régimen general' };
+                  const reg = user?.regimen_laboral;
+                  if (!reg) return <p className="text-stone-800 text-sm">Ninguno (sueldo sin cargas)</p>;
+                  const factor = user?.factor_laboral_override || F[reg] || 1;
+                  return <p className="text-stone-800 text-sm">{L[reg] || reg} · factor {Number(factor).toFixed(2)}</p>;
+                })()}
               </div>
             </div>
           )}
