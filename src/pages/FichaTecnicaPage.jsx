@@ -143,6 +143,8 @@ export default function FichaTecnicaPage() {
         prep_id: pr.id,
         instrucciones: pr.instrucciones || '',
       })),
+      // MO por receta: un campo tiempo_min_<id> por cada preparacion base
+      ...Object.fromEntries(data.preparaciones.map(pr => ['tiempo_min_' + pr.id, pr.tiempo_min ?? ''])),
     });
     setEditing(true);
   };
@@ -160,6 +162,11 @@ export default function FichaTecnicaPage() {
         cif_overhead_unitario: editForm.cif_overhead_unitario || null,
         instrucciones_ensamble: editForm.instrucciones_ensamble,
         instrucciones_prep: editForm.instrucciones_prep,
+        // MO por receta: id de producto_preparaciones + minutos de esa receta
+        preparaciones: (data?.preparaciones || []).map(pr => ({
+          id: pr.id,
+          tiempo_min: Number(editForm['tiempo_min_' + pr.id]) || 0,
+        })),
       });
       // Save channel price overrides
       if (editForm.precios_canal) {
@@ -296,6 +303,13 @@ export default function FichaTecnicaPage() {
                   <span className="text-xs text-stone-400">Rinde: {parseFloat(prep.capacidad)} {prep.unidad_capacidad || ''}</span>
                 )}
               </div>
+              <div className="mb-2">
+                <Field editing={editing}
+                  label="Tiempo de mano de obra (esta receta)"
+                  value={`${prep.tiempo_min || 0} min`}
+                  edit={<EditInput value={editForm['tiempo_min_' + prep.id]} onChange={v => ef('tiempo_min_' + prep.id, v)} placeholder="min" suffix="min" />}
+                />
+              </div>
               <div className="border border-stone-100 rounded-lg overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -401,6 +415,9 @@ export default function FichaTecnicaPage() {
         {/* Section 6 — Mano de obra */}
         <Section title={`${hasMermaPrep ? '6' : '5'}. Mano de obra`} number={6} {...sectionProps(6)}>
           <div className="space-y-3">
+            <p className="text-[11px] text-stone-500 leading-relaxed">
+              El tiempo de mano de obra se carga por cada receta base (mas abajo, en el detalle de cada preparacion). El "Tiempo activo" de esta seccion corresponde solo al ensamble o armado final del producto, no al tiempo total.
+            </p>
             {/* Origen de la tarifa: tasa del período (absorcion real) o manual (fallback) */}
             {tasaPeriodo && tasaPeriodo.tasa_mo_hora != null && !producto.tarifa_mo_override ? (
               <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
@@ -459,9 +476,32 @@ export default function FichaTecnicaPage() {
               <span className="text-stone-500">Costo MO tanda</span>
               <span className="text-stone-700">{formatCurrency(calculos.costo_mo_tanda)}</span>
             </div>
-            <div className="flex justify-between text-sm font-bold pt-2 border-t border-stone-100">
-              <span className="text-stone-800">Costo MO unitario</span>
-              <span className="text-[var(--accent)]">{formatCurrency(calculos.costo_mo_unitario)}</span>
+
+            {/* Detalle de mano de obra: MO por cada receta base + ensamble */}
+            <div className="border border-stone-100 rounded-lg p-3 mt-1">
+              <p className="text-[11px] font-semibold text-stone-500 uppercase mb-2">Detalle de mano de obra</p>
+              <div className="space-y-1.5">
+                {preparaciones.map((prep, pi) => (
+                  <div key={prep.id} className="flex justify-between text-sm">
+                    <span className="text-stone-500">
+                      {prep.nombre || `Preparacion ${pi + 1}`}
+                      {prep.tiempo_min ? <span className="text-stone-400"> ({prep.tiempo_min} min)</span> : null}
+                    </span>
+                    <span className="text-stone-700">{formatCurrency(prep.costo_mo)}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between text-sm">
+                  <span className="text-stone-500">
+                    Ensamble
+                    {calculos.tiempo_activo ? <span className="text-stone-400"> ({calculos.tiempo_activo} min)</span> : null}
+                  </span>
+                  <span className="text-stone-700">{formatCurrency(calculos.costo_mo_ensamble)}</span>
+                </div>
+                <div className="flex justify-between text-sm font-bold pt-2 border-t border-stone-100">
+                  <span className="text-stone-800">Total mano de obra</span>
+                  <span className="text-[var(--accent)]">{formatCurrency(calculos.costo_mo_unitario)}</span>
+                </div>
+              </div>
             </div>
           </div>
         </Section>

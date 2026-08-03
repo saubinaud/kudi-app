@@ -106,7 +106,7 @@ export default function PrepPredPage() {
 
   const startNew = () => {
     setEditingId('new');
-    setEditData({ nombre: '', capacidad: '', unidad: '', insumos: [{ _id: newId(), insumo_id: null, nombre: '', cantidad: '', costo_unitario: 0, unidad_medida: '', uso_unidad: '' }] });
+    setEditData({ nombre: '', capacidad: '', unidad: '', tiempo_min: '', insumos: [{ _id: newId(), insumo_id: null, nombre: '', cantidad: '', costo_unitario: 0, unidad_medida: '', uso_unidad: '' }] });
   };
 
   const startEdit = (prep) => {
@@ -115,6 +115,7 @@ export default function PrepPredPage() {
       nombre: prep.nombre,
       capacidad: parseFloat(prep.capacidad) || '',
       unidad: prep.unidad_capacidad || prep.unidad || '',
+      tiempo_min: prep.tiempo_min ?? 0,
       insumos: (prep.insumos || []).map((i) => {
         const cu = Number(i.cantidad_presentacion) > 0
           ? Number(i.precio_presentacion) / Number(i.cantidad_presentacion)
@@ -173,6 +174,7 @@ export default function PrepPredPage() {
       nombre: editData.nombre,
       capacidad: editData.capacidad,
       unidad: editData.unidad,
+      tiempo_min: Number(editData.tiempo_min) || 0,
       insumos: editData.insumos.filter((i) => i.insumo_id).map((i) => ({ insumo_id: i.insumo_id, cantidad: Number(i.cantidad) || 0, uso_unidad: i.uso_unidad || i.unidad_medida || null })),
     };
     try {
@@ -220,7 +222,7 @@ export default function PrepPredPage() {
       {/* Edit/create form */}
       {editData && (
         <div className={`${cx.card} p-4 mb-4 border-[var(--accent)]`}>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
             <div>
               <label className={cx.label}>Nombre</label>
               <input type="text" value={editData.nombre} onChange={(e) => setEditData({ ...editData, nombre: e.target.value })} className={cx.input} autoFocus />
@@ -245,6 +247,10 @@ export default function PrepPredPage() {
                 ]}
                 placeholder="Seleccionar"
               />
+            </div>
+            <div>
+              <label className={cx.label}>Tiempo de mano de obra (min)</label>
+              <input type="number" value={editData.tiempo_min} onChange={(e) => setEditData({ ...editData, tiempo_min: e.target.value })} className={cx.input} placeholder="0" />
             </div>
           </div>
 
